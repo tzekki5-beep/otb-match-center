@@ -1,0 +1,17 @@
+OTB MATCH CENTER – JAETTAVA WEB-VERSIO
+
+Tämä paketti sisältää nykyisen V22-version.
+
+Tärkeää:
+- Sivun käyttöliittymä ja analyysit säilyvät.
+- Julkisessa jaossa PitchAPI-avain pitää laittaa palvelinpuolelle.
+- Älä laita omaa pk_live/pk_test-avainta suoraan HTML/JS-tiedostoon.
+
+Helpoin julkaisu:
+1. Luo Cloudflare Pages -projekti.
+2. Lataa tämän ZIPin sisältö Pages-projektiin.
+3. Ota käyttöön /pitchapi/* -välityspalvelu Cloudflare Workerilla.
+4. Aseta PitchAPI-avain Worker Secretiksi nimellä PITCHAPI_KEY.
+5. Sen jälkeen kaverille tarvitsee antaa vain Pages-osoite.
+
+Nykyinen Netlify-versio kannattaa pitää varmuuskopiona.

@@ -1,0 +1,18 @@
+OTB MATCH CENTER – HELPPO JAETTAVA VERSIO
+
+Tavoite:
+Kaverille annetaan vain yksi nettiosoite. Hän ei tarvitse Netlifyä eikä PitchAPI-avainta.
+
+TEE VAIN NÄMÄ:
+1. Avaa Cloudflare ja tee Pages-projekti tästä ZIPistä.
+2. Käytä Advanced / Functions -tilaa, jotta _worker.js otetaan mukaan.
+3. Cloudflaressa: Settings -> Variables and Secrets -> lisää Secret:
+   nimi: PITCHAPI_KEY
+   arvo: oma PitchAPI-avaimesi
+4. Julkaise.
+5. Lähetä kaverille Cloudflaren antama *.pages.dev -osoite.
+
+ÄLÄ laita API-avainta index.html-tiedostoon tai lähetä sitä kaverille.
+
+Tämän paketin _worker.js välittää /pitchapi/* pyynnöt PitchAPI:lle
+ja lisää PITCHAPI_KEY-avaimen palvelinpuolella.
