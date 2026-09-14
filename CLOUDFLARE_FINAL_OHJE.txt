@@ -16,3 +16,4 @@ TEE VAIN NÄMÄ:
 
 Tämän paketin _worker.js välittää /pitchapi/* pyynnöt PitchAPI:lle
 ja lisää PITCHAPI_KEY-avaimen palvelinpuolella.
+Build trigger
