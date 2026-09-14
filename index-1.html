@@ -1,0 +1,550 @@
+<!doctype html>
+<html lang="fi">
+<head>
+<meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<meta name="theme-color" content="#071120"><title>OTB Match Center – PitchAPI</title>
+<style>
+:root{--bg:#071120;--card:#0d1a2e;--line:#29405f;--txt:#edf4ff;--muted:#93a8c5;--accent:#4389c8;--good:#39c98b;--bad:#ff7385}
+*{box-sizing:border-box}body{margin:0;background:var(--bg);color:var(--txt);font-family:system-ui,-apple-system,Segoe UI,Roboto,sans-serif}header{padding:18px 15px 13px;background:#081323;position:sticky;top:0;z-index:5;border-bottom:1px solid var(--line)}h1{font-size:27px;margin:0}.sub{color:var(--muted);margin-top:4px;line-height:1.35}.controls{display:flex;gap:8px;flex-wrap:wrap;margin-top:14px}button,input[type=date],input[type=password]{font:inherit;background:#102039;color:var(--txt);border:1px solid #2b4565;border-radius:12px;padding:10px 13px}button.active{background:var(--accent)}main{max-width:1150px;margin:auto;padding:15px}.status{color:var(--muted);margin-bottom:12px}.err{background:#391722;color:#ffbcc6;border:1px solid #713544;padding:12px;border-radius:12px}.setup{background:#0d1a2e;border:1px solid #29405f;border-radius:16px;padding:15px;margin-bottom:14px}.setup input{width:100%;margin:8px 0}.setup .row{display:flex;gap:8px}.setup .row button{flex:1}.ok{color:var(--good)}
+.match{background:#061c24;border:1px solid #173b45;border-radius:15px;margin:14px 0;overflow:hidden}.mh{padding:13px 14px;border-bottom:1px solid #21434d;display:flex;justify-content:space-between;gap:10px;background:#061a22}.teams{font-weight:800;font-size:16px}.lg{font-size:12px;color:#8fa7ae;margin-top:3px}.tm{white-space:nowrap;color:#d5e1e5;font-weight:700}.pitch{margin:0;background:#06252c;border:0;border-radius:0;min-height:820px;padding:0;position:relative;overflow:hidden}.pitch:before{content:"";position:absolute;left:50%;top:0;bottom:0;border-left:3px solid #d9e1e455}.pitch:after{content:"";position:absolute;width:112px;height:112px;border:3px solid #d9e1e455;border-radius:50%;left:calc(50% - 56px);top:calc(50% - 56px)}.pitch .centerDot{display:block;position:absolute;width:10px;height:10px;border-radius:50%;background:#dfe6e7;left:calc(50% - 5px);top:calc(50% - 5px);z-index:0}.goal{position:absolute;left:15%;right:15%;height:20%;border:3px solid #d9e1e455;background:transparent}.g1{top:0}.g2{bottom:0}.pitch .goal:after{content:"";position:absolute;left:24%;right:24%;height:48%;border:3px solid #d9e1e455}.g1:after{bottom:-3px}.g2:after{top:-3px}.players{position:relative;z-index:1;height:820px;width:100%}.p{text-align:center;width:68px;cursor:pointer;position:absolute;transform:translate(-50%,-50%);filter:drop-shadow(0 2px 2px #0009)}.face{width:52px;height:52px;border-radius:50%;object-fit:cover;background:#dbe5e8;border:3px solid #f2f4f4;display:block;margin:0 auto 2px}.name{display:inline-block;background:#06141b;color:#f2f5f6;border-radius:5px;padding:3px 5px;font-size:10px;font-weight:800;line-height:1.1;max-width:68px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}.nums{font-size:9px;line-height:1.35;font-weight:700;text-shadow:0 1px 2px #000;background:transparent}.otb{color:#eef4f5}.ont{color:#b9d6df}.note{padding:9px 14px 12px;color:#8fa7ae;font-size:12px;background:#061a22}.drawer{position:fixed;left:0;right:0;bottom:0;z-index:20;background:#061a22;border-top:1px solid #3a5962;border-radius:20px 20px 0 0;max-height:82vh;overflow:auto;padding:18px;box-shadow:0 -20px 60px #000b}.x{float:right}.grid{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin:14px 0}.stat{background:#0b2832;border:1px solid #2a4d57;border-radius:12px;padding:9px;text-align:center}.stat b{font-size:20px;display:block}table{width:100%;border-collapse:collapse;font-size:12px}td,th{padding:7px;border-bottom:1px solid #263f48;text-align:center}td:first-child,th:first-child{text-align:left}.hidden{display:none}
+@media(max-width:430px){.pitch{min-height:820px;padding:0}.players{height:820px}.p{width:68px}.face{width:46px;height:46px}.name{font-size:9px;max-width:68px}.nums{font-size:8px;white-space:nowrap}}
+@media(min-width:780px){.match{display:inline-block;vertical-align:top;width:calc(50% - 8px);margin-right:8px}}
+
+/* V18: clear halfway line */
+.pitch::before{
+  content:"";
+  position:absolute;
+  left:0;
+  right:0;
+  top:50%;
+  height:2px;
+  background:rgba(255,255,255,.58);
+  box-shadow:0 0 1px rgba(255,255,255,.25);
+  z-index:1;
+  pointer-events:none;
+}
+.pitch::after{
+  content:"";
+  position:absolute;
+  left:50%;
+  top:50%;
+  width:72px;
+  height:72px;
+  transform:translate(-50%,-50%);
+  border:2px solid rgba(255,255,255,.58);
+  border-radius:50%;
+  z-index:1;
+  pointer-events:none;
+}
+
+
+/* V18: larger OTB numbers */
+.stat, .stats, .shotline, .shots, .numbers, .otb, .otbline{
+  font-size:15px !important;
+  line-height:1.25 !important;
+  font-weight:700 !important;
+}
+
+
+/* V19: analysis / ranking panels, without changing the pitch layout */
+.analysis{padding:12px 14px;background:#071d25;border-top:1px solid #21434d}
+.analysis h3{margin:0 0 9px;font-size:15px}
+.analysis .mini{color:#8fa7ae;font-size:11px;margin-bottom:9px}
+.rankgrid{display:grid;grid-template-columns:1fr;gap:7px}
+.rankrow{display:grid;grid-template-columns:28px 1fr auto;align-items:center;gap:7px;background:#0b2832;border:1px solid #294b55;border-radius:10px;padding:7px 8px}
+.ranknum{font-weight:900;text-align:center}
+.rankname{font-weight:800;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.rankmeta{font-size:11px;color:#a9c0c7;margin-top:2px}
+.rankscore{font-size:12px;font-weight:900;white-space:nowrap}
+.hot{border-color:#4389c8}
+.teamtotals{display:flex;gap:7px;flex-wrap:wrap;margin:0 0 10px}
+.teamtotal{background:#102b34;border:1px solid #294b55;border-radius:9px;padding:6px 8px;font-size:11px}
+.teamtotal b{font-size:14px;margin-right:3px}
+@media(min-width:700px){.rankgrid{grid-template-columns:1fr 1fr}}
+
+</style>
+<style id="v20-enhancements">
+.v20-days-row{display:grid;grid-template-columns:repeat(7,1fr);gap:5px}
+.v20-day{background:#173b3c;color:#fff;border:1px solid #527273;border-radius:9px;padding:8px 3px;text-align:center;font-weight:700;font-size:12px;cursor:pointer}
+.v20-day.active{background:#4389c8;border-color:#75aee0}
+.v20-day small{display:block;font-size:10px;opacity:.78;margin-top:2px}
+@media(max-width:500px){.v20-days-row{gap:4px}.v20-day{font-size:11px;padding:7px 1px}}
+.v20-wrap{margin:12px 0 18px}
+.v20-toolbar{display:flex;gap:8px;flex-wrap:wrap;align-items:center;margin:8px 0}
+.v20-toolbar input,.v20-toolbar select{background:#102b2c;color:#fff;border:1px solid #426061;border-radius:9px;padding:9px 10px;font-size:14px;outline:none}
+.v20-btn{background:#173b3c;color:#fff;border:1px solid #527273;border-radius:9px;padding:9px 12px;font-weight:700}
+.v20-section{background:rgba(9,30,31,.82);border:1px solid rgba(130,170,170,.25);border-radius:12px;padding:12px;margin-top:10px}
+.v20-title{font-weight:800;font-size:16px;margin-bottom:8px}
+.v20-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(210px,1fr));gap:8px}
+.v20-card{background:#102b2c;border-radius:10px;padding:10px}
+.v20-small{font-size:12px;opacity:.8}
+.v20-big{font-size:18px;font-weight:900}
+.v20-hot{font-size:12px;font-weight:900;margin-left:5px}
+.v20-bar{height:7px;background:#274748;border-radius:99px;overflow:hidden;margin-top:6px}
+.v20-bar>i{display:block;height:100%;background:#8cc6c0}
+.v20-table{width:100%;border-collapse:collapse;font-size:13px}
+.v20-table th,.v20-table td{padding:7px 5px;border-bottom:1px solid rgba(255,255,255,.09);text-align:left}
+.v20-table th{font-size:12px;opacity:.75}
+.v20-click{cursor:pointer}
+.v20-click:hover{background:rgba(255,255,255,.05)}
+.v20-empty{opacity:.7;padding:8px 0}
+@media(max-width:600px){.v20-toolbar>*{flex:1 1 140px}.v20-table{font-size:12px}}
+</style>
+
+
+<style id="v22-match-analysis-css">
+.v22-match{margin:12px 0;background:rgba(9,30,31,.92);border:1px solid rgba(130,170,170,.28);border-radius:14px;padding:12px}
+.v22-head{display:flex;justify-content:space-between;align-items:center;gap:8px;flex-wrap:wrap}
+.v22-title{font-size:17px;font-weight:900}
+.v22-sub{font-size:12px;opacity:.75}
+.v22-picks{display:grid;grid-template-columns:repeat(auto-fit,minmax(190px,1fr));gap:8px;margin-top:10px}
+.v22-pick{background:#102b2c;border-radius:10px;padding:10px}
+.v22-pick b{font-size:14px}
+.v22-meta{font-size:12px;line-height:1.45;margin-top:5px}
+.v22-badge{display:inline-block;border-radius:999px;padding:3px 7px;background:#234b4b;font-size:11px;font-weight:800;margin-left:5px}
+.v22-conf{font-size:17px;font-weight:900;margin-top:5px}
+.v22-note{font-size:12px;opacity:.8;margin-top:8px}
+.v22-tabs{display:flex;gap:7px;flex-wrap:wrap;margin-top:10px}
+.v22-tab{background:#173b3c;color:#fff;border:1px solid #527273;border-radius:9px;padding:8px 10px;font-weight:800}
+.v22-tab.active{background:#4c98cf}
+.v22-table{width:100%;border-collapse:collapse;margin-top:8px;font-size:12px}
+.v22-table th,.v22-table td{padding:6px 4px;border-bottom:1px solid rgba(255,255,255,.08);text-align:left}
+.v22-table th{opacity:.7}
+</style>
+
+</head><body>
+
+<div style="margin:8px 0;padding:8px 10px;border-radius:9px;background:rgba(16,43,44,.75);font-size:12px;opacity:.85">
+  OTB Match Center · julkinen web-versio
+</div>
+
+
+
+<div id="v22MatchAnalysis" class="v22-match">
+  <div class="v22-head">
+    <div>
+      <div class="v22-title">🎯 Ottelun OTB-analyysi</div>
+      <div class="v22-sub">Parhaat 3–5 kohdetta tämän ottelun pelaajista</div>
+    </div>
+    <div id="v22Confidence" class="v22-conf">—</div>
+  </div>
+  <div class="v22-tabs">
+    <button class="v22-tab active" data-v22mode="all">Kaikki</button>
+    <button class="v22-tab" data-v22mode="home">🏠 Koti</button>
+    <button class="v22-tab" data-v22mode="away">✈️ Vieras</button>
+  </div>
+  <div id="v22Picks" class="v22-picks">
+    <div class="v22-note">Valitse ottelu nähdäksesi analyysin.</div>
+  </div>
+  <div id="v22Details" class="v22-note"></div>
+</div>
+
+<div id="v20Enhancements" class="v20-wrap">
+  <div class="v20-toolbar">
+    <select id="v20League"><option value="">⚽ Kaikki 5 sarjaa</option><option value="Premier League">Premier League</option><option value="LaLiga">LaLiga</option><option value="Serie A">Serie A</option><option value="Bundesliga">Bundesliga</option><option value="Ligue 1">Ligue 1</option></select>
+    <input id="v20Search" placeholder="🔎 Hae pelaajaa..." />
+  </div>
+  <div class="v20-section v20-days">
+    <div class="v20-title">📅 Ottelupäivät</div>
+    <div id="v20Days" class="v20-days-row"></div>
+  </div>
+  <div class="v20-section">
+    <div class="v20-title">🎯 TOP-kohteet</div>
+    <div id="v20Top" class="v20-grid"><div class="v20-empty">Valitse ottelu tai odota tietojen latautumista.</div></div>
+  </div>
+  <div class="v20-section">
+    <div class="v20-title">📈 Pelaajien trendit</div>
+    <div id="v20Trends"><div class="v20-empty">Valitse ottelu nähdäksesi trendit.</div></div>
+  </div>
+  <div class="v20-section">
+    <div class="v20-title">⚽ Joukkueiden vertailu</div>
+    <div id="v20Teams"><div class="v20-empty">Valitse ottelu nähdäksesi vertailun.</div></div>
+  </div>
+</div>
+
+<header><h1>⚽ OTB Match Center</h1><div class="sub">Päivän ottelut · oikeat avauskokoonpanot · viimeiset 5 · boxin ulkopuoliset laukaukset · boxin ulkopuolelta kohti</div>
+<div class="controls"><input id="date" type="date"><button id="refresh">↻ Päivitä</button><button class="f active" data-l="ALL">Kaikki 5 sarjaa</button><button class="f" data-l="Premier League">PL</button><button class="f" data-l="LaLiga">LaLiga</button><button class="f" data-l="Serie A">Serie A</button><button class="f" data-l="Bundesliga">Bundesliga</button><button class="f" data-l="Ligue 1">Ligue 1</button></div></header>
+<main>
+<div id="setup" class="setup"><b>Ensimmäinen käyttökerta</b><div style="color:#93a8c5;font-size:13px;margin-top:5px">Tarvitset PitchAPI:n ilmaisen API-avaimen. Se tallennetaan vain tähän selaimeen.</div><input id="key" type="password" placeholder="pk_live_... tai pk_test_..."><div class="row"><button id="save">Tallenna avain</button><button id="clear">Poista avain</button></div><div id="keymsg" class="status" style="margin-top:8px"></div></div>
+<div id="status" class="status">Valmis.</div><div id="diag" class="status" style="font-size:11px"></div><div id="out"></div></main><div id="drawer" class="drawer hidden"></div>
+<script>
+const API='/pitchapi/';
+const TARGETS={
+  'Premier League':'ENG',
+  'LaLiga':'ESP',
+  'Serie A':'ITA',
+  'Bundesliga':'GER',
+  'Ligue 1':'FRA'
+};
+const ALLOWED=Object.keys(TARGETS);
+let filter='ALL',games=[],leagueMap={},lineupCache=new Map(),matchPlayersCache=new Map(),shotsCache=new Map(),historyCache=new Map();
+const $=s=>document.querySelector(s),$$=s=>[...document.querySelectorAll(s)];
+function today(){let d=new Date();return new Date(d-d.getTimezoneOffset()*60000).toISOString().slice(0,10)}
+function esc(s){return String(s??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]))}
+function isPublicWorker(){return location.hostname.endsWith('.workers.dev')}
+function key(){return localStorage.getItem('otb_pitch_key')||''}
+async function api(path){const k=key();const headers={};if(k)headers['X-API-KEY']=k;const r=await fetch(API+path,{headers,cache:'no-store'});let d=null;try{d=await r.json()}catch{}if(!r.ok){const msg=d?.error?.message||d?.error?.code||('HTTP '+r.status); if(r.status===404 && API.startsWith('/pitchapi/')) throw Error('Netlify-proxy puuttuu tai vanha versio on edelleen käytössä. Lataa V4 ZIP ja julkaise se uudelleen Netlify Dropiin.'); throw Error(msg)}if(d?.error)throw Error(d.error.message||d.error.code||'API-virhe');return d.data}
+function matchLabel(m){return `${m.home_team?.name||''} – ${m.away_team?.name||''}`}
+function localTime(utc){if(!utc)return '';return new Date(utc).toLocaleTimeString('fi-FI',{hour:'2-digit',minute:'2-digit'})}
+function setKeyUI(){const k=key();$('#key').value=k;$('#setup').style.display=k?'none':'block';if(k)$('#keymsg').innerHTML='<span class="ok">API-avain tallennettu tähän selaimeen.</span>'}
+$('#save').onclick=()=>{const v=$('#key').value.trim();if(!v){$('#keymsg').textContent='Syötä API-avain.';return}localStorage.setItem('otb_pitch_key',v);setKeyUI();load()};
+$('#clear').onclick=()=>{localStorage.removeItem('otb_pitch_key');setKeyUI();$('#status').textContent='API-avain poistettu.';$('#out').innerHTML=''};
+async function loadLeagues(){const d=await api('leagues');const arr=d.leagues||[];leagueMap={};for(const name of ALLOWED){const cc=TARGETS[name];const candidates=arr.filter(x=>x.country_code===cc);let x=candidates.find(x=>x.name===name)||candidates.find(x=>x.name?.toLowerCase()===name.toLowerCase());if(!x && name==='LaLiga')x=candidates.find(x=>/la ?liga|laliga/i.test(x.name||''));if(!x)throw Error(`PitchAPI: sarjaa ${name} (${cc}) ei löytynyt.`);leagueMap[name]=x}}
+async function load(){if(!key()&&!isPublicWorker()){setKeyUI();$('#status').textContent='Lisää ensin PitchAPI-avain.';return}$('#out').innerHTML='';$('#status').textContent='Haetaan päivän ottelut…';try{await loadLeagues();const date=$('#date').value;const d=await api(`date/${date}?status=all`);const allowedIds=new Set(Object.values(leagueMap).map(x=>x.id));games=(d.matches||[]).filter(m=>allowedIds.has(m.league?.id)).map(m=>{const target=ALLOWED.find(n=>leagueMap[n]?.id===m.league?.id);return {...m,league:{...(m.league||{}),name:target||m.league?.name}}}).sort((a,b)=>new Date(a.time_utc)-new Date(b.time_utc));$('#status').textContent=`${games.length} ottelua · PitchAPI`;render()}catch(e){$('#status').innerHTML=`<div class="err">${esc(e.message)}<br><small>Jos virhe on API-avain, tarkista avain ja paina Päivitä.</small></div>`}}
+function render(){const list=filter==='ALL'?games:games.filter(m=>m.league?.name===filter);if(!list.length){$('#out').innerHTML='<div class="status">Ei otteluita tällä suodattimella.</div>';return}$('#out').innerHTML=list.map(m=>`<section class="match"><div class="mh"><div><div class="teams">${esc(matchLabel(m))}</div><div class="lg">${esc(m.league?.name||'')}</div></div><div class="tm">${localTime(m.time_utc)}${m.status==='finished'?' · '+m.score_home+'–'+m.score_away:''}</div></div><div class="pitch" id="p${m.id.replace(/[^a-zA-Z0-9_-]/g,'')}"><div class="goal g1"></div><div class="goal g2"></div><span class="centerDot"></span><div class="players"><div class="status">Ladataan kokoonpanoa…</div></div></div><div class="analysis" data-analysis><h3>📊 Ottelun OTB-yhteenveto</h3><div class="mini">Ladataan viimeisten 5 ottelun perusteella…</div></div><div class="note">Ylärivi = boxin ulkopuolelta · alarivi = boxin ulkopuolelta kohti · napauta pelaajaa.</div></section>`).join('');list.forEach(loadGame)}
+function pid(p){return p.player_id||p.id||p.player?.id}function pName(p){return p.name||p.player?.name||'?'}
+function img(p){return p.image_url||p.player?.image_url||p.image?.url||''}
+async function enrichPlayerImages(starters){
+  const out=await Promise.all(starters.map(async p=>{
+    if(img(p)) return p;
+    const id=pid(p);
+    if(!id) return p;
+    try{
+      const d=await api(`players/${encodeURIComponent(id)}`);
+      const q=d?.player||d;
+      if(q?.image_url) return {...p,image_url:q.image_url};
+    }catch(e){}
+    return p;
+  }));
+  return out;
+}
+function posText(p){
+  const v=p.position||p.position_name||p.positionName||p.role||p.player?.position||'';
+  if(typeof v==='object') return String(v.name||v.short_name||v.abbreviation||v.code||'');
+  return String(v);
+}
+function positionGroup(p){
+  const s=posText(p).toLowerCase();
+  if(/goal|keeper|^gk$|\bgk\b/.test(s)) return 'gk';
+  if(/defen|back|centre.?back|center.?back|full.?back|wing.?back|sweeper|libero|^d$/.test(s)) return 'def';
+  if(/forward|striker|attacker|winger|inside forward|second striker|^f$/.test(s)) return 'att';
+  if(/mid|wing|defensive mid|central mid|attacking mid|^m$/.test(s)) return 'mid';
+  return 'mid';
+}
+function place(starters,home){
+  // Four fixed formation rows with generous vertical spacing. Each player
+  // gets a complete card area (photo + name + two stat rows), so cards never overlap.
+  const groups={gk:[],def:[],mid:[],att:[]};
+  starters.forEach(p=>groups[positionGroup(p)].push(p));
+  const total=starters.length;
+  if(!groups.gk.length && total) groups.gk.push(starters[0]);
+  const lines=[];
+  if(groups.gk.length) lines.push(['gk',groups.gk]);
+  if(groups.def.length) lines.push(['def',groups.def]);
+  if(groups.mid.length) lines.push(['mid',groups.mid]);
+  if(groups.att.length) lines.push(['att',groups.att]);
+  if(lines.length<3){
+    const arr=starters.slice();
+    lines.length=0;
+    lines.push(['gk',arr.slice(0,1)],['def',arr.slice(1,5)],['mid',arr.slice(5,9)],['att',arr.slice(9)]);
+  }
+  // Keep a large empty corridor between the two teams.
+  const homeY=[8,20,32,43];
+  const awayY=[92,80,68,57];
+  const pts=[];
+  lines.forEach(([kind,arr],lineIndex)=>{
+    const n=arr.length;
+    const y=home ? homeY[Math.min(lineIndex,3)] : awayY[Math.min(lineIndex,3)];
+    arr.forEach((p,i)=>{
+      let x=(i+1)*100/(n+1);
+      x=Math.max(7,Math.min(93,x));
+      pts.push({p,x,y});
+    });
+  });
+  return pts;
+}
+function card(p,teamId,matchId,x,y){const id=pid(p);const u=img(p);return `<div class="p" data-id="${esc(id)}" data-team="${esc(teamId)}" data-match="${esc(matchId)}" style="left:${x}%;top:${y}%"><img class="face" data-pid="${esc(id)}" src="${esc(u)}" onerror="imageFallback(this)"><div class="name">${esc(pName(p))}</div><div class="nums otb" data-otb>–/–/–/–/–</div><div class="nums ont" data-ont>–/–/–/–/–</div></div>`}
+async function getLineups(id){if(lineupCache.has(id))return lineupCache.get(id);const d=await api(`matches/${id}/lineups`);lineupCache.set(id,d);return d}
+async function getMatchPlayers(id){
+  if(matchPlayersCache.has(id))return matchPlayersCache.get(id);
+  const d=await api(`matches/${id}/players`);
+  const map=new Map();
+  for(const row of (Array.isArray(d)?d:[])){
+    const pl=row.player||{};
+    const rid=pl.id||row.player_id||row.id;
+    if(rid){
+      map.set(String(rid),{
+        ...pl,
+        id:pl.id||rid,
+        image_url:pl.image_url||row.image_url||row.player_image_url||row.image?.url||''
+      });
+    }
+  }
+  matchPlayersCache.set(id,map);
+  return map;
+}
+async function mergeImages(starters,map){
+  const merged=starters.map(p=>{
+    const id=pid(p),q=map.get(String(id));
+    return q?{...q,...p,image_url:p.image_url||p.player?.image_url||q.image_url}:p;
+  });
+  return enrichPlayerImages(merged);
+}
+function imageFallback(el){
+  const id=el.dataset.pid||'';
+  if(!el.dataset.retry && id){
+    el.dataset.retry='1';
+    // Final fallback: ask PitchAPI for the canonical player record.
+    api(`players/${encodeURIComponent(id)}`).then(d=>{
+      const u=(d?.player||d)?.image_url;
+      if(u) el.src=u; else el.style.visibility='hidden';
+    }).catch(()=>{el.style.visibility='hidden'});
+  }else el.style.visibility='hidden';
+}
+
+
+function analysisScore(v){
+  // Simple, transparent ranking: volume + accuracy + consistency over the last five.
+  const avg=v.totalOtb/5, acc=v.totalOtb? v.totalOn/v.totalOtb : 0;
+  const consistency=v.gamesWithOtb/5;
+  return avg*5 + acc*3 + consistency*2;
+}
+function playerAnalysis(el){
+  const vals=el._history||[];
+  const totalOtb=vals.reduce((a,v)=>a+v.otb,0);
+  const totalOn=vals.reduce((a,v)=>a+v.on,0);
+  const totalAll=vals.reduce((a,v)=>a+v.all,0);
+  const gamesWithOtb=vals.filter(v=>v.otb>0).length;
+  const score=analysisScore({totalOtb,totalOn,gamesWithOtb});
+  return {name:el.querySelector('.name')?.textContent||'?', totalOtb,totalOn,totalAll,gamesWithOtb,score};
+}
+function renderAnalysis(m,home,away){
+  const pitch=document.querySelector(`#p${m.id.replace(/[^a-zA-Z0-9_-]/g,'')}`);
+  if(!pitch)return;
+  const panel=pitch.parentElement.querySelector('[data-analysis]');
+  if(!panel)return;
+  const players=[...pitch.querySelectorAll('.p')].map(playerAnalysis).filter(x=>x.totalAll>=0);
+  if(!players.length){panel.querySelector('.mini').textContent='Historiatietoja ei saatavilla.';return}
+  players.sort((a,b)=>b.score-a.score||b.totalOtb-a.totalOtb||b.totalOn-a.totalOn);
+  const top=players.slice(0,5);
+  const hNames=new Set(home.map(p=>pName(p)));
+  const h=players.filter(x=>hNames.has(x.name));
+  const a=players.filter(x=>!hNames.has(x.name));
+  const teamTotal=(arr,key)=>arr.reduce((s,x)=>s+x[key],0);
+  const rankHtml=top.map((x,i)=>{
+    const acc=x.totalOtb?Math.round(100*x.totalOn/x.totalOtb):0;
+    const star=x.score>=10?'★★★★★':x.score>=7?'★★★★☆':x.score>=5?'★★★☆☆':x.score>=3?'★★☆☆☆':'★☆☆☆☆';
+    return `<div class="rankrow ${i<2?'hot':''}"><div class="ranknum">${i+1}</div><div><div class="rankname">${esc(x.name)}</div><div class="rankmeta">${star} · ${x.totalOtb} OTB · ${x.totalOn} kohti · ${x.totalAll} kaikki · ${acc}% OTB-kohti</div></div><div class="rankscore">${x.score.toFixed(1)}</div></div>`;
+  }).join('');
+  panel.innerHTML=`<h3>📊 Ottelun OTB-yhteenveto</h3><div class="mini">TOP 5 perustuu viimeiseen 5 otteluun: OTB-määrä + OTB kohti + tasaisuus. Mitä suurempi pistemäärä, sitä kiinnostavampi tilastollisesti.</div><div class="teamtotals"><div class="teamtotal">${esc(m.home_team?.name||'Kotijoukkue')}: <b>${teamTotal(h,'totalOtb')}</b> OTB · <b>${teamTotal(h,'totalOn')}</b> kohti</div><div class="teamtotal">${esc(m.away_team?.name||'Vierasjoukkue')}: <b>${teamTotal(a,'totalOtb')}</b> OTB · <b>${teamTotal(a,'totalOn')}</b> kohti</div></div><div class="rankgrid">${rankHtml}</div>`;
+}
+
+async function loadGame(m){const box=$('#p'+m.id.replace(/[^a-zA-Z0-9_-]/g,'')+' .players');if(!box)return;try{const d=await getLineups(m.id),home=d.home||{},away=d.away||{};const hs0=home.starters||[],as0=away.starters||[];const pm=await getMatchPlayers(m.id).catch(()=>new Map());const hs=await mergeImages(hs0,pm),as=await mergeImages(as0,pm);if(hs.length<7||as.length<7){box.innerHTML='<div class="status">Avauskokoonpano ei ole vielä saatavilla.</div>';return}let html='';for(const q of place(hs,true))html+=card(q.p,home.team_id||d.home_team?.id,m.id,q.x,q.y);for(const q of place(as,false))html+=card(q.p,away.team_id||d.away_team?.id,m.id,q.x,q.y);box.innerHTML=html;const hTeam=home.team_id||d.home_team?.id,aTeam=away.team_id||d.away_team?.id;await Promise.all([loadHistory(m,hTeam,hs),loadHistory(m,aTeam,as)]);renderAnalysis(m,hs,as);box.querySelectorAll('.p').forEach(el=>el.onclick=()=>openPlayer(el.dataset.id,el.querySelector('.name').textContent,el.dataset.team,m.league?.name,m.time_utc));}catch(e){box.innerHTML=`<div class="err">Kokoonpanoa ei saatu: ${esc(e.message)}</div>`}}
+async function teamMatches(teamId,leagueName,cutoffTime){const ck=teamId+':'+leagueName+':'+cutoffTime;if(historyCache.has(ck))return historyCache.get(ck);const lm=leagueMap[leagueName];if(!lm)throw Error('Sarjaa ei löytynyt');const d=await api(`leagues/${encodeURIComponent(lm.id)}/matches?status=played`);const cutoff=Date.parse(cutoffTime||'9999-12-31T23:59:59Z');const arr=(d.matches||[]).filter(m=>(m.home_team?.id===teamId||m.away_team?.id===teamId)&&m.status==='finished'&&Date.parse(m.time_utc)<cutoff).sort((a,b)=>new Date(b.time_utc)-new Date(a.time_utc)).slice(0,5);historyCache.set(ck,arr);return arr}
+async function shots(matchId){if(shotsCache.has(matchId))return shotsCache.get(matchId);const d=await api(`matches/${matchId}/shots`);const arr=[];for(const per of (d.periods||[]))arr.push(...(per.shots||[]));shotsCache.set(matchId,arr);return arr}
+function statsFor(arr,playerId){const ss=arr.filter(s=>String(s.player?.id)===String(playerId));let otb=0,otbOn=0;for(const s of ss){const outside=s.is_inside_box===false;if(outside)otb++;if(outside && s.is_on_target===true)otbOn++}return{otb,on:otbOn,all:ss.length,shots:ss}}
+async function loadHistory(m,teamId,starters){if(!teamId)return;try{const hist=await teamMatches(teamId,m.league.name,m.time_utc);const rows=await Promise.all(hist.map(async g=>({g,shots:await shots(g.id)})));for(const p of starters){const id=pid(p);const vals=rows.map(r=>{const z=statsFor(r.shots,id);return{...z,opp:matchLabel(r.g)}});const el=document.querySelector(`#p${m.id.replace(/[^a-zA-Z0-9_-]/g,'')} .p[data-id="${CSS.escape(String(id))}"]`);if(el){el.querySelector('[data-otb]').textContent=vals.map(v=>v.otb).join('/');el.querySelector('[data-ont]').textContent=vals.map(v=>v.on).join('/');el._history=vals;}}}catch(e){console.warn('history',e)}}
+async function openPlayer(id,name,teamId,leagueName,cutoffTime){const d=$('#drawer');d.classList.remove('hidden');d.innerHTML=`<button class="x" onclick="this.parentElement.classList.add('hidden')">✕</button><h2>${esc(name)}</h2><div class="status">Haetaan viimeisiä 5 ottelua…</div>`;try{const hist=await teamMatches(teamId,leagueName,cutoffTime),vals=[];for(const g of hist){const ss=statsFor(await shots(g.id),id);vals.push({...ss,opp:matchLabel(g)})}const t=vals.reduce((a,v)=>a+v.otb,0),o=vals.reduce((a,v)=>a+v.on,0),all=vals.reduce((a,v)=>a+v.all,0),active=vals.filter(v=>v.otb>0).length,avg=(t/Math.max(vals.length,1)).toFixed(1),acc=t?Math.round(100*o/t):0;d.innerHTML=`<button class="x" onclick="this.parentElement.classList.add('hidden')">✕</button><h2>${esc(name)}</h2><div class="grid"><div class="stat"><b>${t}</b>OTB</div><div class="stat"><b>${o}</b>OTB kohti</div><div class="stat"><b>${all}</b>kaikki</div></div><div class="mini">Keskiarvo: <b>${avg}</b> OTB/peli · OTB kohti ${acc}% · OTB vähintään kerran ${active}/${vals.length} pelissä</div><table><thead><tr><th>Ottelu</th><th>OTB</th><th>OTB kohti</th><th>Kaikki</th></tr></thead><tbody>${vals.map(v=>`<tr><td>${esc(v.opp)}</td><td>${v.otb}</td><td>${v.on}</td><td>${v.all}</td></tr>`).join('')}</tbody></table>`}catch(e){d.innerHTML=`<button class="x" onclick="this.parentElement.classList.add('hidden')">✕</button><h2>${esc(name)}</h2><div class="err">Tilastoja ei saatu: ${esc(e.message)}</div>`}}
+$('#date').value=today();if(isPublicWorker())$('#setup').style.display='none';$('#refresh').onclick=load;$('#date').onchange=load;$$('.f').forEach(b=>b.onclick=()=>{$$('.f').forEach(x=>x.classList.remove('active'));b.classList.add('active');filter=b.dataset.l;render()});setKeyUI();if(key()||isPublicWorker())load();
+</script>
+<script id="v20-enhancements-js">
+(function(){
+  const V20 = { players:[], matches:[] };
+  const $ = id => document.getElementById(id);
+
+  function num(v){ return Number(v)||0 }
+  function mean(a){ return a.length ? a.reduce((x,y)=>x+y,0)/a.length : 0 }
+  function stars(score){
+    if(score>=0.85)return "★★★★★";
+    if(score>=0.68)return "★★★★☆";
+    if(score>=0.50)return "★★★☆☆";
+    if(score>=0.32)return "★★☆☆☆";
+    return "★☆☆☆☆";
+  }
+  function trend(vals){
+    if(vals.length<2) return {label:"—",delta:0};
+    const n=vals.length, k=Math.max(1,Math.floor(n/2));
+    const recent=mean(vals.slice(0,k)), old=mean(vals.slice(k));
+    const d=recent-old;
+    return {label:d>.19?"🔥 Nousussa":d<-.19?"📉 Laskussa":"➡️ Tasainen",delta:d};
+  }
+  function scorePlayer(p){
+    const avg=num(p.avg), on=num(p.onAvg), games=num(p.games);
+    const consistency=games/5;
+    return Math.min(1, avg/3*.5 + on/1.5*.25 + consistency*.25);
+  }
+  function render(list){
+    const top=$("v20Top"), tr=$("v20Trends");
+    if(!top||!tr)return;
+    if(!list.length){
+      top.innerHTML='<div class="v20-empty">Ei pelaajia tällä haulla.</div>';
+      tr.innerHTML='<div class="v20-empty">Ei pelaajia.</div>';
+      return;
+    }
+    const ranked=[...list].sort((a,b)=>scorePlayer(b)-scorePlayer(a)).slice(0,5);
+    top.innerHTML=ranked.map((p,i)=>{
+      const s=scorePlayer(p), t=trend(p.values||[]);
+      return `<div class="v20-card v20-click" data-v20pid="${p.id||""}">
+        <div><b>${i+1}. ${p.name||"—"}</b><span class="v20-hot">${t.label}</span></div>
+        <div class="v20-big">${stars(s)}</div>
+        <div class="v20-small">OTB ${p.total||0} · OTB kohti ${p.onTotal||0} · kaikki ${p.allTotal||0}</div>
+        <div class="v20-small">keskiarvo ${p.avg.toFixed(2)}/peli · ${p.games}/5 peliä</div>
+      </div>`;
+    }).join("");
+    tr.innerHTML=`<table class="v20-table"><thead><tr><th>Pelaaja</th><th>5 peliä</th><th>Keskiarvo</th><th>Trend</th></tr></thead><tbody>`+
+      list.sort((a,b)=>scorePlayer(b)-scorePlayer(a)).map(p=>{
+        const t=trend(p.values||[]);
+        return `<tr class="v20-click" data-v20pid="${p.id||""}"><td>${p.name||"—"}</td><td>${(p.values||[]).join(" / ")||"—"}</td><td>${p.avg.toFixed(2)}</td><td>${t.label}</td></tr>`;
+      }).join("")+"</tbody></table>";
+    document.querySelectorAll("[data-v20pid]").forEach(el=>{
+      el.onclick=()=>{ const id=el.dataset.v20pid; const target=document.querySelector(`[data-pid="${CSS.escape(id)}"]`); if(target) target.scrollIntoView({behavior:"smooth",block:"center"}); };
+    });
+  }
+
+  // Hook into the existing app's rendered player cards without modifying their HTML.
+  function collectFromDOM(){
+    const cards=[...document.querySelectorAll(".p")];
+    const out=[];
+    cards.forEach(c=>{
+      const img=c.querySelector("[data-pid]")||c.querySelector("img");
+      const id=img?.dataset?.pid||"";
+      const txt=c.innerText||"";
+      const lines=txt.split(/\n+/).map(x=>x.trim()).filter(Boolean);
+      if(!id && !lines.length)return;
+      const name=lines.find(x=>x && !/^[0-9/]+$/.test(x))||"Pelaaja";
+      const nums=lines.filter(x=>/^[0-9/]+$/.test(x));
+      const vals=(nums[0]||"").split("/").map(Number).filter(Number.isFinite);
+      const on=(nums[1]||"").split("/").map(Number).filter(Number.isFinite);
+      const hist=Array.isArray(c._history)?c._history:[];
+      const all=hist.length?hist.map(v=>Number(v.all)||0):(nums[2]||"").split("/").map(Number).filter(Number.isFinite);
+      out.push({id,name,values:vals,total:vals.reduce((a,b)=>a+b,0),onTotal:on.reduce((a,b)=>a+b,0),allTotal:all.reduce((a,b)=>a+b,0),games:vals.length,avg:mean(vals),onAvg:mean(on)});
+    });
+    return out;
+  }
+
+  function refresh(){
+    const list=collectFromDOM();
+    V20.players=list;
+    const q=($("v20Search")?.value||"").toLowerCase().trim();
+    render(q?list.filter(p=>(p.name||"").toLowerCase().includes(q)):list);
+  }
+
+  $("v20Search")?.addEventListener("input",refresh);
+
+  // Seven-day date navigator: 3 days back + today + 3 days forward.
+  function isoLocal(d){
+    const x=new Date(d); x.setHours(12,0,0,0);
+    return new Date(x-x.getTimezoneOffset()*60000).toISOString().slice(0,10);
+  }
+  function setAppDate(iso){
+    const el=document.querySelector('input[type="date"]');
+    if(!el)return; el.value=iso;
+    el.dispatchEvent(new Event("change",{bubbles:true}));
+    el.dispatchEvent(new Event("input",{bubbles:true}));
+    renderDays(iso);
+  }
+  function renderDays(active){
+    const box=$("v20Days"); if(!box)return;
+    const base=new Date((active||document.querySelector('input[type="date"]')?.value||new Date().toISOString().slice(0,10))+"T12:00:00");
+    box.innerHTML='';
+    for(let i=-3;i<=3;i++){
+      const d=new Date(base); d.setDate(base.getDate()+i); const iso=isoLocal(d);
+      const label=i===0?'Tänään':d.toLocaleDateString('fi-FI',{weekday:'short'});
+      const date=d.toLocaleDateString('fi-FI',{day:'2-digit',month:'2-digit'});
+      const b=document.createElement('button'); b.className='v20-day'+(iso===active?' active':'');
+      b.innerHTML=`${label}<small>${date}</small>`; b.onclick=()=>setAppDate(iso); box.appendChild(b);
+    }
+  }
+  renderDays(document.querySelector('input[type="date"]')?.value);
+  document.querySelector('input[type="date"]')?.addEventListener('change',e=>renderDays(e.target.value));
+  document.querySelectorAll('.f').forEach(btn=>btn.addEventListener('click',()=>{const sel=$("v20League"); if(sel)sel.value=btn.dataset.l==='ALL'?'':btn.dataset.l;}));
+
+  // Top league selector controls the existing league filter buttons.
+  $("v20League")?.addEventListener("change",e=>{
+    const value=e.target.value||'ALL';
+    const btn=document.querySelector(`.f[data-l="${CSS.escape(value)}"]`);
+    if(btn)btn.click();
+  });
+
+  // Observe the existing pitch so the new analysis follows the current selected match.
+  const obs=new MutationObserver(()=>setTimeout(refresh,250));
+  obs.observe(document.body,{childList:true,subtree:true});
+  setTimeout(refresh,800);
+})();
+</script>
+
+
+<script id="v22-match-analysis-js">
+(function(){
+  let mode="all", last=[];
+  const $=id=>document.getElementById(id);
+  const mean=a=>a.length?a.reduce((x,y)=>x+y,0)/a.length:0;
+
+  function trend(vals){
+    if(vals.length<2)return {label:"➡️ Tasainen",d:0};
+    const half=Math.max(1,Math.floor(vals.length/2));
+    const recent=mean(vals.slice(0,half)), old=mean(vals.slice(half));
+    const d=recent-old;
+    return {label:d>=.25?"🔥 Nousussa":d<=-.25?"📉 Laskussa":"➡️ Tasainen",d};
+  }
+  function confidence(p){
+    const avg=Math.min(1,(p.avg||0)/2.5);
+    const on=Math.min(1,(p.onAvg||0)/1.5);
+    const consistency=(p.games||0)/5;
+    const t=Math.max(0,Math.min(1,(trend(p.values||[]).d+1)/2));
+    return Math.round(100*(avg*.38+on*.27+consistency*.20+t*.15));
+  }
+  function sideClass(p){
+    const s=(p.side||"").toLowerCase();
+    if(s.includes("home")||s.includes("koti"))return "home";
+    if(s.includes("away")||s.includes("vier"))return "away";
+    return "";
+  }
+  function render(){
+    const box=$("v22Picks"); if(!box)return;
+    let arr=last.filter(p=>mode==="all"||sideClass(p)===mode);
+    arr=arr.map(p=>({...p,conf:confidence(p)})).sort((a,b)=>b.conf-a.conf).slice(0,5);
+    if(!arr.length){box.innerHTML='<div class="v22-note">Ei riittävästi pelaajadataa tähän otteluun.</div>';return}
+    box.innerHTML=arr.map((p,i)=>{
+      const tr=trend(p.values||[]);
+      const ratio=p.total?Math.round(100*(p.onTotal||0)/p.total):0;
+      const c=p.conf;
+      return `<div class="v22-pick">
+        <b>${i+1}. ${p.name||"Pelaaja"}</b><span class="v22-badge">${sideClass(p)==="home"?"🏠 Koti":sideClass(p)==="away"?"✈️ Vieras":"⚽"}</span>
+        <div class="v22-meta">OTB ${p.total||0} · OTB kohti ${p.onTotal||0} · kaikki ${p.allTotal||0}</div>
+        <div class="v22-meta">keskiarvo ${mean(p.values||[]).toFixed(2)}/peli · kohti ${ratio}% · ${p.games||0}/5 peleissä</div>
+        <div class="v22-meta">${tr.label}</div>
+        <div class="v22-conf">${c}% luottamus</div>
+      </div>`;
+    }).join("");
+    const avg=arr.length?Math.round(mean(arr.map(x=>x.conf))):0;
+    $("v22Confidence").textContent=avg+"%";
+    $("v22Details").textContent="Arvio painottaa OTB-määrää, OTB kohti -tehoa, toistuvuutta ja viime pelien trendiä. Se ei ole varma tulosennuste.";
+  }
+
+  document.querySelectorAll("[data-v22mode]").forEach(b=>b.onclick=()=>{
+    document.querySelectorAll("[data-v22mode]").forEach(x=>x.classList.remove("active"));
+    b.classList.add("active"); mode=b.dataset.v22mode; render();
+  });
+
+  function collect(){
+    const cards=[...document.querySelectorAll(".p")];
+    const out=[];
+    cards.forEach((c,idx)=>{
+      const img=c.querySelector("[data-pid]")||c.querySelector("img");
+      const id=img?.dataset?.pid||"";
+      const lines=(c.innerText||"").split(/\n+/).map(x=>x.trim()).filter(Boolean);
+      const nums=lines.filter(x=>/^[0-9/]+$/.test(x));
+      const name=lines.find(x=>x&&!/^[0-9/]+$/.test(x))||"Pelaaja";
+      const vals=(nums[0]||"").split("/").map(Number).filter(Number.isFinite);
+      const on=(nums[1]||"").split("/").map(Number).filter(Number.isFinite);
+      const hist=Array.isArray(c._history)?c._history:[];
+      const all=hist.length?hist.map(v=>Number(v.all)||0):(nums[2]||"").split("/").map(Number).filter(Number.isFinite);
+      // Infer side from vertical position relative to pitch center.
+      const r=c.getBoundingClientRect(), pr=document.querySelector(".pitch")?.getBoundingClientRect();
+      let side="";
+      if(pr) side=((r.top+r.height/2)<(pr.top+pr.height/2))?"home":"away";
+      out.push({id,name,side,values:vals,total:vals.reduce((a,b)=>a+b,0),onTotal:on.reduce((a,b)=>a+b,0),allTotal:all.reduce((a,b)=>a+b,0),games:vals.length,avg:mean(vals),onAvg:mean(on)});
+    });
+    return out;
+  }
+  function refresh(){
+    const a=collect();
+    if(a.length){last=a;render();}
+  }
+  new MutationObserver(()=>setTimeout(refresh,350)).observe(document.body,{childList:true,subtree:true});
+  setTimeout(refresh,1200);
+})();
+</script>
+
+</body></html>
