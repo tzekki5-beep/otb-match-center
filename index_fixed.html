@@ -65,10 +65,10 @@
 </style>
 <style id="v20-enhancements">
 .v20-days-row{display:grid;grid-template-columns:repeat(7,1fr);gap:5px}
-.v20-day{background:#173b3c;color:#fff;border:1px solid #527273;border-radius:9px;padding:8px 3px;text-align:center;font-weight:700;font-size:12px;cursor:pointer}
+.v20-day{min-width:120px;flex:0 0 auto;background:#173b3c;color:#fff;border:1px solid #527273;border-radius:9px;padding:8px 3px;text-align:center;font-weight:700;font-size:12px;cursor:pointer}
 .v20-day.active{background:#4389c8;border-color:#75aee0}
 .v20-day small{display:block;font-size:10px;opacity:.78;margin-top:2px}
-@media(max-width:500px){.v20-days-row{gap:4px}.v20-day{font-size:11px;padding:7px 1px}}
+@media(max-width:500px){.v20-days-row{gap:4px}.v20-day{min-width:120px;flex:0 0 auto;font-size:11px;padding:7px 1px}}
 .v20-wrap{margin:12px 0 18px}
 .v20-toolbar{display:flex;gap:8px;flex-wrap:wrap;align-items:center;margin:8px 0}
 .v20-toolbar input,.v20-toolbar select{background:#102b2c;color:#fff;border:1px solid #426061;border-radius:9px;padding:9px 10px;font-size:14px;outline:none}
@@ -159,8 +159,18 @@ html,body{overflow-x:hidden}
 .v20-section:not(.v20-days){display:none!important}
 .v20-days{margin-top:0}
 .v20-days-row{display:flex;gap:7px;overflow-x:auto;padding-bottom:6px;scrollbar-width:thin}
-.v20-day{flex:0 0 auto;min-width:88px}
+.v20-day{min-width:120px;flex:0 0 auto;flex:0 0 auto;min-width:88px}
 
+</style>
+
+<style id="v25-match-analysis-css">
+.match-analysis-card{margin:12px auto 20px;max-width:1180px;background:rgba(7,30,34,.96);border:1px solid rgba(120,170,175,.32);border-radius:16px;overflow:hidden}
+.ma-head{display:flex;align-items:center;justify-content:space-between;gap:14px;padding:16px 18px;border-bottom:1px solid rgba(255,255,255,.08)}
+.ma-teams{display:grid;grid-template-columns:1fr auto 1fr;align-items:center;gap:14px;width:100%}
+.ma-team{display:flex;align-items:center;gap:10px;font-size:18px;font-weight:900}.ma-team.away{justify-content:flex-end;text-align:right}
+.ma-logo{width:48px;height:48px;object-fit:contain;background:#fff;border-radius:50%;padding:3px}.ma-vs{font-weight:900;opacity:.75;font-size:13px}
+.ma-time{white-space:nowrap;font-weight:900;font-size:15px}.ma-body{padding:14px 18px}.ma-title{font-size:18px;font-weight:900;margin-bottom:8px}.ma-expect{background:#102b2c;border:1px solid rgba(120,170,175,.25);border-radius:12px;padding:12px;margin-bottom:12px}.ma-expect b{font-size:16px}.ma-facts{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px}.ma-teambox{background:#0d272a;border-radius:12px;padding:12px}.ma-teambox h4{margin:0 0 8px;font-size:14px}.ma-stats{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:7px}.ma-stat{background:rgba(255,255,255,.035);border-radius:8px;padding:8px}.ma-stat b{display:block;font-size:15px}.ma-stat span{font-size:10px;opacity:.72}.ma-h2h{margin-top:10px;background:#0d272a;border-radius:12px;padding:11px;font-size:12px}.ma-form{font-size:12px;margin-top:7px;opacity:.9}.ma-foot{padding:0 18px 14px;font-size:11px;opacity:.65}.ma-badges{display:flex;gap:7px;flex-wrap:wrap;margin-top:9px}.ma-badge{background:#173b3c;border:1px solid rgba(120,170,175,.25);padding:6px 8px;border-radius:8px;font-size:11px;font-weight:800}
+@media(max-width:700px){.ma-teams{grid-template-columns:1fr;gap:8px}.ma-team.away{justify-content:flex-start;text-align:left}.ma-vs{display:none}.ma-head{display:block}.ma-time{margin-top:8px}.ma-facts{grid-template-columns:1fr}.ma-logo{width:40px;height:40px}}
 </style>
 </head><body>
 
@@ -325,7 +335,16 @@ function render(){
     $('#out').innerHTML='<div class="status select-league-prompt">👆 Valitse ylhäältä sarja nähdäksesi ottelut.</div>';
     return;
   }
-  const list=games.filter(m=>m.league?.name===filter);if(!list.length){$('#out').innerHTML='<div class="status">Ei otteluita tällä suodattimella.</div>';return}$('#out').innerHTML=list.map(m=>`<section class="match"><div class="mh"><div><div class="teams">${esc(matchLabel(m))}</div><div class="lg">${esc(m.league?.name||'')}</div></div><div class="tm">${localTime(m.time_utc)}${m.status==='finished'?' · '+m.score_home+'–'+m.score_away:''}</div></div><div class="pitch" id="p${m.id.replace(/[^a-zA-Z0-9_-]/g,'')}"><div class="goal g1"></div><div class="goal g2"></div><span class="centerDot"></span><div class="players"><div class="status">Ladataan kokoonpanoa…</div></div></div><div class="note">OUT = boxin ulkopuolelta · pelaajaa painamalla näet tarkat tilastot.</div></section>`).join('');list.forEach(loadGame)}
+  const list=games.filter(m=>m.league?.name===filter);
+  if(!list.length){$('#out').innerHTML='<div class="status">Ei otteluita tällä päivällä tässä sarjassa.</div>';return}
+  if(MAIN_SET.has(filter)){
+    $('#out').innerHTML=list.map(m=>`<section class="match"><div class="mh"><div><div class="teams">${esc(matchLabel(m))}</div><div class="lg">${esc(m.league?.name||'')}</div></div><div class="tm">${localTime(m.time_utc)}${m.status==='finished'?' · '+m.score_home+'–'+m.score_away:''}</div></div><div class="pitch" id="p${m.id.replace(/[^a-zA-Z0-9_-]/g,'')}"><div class="goal g1"></div><div class="goal g2"></div><span class="centerDot"></span><div class="players"><div class="status">Ladataan kokoonpanoa…</div></div></div><div class="note">OUT = boxin ulkopuolelta · pelaajaa painamalla näet tarkat tilastot.</div></section>`).join('');
+    list.forEach(loadGame);
+  }else{
+    $('#out').innerHTML=list.map(m=>`<section class="other-match match-analysis-card" data-other-match="${esc(m.id)}"><div class="ma-head"><div class="ma-teams"><div class="ma-team">${m.home_team?.image_url?`<img class="ma-logo" src="${esc(m.home_team.image_url)}" alt="">`:''}<span>${esc(m.home_team?.name||'')}</span></div><div class="ma-vs">VS</div><div class="ma-team away"><span>${esc(m.away_team?.name||'')}</span>${m.away_team?.image_url?`<img class="ma-logo" src="${esc(m.away_team.image_url)}" alt="">`:''}</div></div><div class="ma-time">${localTime(m.time_utc)}${m.status==='finished'?' · '+m.score_home+'–'+m.score_away:''}</div></div><div class="ma-body"><div class="other-analysis"><div class="status">Lasketaan joukkueiden tilastofaktoja…</div></div></div><div class="ma-foot">📊 Perustuu PitchAPI:n viimeisiin otteluihin, joukkueiden tilastoihin ja H2H-kohtaamisiin. Ennuste on tilastollinen arvio, ei varma tulos.</div></section>`).join('');
+    list.forEach(loadOtherGame);
+  }
+}
 function pid(p){return p.player_id||p.id||p.player?.id}function pName(p){return p.name||p.player?.name||'?'}
 function img(p){return p.image_url||p.player?.image_url||p.image?.url||''}
 async function enrichPlayerImages(starters){
@@ -530,6 +549,9 @@ async function teamFormForOther(teamId,leagueName,cutoff){
       ga:s==='home'?Number(r.g.score_away)||0:Number(r.g.score_home)||0,
       corners:statFrom(r.stats,[/corner/],s),
       fouls:statFrom(r.stats,[/foul/],s),
+      shots:statFrom(r.stats,[/total.?shots/,/shots$/,/shots/],s),
+      shotsOn:statFrom(r.stats,[/shots.?on.?target/,/on.?target/],s),
+      xg:statFrom(r.stats,[/expected.?goals/,/^xg$/],s),
       cards
     };
   });
@@ -555,34 +577,62 @@ async function loadOtherGame(m){
       api(`matches/${m.id}/h2h`).catch(()=>null)
     ]);
     const h2=(h2h?.recent_matches||[]).filter(x=>x.finished).slice(0,5);
-    const h2HomeGoals=avgNonNull(h2.map(x=>({v:(x.home?.id===hid?x.score_home:x.score_away)})),'v');
-    const h2AwayGoals=avgNonNull(h2.map(x=>({v:(x.home?.id===aid?x.score_home:x.score_away)})),'v');
-    const hgf=avgNonNull(hf,'gf')??0, hga=avgNonNull(hf,'ga')??0, agf=avgNonNull(af,'gf')??0, aga=avgNonNull(af,'ga')??0;
-    const h2hAdjH=Number.isFinite(h2HomeGoals)?h2HomeGoals*.15:0, h2hAdjA=Number.isFinite(h2AwayGoals)?h2AwayGoals*.15:0;
-    const lh=Math.max(.15,(hgf+aga)/2+h2hAdjH), la=Math.max(.15,(agf+hga)/2+h2hAdjA);
-    const rp=resultProbs(lh,la), total=lh+la;
+    const hgf=avgNonNull(hf,'gf')??0, hga=avgNonNull(hf,'ga')??0;
+    const agf=avgNonNull(af,'gf')??0, aga=avgNonNull(af,'ga')??0;
     const hc=avgNonNull(hf,'corners'), ac=avgNonNull(af,'corners');
     const hcards=avgNonNull(hf,'cards'), acards=avgNonNull(af,'cards');
-    const over15=poissonOver(total,1.5), over25=poissonOver(total,2.5), btts=(1-Math.exp(-lh))*(1-Math.exp(-la));
+    const hs=avgNonNull(hf,'shots'), as=avgNonNull(af,'shots');
+    const hso=avgNonNull(hf,'shotsOn'), aso=avgNonNull(af,'shotsOn');
+    const hxg=avgNonNull(hf,'xg'), axg=avgNonNull(af,'xg');
+    const lh=Math.max(.15,(hgf+aga)/2), la=Math.max(.15,(agf+hga)/2), total=lh+la;
+    const rp=resultProbs(lh,la);
+    const over15=poissonOver(total,1.5), over25=poissonOver(total,2.5);
+    const btts=(1-Math.exp(-lh))*(1-Math.exp(-la));
     const over85corners=(Number.isFinite(hc)&&Number.isFinite(ac))?poissonOver(hc+ac,8.5):null;
     const over35cards=(Number.isFinite(hcards)&&Number.isFinite(acards))?poissonOver(hcards+acards,3.5):null;
-    const confidence=Math.round(Math.max(0,Math.min(100,50+Math.min(25,h2.length*3)+Math.min(20,(hf.length+af.length)*2))));
-    const pick=(label,p,sub)=>`<div class="v23-pick"><strong>${label}</strong><div>${pct(p)} <span class="v23-muted">${sub||''}</span></div></div>`;
-    box.innerHTML=`<div class="v23-grid">
-      <div class="v23-card"><div class="v23-small">🔮 Odotetut maalit</div><b>${lh.toFixed(2)} – ${la.toFixed(2)}</b><div class="v23-small">${esc(m.home_team?.name||'Koti')} – ${esc(m.away_team?.name||'Vieras')}</div></div>
-      <div class="v23-card"><div class="v23-small">🏠 Kotivoitto</div><b>${pct(rp.home)}</b><div class="v23-small">Tasapeli ${pct(rp.draw)} · Vieras ${pct(rp.away)}</div></div>
-      <div class="v23-card"><div class="v23-small">📈 Data</div><b>${confidence}%</b><div class="v23-small">${hf.length}+${af.length} viimeistä · H2H ${h2.length}</div></div>
-    </div>
-    <div class="v23-grid">
-      ${pick('⚽ Yli 1,5 maalia',over15,`arvio ${total.toFixed(2)} maalia`)}
-      ${pick('⚽ Yli 2,5 maalia',over25,`Poisson-arvio`)}
-      ${pick('⚽ Molemmat tekevät maalin',btts,'BTTS')}
-      ${pick('🚩 Yli 8,5 kulmaa',over85corners,Number.isFinite(hc+ac)?`keskiarvo ${(hc+ac).toFixed(1)}`:'kulmadato puuttuu')}
-      ${pick('🟨 Yli 3,5 korttia',over35cards,Number.isFinite(hcards+acards)?`keskiarvo ${(hcards+acards).toFixed(1)}`:'korttidata puuttuu')}
-    </div>
-    <table class="v23-table"><thead><tr><th>Viimeiset</th><th>${esc(m.home_team?.name||'Koti')}</th><th>${esc(m.away_team?.name||'Vieras')}</th></tr></thead>
-    <tbody><tr><td>Maalit tehty</td><td>${safeAvg(hgf)}</td><td>${safeAvg(agf)}</td></tr><tr><td>Maalit päästetty</td><td>${safeAvg(hga)}</td><td>${safeAvg(aga)}</td></tr><tr><td>Kulmat</td><td>${safeAvg(hc)}</td><td>${safeAvg(ac)}</td></tr><tr><td>Kortit</td><td>${safeAvg(hcards)}</td><td>${safeAvg(acards)}</td></tr></tbody></table>
-    <div class="v23-muted" style="margin-top:8px">Arvio yhdistää viimeisten otteluiden maali-/tapahtumadataa, koti/vieras-asetelmaa ja viimeisiä keskinäisiä kohtaamisia. Se ei ole varma tulosennuste.</div>`;
+    const h2hHomeWins=h2.filter(x=>(x.home?.id===hid?x.score_home:x.score_away)>(x.home?.id===hid?x.score_away:x.score_home)).length;
+    const h2hDraws=h2.filter(x=>x.score_home===x.score_away).length;
+    const h2hAwayWins=h2.length-h2hHomeWins-h2hDraws;
+    const recentForm=(rows,teamId)=>rows.map(r=>{const home=r.g.home_team?.id===teamId;const gf=home?r.g.score_home:r.g.score_away;const ga=home?r.g.score_away:r.g.score_home;return gf>ga?'V':gf===ga?'T':'H'}).join(' ');
+    const hForm=recentForm(hf,hid), aForm=recentForm(af,aid);
+    const stronger=rp.home>=rp.away?m.home_team?.name:m.away_team?.name;
+    const expectation=[];
+    expectation.push(`Ottelussa on mallin perusteella noin ${total.toFixed(1)} maalin odotus (${lh.toFixed(1)}–${la.toFixed(1)}).`);
+    expectation.push(`${esc(stronger||'Toinen joukkue')} on tilastollisesti vahvemmalla voittoarviolla (${pct(Math.max(rp.home,rp.away))}).`);
+    if(Number.isFinite(hc)&&Number.isFinite(ac)) expectation.push(`Kulmia on viime peleissä tullut keskimäärin ${(hc+ac).toFixed(1)} yhteensä.`);
+    if(Number.isFinite(hcards)&&Number.isFinite(acards)) expectation.push(`Kortteja on tullut keskimäärin ${(hcards+acards).toFixed(1)} yhteensä.`);
+    const fact=(label,v)=>`<div class="ma-stat"><span>${label}</span><b>${safeAvg(v)}</b></div>`;
+    const logo=(team)=>team?.image_url?`<img class="ma-logo" src="${esc(team.image_url)}" alt="">`:'';
+    const badge=(label,val)=>`<span class="ma-badge">${label}: ${val}</span>`;
+    box.innerHTML=`<div class="ma-title">🔎 Mitä ottelulta voi odottaa?</div>
+      <div class="ma-expect">${expectation.map(x=>`<div>• ${x}</div>`).join('')}
+        <div class="ma-badges">
+          ${badge('Yli 1,5 maalia',pct(over15))}
+          ${badge('Yli 2,5 maalia',pct(over25))}
+          ${badge('BTTS',pct(btts))}
+          ${Number.isFinite(over85corners)?badge('Yli 8,5 kulmaa',pct(over85corners)):''}
+          ${Number.isFinite(over35cards)?badge('Yli 3,5 korttia',pct(over35cards)):''}
+        </div>
+      </div>
+      <div class="ma-facts">
+        <div class="ma-teambox"><h4>${logo(m.home_team)} ${esc(m.home_team?.name||'Kotijoukkue')}</h4>
+          <div class="ma-form">Viimeiset 5: <b>${hForm||'—'}</b></div>
+          <div class="ma-stats">
+            ${fact('Maalit tehty / peli',hgf)} ${fact('Maalit päästetty / peli',hga)}
+            ${fact('Laukaukset / peli',hs)} ${fact('Laukaukset kohti / peli',hso)}
+            ${fact('xG / peli',hxg)} ${fact('Kulmat / peli',hc)}
+            ${fact('Kortit / peli',hcards)}
+          </div></div>
+        <div class="ma-teambox"><h4>${logo(m.away_team)} ${esc(m.away_team?.name||'Vierasjoukkue')}</h4>
+          <div class="ma-form">Viimeiset 5: <b>${aForm||'—'}</b></div>
+          <div class="ma-stats">
+            ${fact('Maalit tehty / peli',agf)} ${fact('Maalit päästetty / peli',aga)}
+            ${fact('Laukaukset / peli',as)} ${fact('Laukaukset kohti / peli',aso)}
+            ${fact('xG / peli',axg)} ${fact('Kulmat / peli',ac)}
+            ${fact('Kortit / peli',acards)}
+          </div></div>
+      </div>
+      <div class="ma-h2h"><b>🤝 Viimeiset keskinäiset:</b> ${h2.length?`${h2hHomeWins} kotijoukkueen voittoa · ${h2hDraws} tasapeliä · ${h2hAwayWins} vierasjoukkueen voittoa`:'ei H2H-dataa'}${h2.length?`<div class="ma-form">${h2.map(x=>`${esc(x.home?.name||'')} ${x.score_home}–${x.score_away} ${esc(x.away?.name||'')}`).join(' · ')}</div>`:''}</div>`;
   }catch(e){box.innerHTML=`<div class="err">Otteluanalyysiä ei saatu: ${esc(e.message)}</div>`}
 }
 
