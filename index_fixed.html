@@ -118,7 +118,24 @@
 .v23-card{background:#102b2c;border:1px solid rgba(130,170,170,.2);border-radius:10px;padding:10px}.v23-card b{font-size:18px}.v23-small{font-size:11px;opacity:.78}
 .v23-pick{background:#102b2c;border-radius:10px;padding:10px;margin-top:8px}.v23-pick strong{font-size:15px}.v23-muted{font-size:11px;opacity:.7}
 .v23-table{width:100%;border-collapse:collapse;font-size:12px;margin-top:8px}.v23-table td,.v23-table th{padding:6px 4px;border-bottom:1px solid rgba(255,255,255,.08);text-align:left}
-</style></head><body>
+</style>
+<style id="league-tabs-css">
+.league-nav{margin-top:12px;padding:10px;background:#061a22;border:1px solid #21434d;border-radius:14px}
+.league-mode{display:flex;gap:7px;flex-wrap:wrap;margin-bottom:8px}
+.league-mode-btn,.league-tab{background:#173b3c;color:#fff;border:1px solid #527273;border-radius:10px;padding:9px 12px;font-weight:800;cursor:pointer}
+.league-mode-btn.active,.league-tab.active{background:#4389c8;border-color:#75aee0}
+.league-tabs{display:flex;gap:7px;overflow-x:auto;padding-bottom:2px;scrollbar-width:thin}
+.league-tabs::-webkit-scrollbar{height:6px}.league-tabs::-webkit-scrollbar-thumb{background:#38595d;border-radius:9px}
+.league-tab{white-space:nowrap;font-size:13px}
+.other-league-panel{display:flex;align-items:center;gap:8px;flex-wrap:wrap}
+.other-league-panel label{font-size:12px;font-weight:800;color:#9fb5bd}
+.other-league-panel select{min-width:260px;max-width:100%;background:#102b2c;color:#fff;border:1px solid #527273;border-radius:10px;padding:10px 12px;font:inherit}
+@media(max-width:600px){.league-mode-btn,.league-tab{padding:8px 10px;font-size:12px}.other-league-panel select{width:100%;min-width:0}}
+/* Give the match field the full available width so player cards do not collide. */
+@media(min-width:780px){.match{display:block;width:100%;margin-right:0}.pitch{width:100%}}
+html,body{overflow-x:hidden}
+</style>
+</head><body>
 
 <div style="margin:8px 0;padding:8px 10px;border-radius:9px;background:rgba(16,43,44,.75);font-size:12px;opacity:.85">
   OTB Match Center · julkinen web-versio
@@ -169,7 +186,19 @@
 </div>
 
 <header><h1>⚽ OTB Match Center</h1><div class="sub">Päivän ottelut · oikeat avauskokoonpanot · viimeiset 5 · boxin ulkopuoliset laukaukset · boxin ulkopuolelta kohti</div>
-<div class="controls"><input id="date" type="date"><button id="refresh">↻ Päivitä</button><button class="f active" data-l="ALL">Kaikki sarjat</button><button class="f" data-l="Premier League">PL</button><button class="f" data-l="LaLiga">LaLiga</button><button class="f" data-l="Serie A">Serie A</button><button class="f" data-l="Bundesliga">Bundesliga</button><button class="f" data-l="Ligue 1">Ligue 1</button><button class="f" data-l="Champions League">UCL</button><button class="f" data-l="Europa League">UEL</button><button class="f" data-l="Conference League">UECL</button></div></header>
+<div class="controls"><input id="date" type="date"><button id="refresh">↻ Päivitä</button></div>
+<div class="league-nav">
+  <div class="league-mode">
+    <button class="league-mode-btn active" data-mode="players">⭐ Pelaaja-analyysi</button>
+    <button class="league-mode-btn" data-mode="matches">📊 Otteluanalyysi</button>
+  </div>
+  <div id="mainLeagueTabs" class="league-tabs"></div>
+  <div id="otherLeaguePanel" class="other-league-panel hidden">
+    <label for="otherLeagueSelect">Valitse sarja:</label>
+    <select id="otherLeagueSelect"><option value="">Valitse otteluanalyysin sarja…</option></select>
+  </div>
+</div>
+<div id="legacyFilters" class="hidden"><button class="f active" data-l="ALL">Kaikki sarjat</button><button class="f" data-l="Premier League">PL</button><button class="f" data-l="LaLiga">LaLiga</button><button class="f" data-l="Serie A">Serie A</button><button class="f" data-l="Bundesliga">Bundesliga</button><button class="f" data-l="Ligue 1">Ligue 1</button><button class="f" data-l="Champions League">UCL</button><button class="f" data-l="Europa League">UEL</button><button class="f" data-l="Conference League">UECL</button></div></header>
 <main>
 <div id="setup" class="setup"><b>Ensimmäinen käyttökerta</b><div style="color:#93a8c5;font-size:13px;margin-top:5px">Tarvitset PitchAPI:n ilmaisen API-avaimen. Se tallennetaan vain tähän selaimeen.</div><input id="key" type="password" placeholder="pk_live_... tai pk_test_..."><div class="row"><button id="save">Tallenna avain</button><button id="clear">Poista avain</button></div><div id="keymsg" class="status" style="margin-top:8px"></div></div>
 <div id="status" class="status">Valmis.</div><div id="diag" class="status" style="font-size:11px"></div><div id="out"></div></main><div id="drawer" class="drawer hidden"></div>
@@ -223,6 +252,10 @@ function populateLeagueSelector(){
   const others=Object.keys(leagueMap).filter(n=>!MAIN_SET.has(n)).sort((a,b)=>a.localeCompare(b,'fi'));
   sel.innerHTML='<option value="">⚽ Kaikki sarjat</option><optgroup label="⭐ Pelaaja-analyysi">'+main.map(n=>`<option value="${esc(n)}">${esc(n)}</option>`).join('')+'</optgroup><optgroup label="📊 Otteluanalyysi">'+others.map(n=>`<option value="${esc(n)}">${esc(n)}</option>`).join('')+'</optgroup>';
   if([...sel.options].some(o=>o.value===current))sel.value=current;
+  const tabs=document.getElementById('mainLeagueTabs');
+  if(tabs){tabs.innerHTML=main.map((n,i)=>`<button class="league-tab${i===0?' active':''}" data-league="${esc(n)}">${n==='Premier League'?'🇬🇧 PL':n==='LaLiga'?'🇪🇸 LaLiga':n==='Serie A'?'🇮🇹 Serie A':n==='Bundesliga'?'🇩🇪 Bundesliga':n==='Ligue 1'?'🇫🇷 Ligue 1':n==='Champions League'?'🏆 UCL':n==='Europa League'?'🏆 UEL':'🏆 UECL'}</button>`).join('');}
+  const otherSel=document.getElementById('otherLeagueSelect');
+  if(otherSel){const old=otherSel.value;otherSel.innerHTML='<option value="">Valitse otteluanalyysin sarja…</option>'+others.map(n=>`<option value="${esc(n)}">${esc(n)}</option>`).join('');if(others.includes(old))otherSel.value=old;}
 }
 async function load(){if(!key()&&!isPublicWorker()){setKeyUI();$('#status').textContent='Lisää ensin PitchAPI-avain.';return}$('#out').innerHTML='';$('#status').textContent='Haetaan päivän ottelut…';try{await loadLeagues();const date=$('#date').value;const d=await api(`date/${date}?status=all`);const allowedIds=new Set(Object.values(leagueMap).map(x=>x.id));games=(d.matches||[]).filter(m=>allowedIds.has(m.league?.id)).map(m=>{const target=ALLOWED.find(n=>leagueMap[n]?.id===m.league?.id);return {...m,league:{...(m.league||{}),name:target||m.league?.name}}}).sort((a,b)=>new Date(a.time_utc)-new Date(b.time_utc));$('#status').textContent=`${games.length} ottelua · PitchAPI`;render()}catch(e){$('#status').innerHTML=`<div class="err">${esc(e.message)}<br><small>Jos virhe on API-avain, tarkista avain ja paina Päivitä.</small></div>`}}
 function render(){const list=filter==='ALL'?games:games.filter(m=>m.league?.name===filter);if(!list.length){$('#out').innerHTML='<div class="status">Ei otteluita tällä suodattimella.</div>';return}$('#out').innerHTML=list.map(m=>`<section class="match"><div class="mh"><div><div class="teams">${esc(matchLabel(m))}</div><div class="lg">${esc(m.league?.name||'')}</div></div><div class="tm">${localTime(m.time_utc)}${m.status==='finished'?' · '+m.score_home+'–'+m.score_away:''}</div></div><div class="pitch" id="p${m.id.replace(/[^a-zA-Z0-9_-]/g,'')}"><div class="goal g1"></div><div class="goal g2"></div><span class="centerDot"></span><div class="players"><div class="status">Ladataan kokoonpanoa…</div></div></div><div class="analysis" data-analysis><h3>📊 Ottelun OTB-yhteenveto</h3><div class="mini">Ladataan viimeisten 5 ottelun perusteella…</div></div><div class="note">Ylärivi = boxin ulkopuolelta · alarivi = boxin ulkopuolelta kohti · napauta pelaajaa.</div></section>`).join('');list.forEach(loadGame)}
@@ -486,7 +519,14 @@ async function loadOtherGame(m){
   }catch(e){box.innerHTML=`<div class="err">Otteluanalyysiä ei saatu: ${esc(e.message)}</div>`}
 }
 
-$('#date').value=today();if(isPublicWorker())$('#setup').style.display='none';$('#refresh').onclick=load;$('#date').onchange=load;$$('.f').forEach(b=>b.onclick=()=>{$$('.f').forEach(x=>x.classList.remove('active'));b.classList.add('active');filter=b.dataset.l;render()});setKeyUI();if(key()||isPublicWorker())load();
+$('#date').value=today();if(isPublicWorker())$('#setup').style.display='none';$('#refresh').onclick=load;
+  document.addEventListener('click',e=>{
+    const tab=e.target.closest('.league-tab');
+    if(tab){const b=document.querySelector(`.f[data-l="${CSS.escape(tab.dataset.league)}"]`);if(b)b.click();document.querySelectorAll('.league-tab').forEach(x=>x.classList.remove('active'));tab.classList.add('active');return;}
+    const mode=e.target.closest('.league-mode-btn');
+    if(mode){document.querySelectorAll('.league-mode-btn').forEach(x=>x.classList.remove('active'));mode.classList.add('active');const players=mode.dataset.mode==='players';document.getElementById('mainLeagueTabs')?.classList.toggle('hidden',!players);document.getElementById('otherLeaguePanel')?.classList.toggle('hidden',players);if(players){const first=document.querySelector('.league-tab');if(first){const b=document.querySelector(`.f[data-l="${CSS.escape(first.dataset.league)}"]`);if(b)b.click();document.querySelectorAll('.league-tab').forEach(x=>x.classList.remove('active'));first.classList.add('active');}}else{const sel=document.getElementById('otherLeagueSelect');if(sel?.value){const b=document.querySelector(`.f[data-l="${CSS.escape(sel.value)}"]`);if(b)b.click();}else{document.querySelector('.f[data-l="ALL"]')?.click();}}}
+  });
+  document.getElementById('otherLeagueSelect')?.addEventListener('change',e=>{const v=e.target.value;if(!v)return;const b=document.querySelector(`.f[data-l="${CSS.escape(v)}"]`);if(b)b.click();});$('#date').onchange=load;$$('.f').forEach(b=>b.onclick=()=>{$$('.f').forEach(x=>x.classList.remove('active'));b.classList.add('active');filter=b.dataset.l;render()});setKeyUI();if(key()||isPublicWorker())load();
 </script>
 <script id="v20-enhancements-js">
 (function(){
