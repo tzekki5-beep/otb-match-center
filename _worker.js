@@ -17,7 +17,7 @@ export default {
     }
 
     const file = await fetch(
-      "https://raw.githubusercontent.com/tzekki5-beep/otb-match-center/main/index.html"
+      "https://raw.githubusercontent.com/tzekki5-beep/otb-match-center/main/index_fixed.html"
     );
 
     return new Response(file.body, {
