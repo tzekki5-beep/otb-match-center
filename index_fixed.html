@@ -134,6 +134,24 @@
 /* Give the match field the full available width so player cards do not collide. */
 @media(min-width:780px){.match{display:block;width:100%;margin-right:0}.pitch{width:100%}}
 html,body{overflow-x:hidden}
+
+/* v3: league-first navigation */
+.select-league-prompt{
+  margin:18px auto;
+  max-width:760px;
+  text-align:center;
+  padding:22px 16px;
+  border:1px dashed #527273;
+  border-radius:14px;
+  background:#0b2427;
+  color:#c9d8dc;
+  font-weight:800;
+}
+.league-nav{position:sticky;top:0;z-index:4}
+.league-mode{margin-bottom:10px}
+.league-tabs{min-height:42px}
+.league-tab{flex:0 0 auto}
+
 </style>
 </head><body>
 
@@ -143,7 +161,7 @@ html,body{overflow-x:hidden}
 
 
 
-<div id="v22MatchAnalysis" class="v22-match">
+<div id="v22MatchAnalysis" class="v22-match" style="display:none">
   <div class="v22-head">
     <div>
       <div class="v22-title">🎯 Ottelun OTB-analyysi</div>
@@ -171,11 +189,11 @@ html,body{overflow-x:hidden}
     <div class="v20-title">📅 Ottelupäivät</div>
     <div id="v20Days" class="v20-days-row"></div>
   </div>
-  <div class="v20-section">
+  <div class="v20-section" style="display:none">
     <div class="v20-title">🎯 TOP-kohteet</div>
     <div id="v20Top" class="v20-grid"><div class="v20-empty">Valitse ottelu tai odota tietojen latautumista.</div></div>
   </div>
-  <div class="v20-section">
+  <div class="v20-section" style="display:none">
     <div class="v20-title">📈 Pelaajien trendit</div>
     <div id="v20Trends"><div class="v20-empty">Valitse ottelu nähdäksesi trendit.</div></div>
   </div>
@@ -253,12 +271,17 @@ function populateLeagueSelector(){
   sel.innerHTML='<option value="">⚽ Kaikki sarjat</option><optgroup label="⭐ Pelaaja-analyysi">'+main.map(n=>`<option value="${esc(n)}">${esc(n)}</option>`).join('')+'</optgroup><optgroup label="📊 Otteluanalyysi">'+others.map(n=>`<option value="${esc(n)}">${esc(n)}</option>`).join('')+'</optgroup>';
   if([...sel.options].some(o=>o.value===current))sel.value=current;
   const tabs=document.getElementById('mainLeagueTabs');
-  if(tabs){tabs.innerHTML=main.map((n,i)=>`<button class="league-tab${i===0?' active':''}" data-league="${esc(n)}">${n==='Premier League'?'🇬🇧 PL':n==='LaLiga'?'🇪🇸 LaLiga':n==='Serie A'?'🇮🇹 Serie A':n==='Bundesliga'?'🇩🇪 Bundesliga':n==='Ligue 1'?'🇫🇷 Ligue 1':n==='Champions League'?'🏆 UCL':n==='Europa League'?'🏆 UEL':'🏆 UECL'}</button>`).join('');}
+  if(tabs){tabs.innerHTML=main.map((n,i)=>`<button class="league-tab" data-league="${esc(n)}">${n==='Premier League'?'🇬🇧 PL':n==='LaLiga'?'🇪🇸 LaLiga':n==='Serie A'?'🇮🇹 Serie A':n==='Bundesliga'?'🇩🇪 Bundesliga':n==='Ligue 1'?'🇫🇷 Ligue 1':n==='Champions League'?'🏆 UCL':n==='Europa League'?'🏆 UEL':'🏆 UECL'}</button>`).join('');}
   const otherSel=document.getElementById('otherLeagueSelect');
   if(otherSel){const old=otherSel.value;otherSel.innerHTML='<option value="">Valitse otteluanalyysin sarja…</option>'+others.map(n=>`<option value="${esc(n)}">${esc(n)}</option>`).join('');if(others.includes(old))otherSel.value=old;}
 }
 async function load(){if(!key()&&!isPublicWorker()){setKeyUI();$('#status').textContent='Lisää ensin PitchAPI-avain.';return}$('#out').innerHTML='';$('#status').textContent='Haetaan päivän ottelut…';try{await loadLeagues();const date=$('#date').value;const d=await api(`date/${date}?status=all`);const allowedIds=new Set(Object.values(leagueMap).map(x=>x.id));games=(d.matches||[]).filter(m=>allowedIds.has(m.league?.id)).map(m=>{const target=ALLOWED.find(n=>leagueMap[n]?.id===m.league?.id);return {...m,league:{...(m.league||{}),name:target||m.league?.name}}}).sort((a,b)=>new Date(a.time_utc)-new Date(b.time_utc));$('#status').textContent=`${games.length} ottelua · PitchAPI`;render()}catch(e){$('#status').innerHTML=`<div class="err">${esc(e.message)}<br><small>Jos virhe on API-avain, tarkista avain ja paina Päivitä.</small></div>`}}
-function render(){const list=filter==='ALL'?games:games.filter(m=>m.league?.name===filter);if(!list.length){$('#out').innerHTML='<div class="status">Ei otteluita tällä suodattimella.</div>';return}$('#out').innerHTML=list.map(m=>`<section class="match"><div class="mh"><div><div class="teams">${esc(matchLabel(m))}</div><div class="lg">${esc(m.league?.name||'')}</div></div><div class="tm">${localTime(m.time_utc)}${m.status==='finished'?' · '+m.score_home+'–'+m.score_away:''}</div></div><div class="pitch" id="p${m.id.replace(/[^a-zA-Z0-9_-]/g,'')}"><div class="goal g1"></div><div class="goal g2"></div><span class="centerDot"></span><div class="players"><div class="status">Ladataan kokoonpanoa…</div></div></div><div class="analysis" data-analysis><h3>📊 Ottelun OTB-yhteenveto</h3><div class="mini">Ladataan viimeisten 5 ottelun perusteella…</div></div><div class="note">Ylärivi = boxin ulkopuolelta · alarivi = boxin ulkopuolelta kohti · napauta pelaajaa.</div></section>`).join('');list.forEach(loadGame)}
+function render(){
+  if(filter==='ALL'){
+    $('#out').innerHTML='<div class="status select-league-prompt">👆 Valitse ylhäältä sarja nähdäksesi ottelut.</div>';
+    return;
+  }
+  const list=games.filter(m=>m.league?.name===filter);if(!list.length){$('#out').innerHTML='<div class="status">Ei otteluita tällä suodattimella.</div>';return}$('#out').innerHTML=list.map(m=>`<section class="match"><div class="mh"><div><div class="teams">${esc(matchLabel(m))}</div><div class="lg">${esc(m.league?.name||'')}</div></div><div class="tm">${localTime(m.time_utc)}${m.status==='finished'?' · '+m.score_home+'–'+m.score_away:''}</div></div><div class="pitch" id="p${m.id.replace(/[^a-zA-Z0-9_-]/g,'')}"><div class="goal g1"></div><div class="goal g2"></div><span class="centerDot"></span><div class="players"><div class="status">Ladataan kokoonpanoa…</div></div></div><div class="analysis" data-analysis><h3>📊 Ottelun OTB-yhteenveto</h3><div class="mini">Ladataan viimeisten 5 ottelun perusteella…</div></div><div class="note">Ylärivi = boxin ulkopuolelta · alarivi = boxin ulkopuolelta kohti · napauta pelaajaa.</div></section>`).join('');list.forEach(loadGame)}
 function pid(p){return p.player_id||p.id||p.player?.id}function pName(p){return p.name||p.player?.name||'?'}
 function img(p){return p.image_url||p.player?.image_url||p.image?.url||''}
 async function enrichPlayerImages(starters){
@@ -522,11 +545,40 @@ async function loadOtherGame(m){
 $('#date').value=today();if(isPublicWorker())$('#setup').style.display='none';$('#refresh').onclick=load;
   document.addEventListener('click',e=>{
     const tab=e.target.closest('.league-tab');
-    if(tab){const b=document.querySelector(`.f[data-l="${CSS.escape(tab.dataset.league)}"]`);if(b)b.click();document.querySelectorAll('.league-tab').forEach(x=>x.classList.remove('active'));tab.classList.add('active');return;}
+    if(tab){
+      document.querySelectorAll('.league-tab').forEach(x=>x.classList.remove('active'));
+      tab.classList.add('active');
+      filter=tab.dataset.league;
+      const b=document.querySelector(`.f[data-l="${CSS.escape(filter)}"]`);
+      if(b){document.querySelectorAll('.f').forEach(x=>x.classList.remove('active'));b.classList.add('active');}
+      render();
+      return;
+    }
     const mode=e.target.closest('.league-mode-btn');
-    if(mode){document.querySelectorAll('.league-mode-btn').forEach(x=>x.classList.remove('active'));mode.classList.add('active');const players=mode.dataset.mode==='players';document.getElementById('mainLeagueTabs')?.classList.toggle('hidden',!players);document.getElementById('otherLeaguePanel')?.classList.toggle('hidden',players);if(players){const first=document.querySelector('.league-tab');if(first){const b=document.querySelector(`.f[data-l="${CSS.escape(first.dataset.league)}"]`);if(b)b.click();document.querySelectorAll('.league-tab').forEach(x=>x.classList.remove('active'));first.classList.add('active');}}else{const sel=document.getElementById('otherLeagueSelect');if(sel?.value){const b=document.querySelector(`.f[data-l="${CSS.escape(sel.value)}"]`);if(b)b.click();}else{document.querySelector('.f[data-l="ALL"]')?.click();}}}
+    if(mode){document.querySelectorAll('.league-mode-btn').forEach(x=>x.classList.remove('active'));mode.classList.add('active');const players=mode.dataset.mode==='players';document.getElementById('mainLeagueTabs')?.classList.toggle('hidden',!players);document.getElementById('otherLeaguePanel')?.classList.toggle('hidden',players);if(players){
+      filter='ALL';
+      document.querySelectorAll('.league-tab').forEach(x=>x.classList.remove('active'));
+      document.querySelectorAll('.f').forEach(x=>x.classList.remove('active'));
+      $('#out').innerHTML='<div class="status select-league-prompt">👆 Valitse ylhäältä sarja nähdäksesi ottelut.</div>';
+    }else{
+      filter='ALL';
+      document.querySelectorAll('.league-tab').forEach(x=>x.classList.remove('active'));
+      document.querySelectorAll('.f').forEach(x=>x.classList.remove('active'));
+      $('#out').innerHTML='<div class="status select-league-prompt">👆 Valitse otteluanalyysin sarja nähdäksesi ottelut.</div>';
+    }}
   });
-  document.getElementById('otherLeagueSelect')?.addEventListener('change',e=>{const v=e.target.value;if(!v)return;const b=document.querySelector(`.f[data-l="${CSS.escape(v)}"]`);if(b)b.click();});$('#date').onchange=load;$$('.f').forEach(b=>b.onclick=()=>{$$('.f').forEach(x=>x.classList.remove('active'));b.classList.add('active');filter=b.dataset.l;render()});setKeyUI();if(key()||isPublicWorker())load();
+  document.getElementById('otherLeagueSelect')?.addEventListener('change',e=>{
+    const v=e.target.value;
+    if(!v){
+      filter='ALL';
+      $('#out').innerHTML='<div class="status select-league-prompt">👆 Valitse otteluanalyysin sarja nähdäksesi ottelut.</div>';
+      return;
+    }
+    filter=v;
+    const b=document.querySelector(`.f[data-l="${CSS.escape(v)}"]`);
+    if(b){document.querySelectorAll('.f').forEach(x=>x.classList.remove('active'));b.classList.add('active');}
+    render();
+  });$('#date').onchange=load;$$('.f').forEach(b=>b.onclick=()=>{$$('.f').forEach(x=>x.classList.remove('active'));b.classList.add('active');filter=b.dataset.l;render()});setKeyUI();if(key()||isPublicWorker())load();
 </script>
 <script id="v20-enhancements-js">
 (function(){
