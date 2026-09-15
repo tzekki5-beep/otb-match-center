@@ -171,6 +171,19 @@ html,body{overflow-x:hidden}
 .ma-logo{width:48px;height:48px;object-fit:contain;background:#fff;border-radius:50%;padding:3px}.ma-vs{font-weight:900;opacity:.75;font-size:13px}
 .ma-time{white-space:nowrap;font-weight:900;font-size:15px}.ma-body{padding:14px 18px}.ma-title{font-size:18px;font-weight:900;margin-bottom:8px}.ma-expect{background:#102b2c;border:1px solid rgba(120,170,175,.25);border-radius:12px;padding:12px;margin-bottom:12px}.ma-expect b{font-size:16px}.ma-facts{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px}.ma-teambox{background:#0d272a;border-radius:12px;padding:12px}.ma-teambox h4{margin:0 0 8px;font-size:14px}.ma-stats{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:7px}.ma-stat{background:rgba(255,255,255,.035);border-radius:8px;padding:8px}.ma-stat b{display:block;font-size:15px}.ma-stat span{font-size:10px;opacity:.72}.ma-h2h{margin-top:10px;background:#0d272a;border-radius:12px;padding:11px;font-size:12px}.ma-form{font-size:12px;margin-top:7px;opacity:.9}.ma-foot{padding:0 18px 14px;font-size:11px;opacity:.65}.ma-badges{display:flex;gap:7px;flex-wrap:wrap;margin-top:9px}.ma-badge{background:#173b3c;border:1px solid rgba(120,170,175,.25);padding:6px 8px;border-radius:8px;font-size:11px;font-weight:800}
 @media(max-width:700px){.ma-teams{grid-template-columns:1fr;gap:8px}.ma-team.away{justify-content:flex-start;text-align:left}.ma-vs{display:none}.ma-head{display:block}.ma-time{margin-top:8px}.ma-facts{grid-template-columns:1fr}.ma-logo{width:40px;height:40px}}
+
+/* v6: clear league hub directly below OTB Match Center */
+.league-hub{margin-top:16px;display:grid;gap:12px}
+.league-section{background:#061a22;border:1px solid #21434d;border-radius:14px;padding:13px 14px 14px}
+.league-section-title{font-size:17px;font-weight:900;margin-bottom:3px}
+.league-section-sub{font-size:11px;color:#9fb5bd;margin-bottom:10px}
+.main-league-section{border-color:#315d68}
+.other-league-section{background:#071720}
+.other-league-panel{display:flex;align-items:center;gap:9px;flex-wrap:wrap}
+.other-league-panel label{font-size:12px;font-weight:900;color:#b7c9ce}
+.other-league-panel select{min-width:310px;background:#102b2c;color:#fff;border:1px solid #527273;border-radius:10px;padding:10px 12px;font:inherit}
+@media(max-width:700px){.other-league-panel select{width:100%;min-width:0}}
+
 </style>
 </head><body>
 
@@ -224,16 +237,21 @@ html,body{overflow-x:hidden}
 
 <header><h1>⚽ OTB Match Center</h1><div class="sub">Päivän ottelut · oikeat avauskokoonpanot · viimeiset 5 · boxin ulkopuoliset laukaukset · boxin ulkopuolelta kohti</div>
 <div class="controls"><input id="date" type="date"><button id="refresh">↻ Päivitä</button></div>
-<div class="league-nav">
-  <div class="league-mode">
-    <button class="league-mode-btn active" data-mode="players">⭐ Pelaaja-analyysi</button>
-    <button class="league-mode-btn" data-mode="matches">📊 Otteluanalyysi</button>
-  </div>
-  <div id="mainLeagueTabs" class="league-tabs"></div>
-  <div id="otherLeaguePanel" class="other-league-panel hidden">
-    <label for="otherLeagueSelect">Valitse sarja:</label>
-    <select id="otherLeagueSelect"><option value="">Valitse otteluanalyysin sarja…</option></select>
-  </div>
+<div class="league-hub">
+  <section class="league-section main-league-section">
+    <div class="league-section-title">⭐ Pääsarjat · pelaajakohteet</div>
+    <div class="league-section-sub">Valitse sarja nähdäksesi sen pelit ja pelaajien OUT/OTB-kohteet.</div>
+    <div id="mainLeagueTabs" class="league-tabs"></div>
+  </section>
+
+  <section class="league-section other-league-section">
+    <div class="league-section-title">📊 Muut sarjat · otteluanalyysi</div>
+    <div class="league-section-sub">Valitse sarja nähdäksesi joukkueiden tilastofaktat, H2H:t ja mitä ottelulta voi odottaa.</div>
+    <div id="otherLeaguePanel" class="other-league-panel">
+      <label for="otherLeagueSelect">Sarja:</label>
+      <select id="otherLeagueSelect"><option value="">Valitse otteluanalyysin sarja…</option></select>
+    </div>
+  </section>
 </div>
 <div id="legacyFilters" class="hidden"><button class="f active" data-l="ALL">Kaikki sarjat</button><button class="f" data-l="Premier League">PL</button><button class="f" data-l="LaLiga">LaLiga</button><button class="f" data-l="Serie A">Serie A</button><button class="f" data-l="Bundesliga">Bundesliga</button><button class="f" data-l="Ligue 1">Ligue 1</button><button class="f" data-l="Champions League">UCL</button><button class="f" data-l="Europa League">UEL</button><button class="f" data-l="Conference League">UECL</button></div></header>
 <main>
@@ -325,7 +343,7 @@ function renderLeagueDates(active){
 window.otbSelectLeague=async function(leagueName){
   filter=leagueName||'ALL';
   document.querySelectorAll('.league-tab').forEach(x=>x.classList.toggle('active',x.dataset.league===filter));
-  if(filter==='ALL'){$('#out').innerHTML='<div class="status select-league-prompt">👆 Valitse ylhäältä sarja nähdäksesi ottelut.</div>';return;}
+  if(filter==='ALL'){$('#out').innerHTML='<div class="status select-league-prompt">👆 Valitse ensin pääsarja tai muu sarja nähdäksesi ottelut.</div>';return;}
   await loadLeagueDateIndex(filter);
   load();
 };
@@ -645,24 +663,13 @@ $('#date').value=today();if(isPublicWorker())$('#setup').style.display='none';$(
       window.otbSelectLeague(tab.dataset.league);
       return;
     }
-    const mode=e.target.closest('.league-mode-btn');
-    if(mode){document.querySelectorAll('.league-mode-btn').forEach(x=>x.classList.remove('active'));mode.classList.add('active');const players=mode.dataset.mode==='players';document.getElementById('mainLeagueTabs')?.classList.toggle('hidden',!players);document.getElementById('otherLeaguePanel')?.classList.toggle('hidden',players);if(players){
-      filter='ALL';
-      document.querySelectorAll('.league-tab').forEach(x=>x.classList.remove('active'));
-      document.querySelectorAll('.f').forEach(x=>x.classList.remove('active'));
-      $('#out').innerHTML='<div class="status select-league-prompt">👆 Valitse ylhäältä sarja nähdäksesi ottelut.</div>';
-    }else{
-      filter='ALL';
-      document.querySelectorAll('.league-tab').forEach(x=>x.classList.remove('active'));
-      document.querySelectorAll('.f').forEach(x=>x.classList.remove('active'));
-      $('#out').innerHTML='<div class="status select-league-prompt">👆 Valitse otteluanalyysin sarja nähdäksesi ottelut.</div>';
-    }}
   });
   document.getElementById('otherLeagueSelect')?.addEventListener('change',e=>{
     const v=e.target.value;
+    document.querySelectorAll('.league-tab').forEach(x=>x.classList.remove('active'));
     if(!v){
       filter='ALL';
-      $('#out').innerHTML='<div class="status select-league-prompt">👆 Valitse otteluanalyysin sarja nähdäksesi ottelut.</div>';
+      $('#out').innerHTML='<div class="status select-league-prompt">👆 Valitse ensin pääsarja tai muu sarja.</div>';
       return;
     }
     window.otbSelectLeague(v);
