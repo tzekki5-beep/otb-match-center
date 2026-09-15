@@ -112,7 +112,13 @@
 .v22-table th{opacity:.7}
 </style>
 
-</head><body>
+<style id="v23-other-analysis-css">
+.other-match{margin:12px 0;background:rgba(9,30,31,.92);border:1px solid rgba(130,170,170,.28);border-radius:14px;padding:12px}
+.other-analysis{margin-top:10px}.v23-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(170px,1fr));gap:8px;margin-top:9px}
+.v23-card{background:#102b2c;border:1px solid rgba(130,170,170,.2);border-radius:10px;padding:10px}.v23-card b{font-size:18px}.v23-small{font-size:11px;opacity:.78}
+.v23-pick{background:#102b2c;border-radius:10px;padding:10px;margin-top:8px}.v23-pick strong{font-size:15px}.v23-muted{font-size:11px;opacity:.7}
+.v23-table{width:100%;border-collapse:collapse;font-size:12px;margin-top:8px}.v23-table td,.v23-table th{padding:6px 4px;border-bottom:1px solid rgba(255,255,255,.08);text-align:left}
+</style></head><body>
 
 <div style="margin:8px 0;padding:8px 10px;border-radius:9px;background:rgba(16,43,44,.75);font-size:12px;opacity:.85">
   OTB Match Center · julkinen web-versio
@@ -141,7 +147,7 @@
 
 <div id="v20Enhancements" class="v20-wrap">
   <div class="v20-toolbar">
-    <select id="v20League"><option value="">⚽ Kaikki 5 sarjaa</option><option value="Premier League">Premier League</option><option value="LaLiga">LaLiga</option><option value="Serie A">Serie A</option><option value="Bundesliga">Bundesliga</option><option value="Ligue 1">Ligue 1</option></select>
+    <select id="v20League"><option value="">⚽ Kaikki sarjat</option></select>
     <input id="v20Search" placeholder="🔎 Hae pelaajaa..." />
   </div>
   <div class="v20-section v20-days">
@@ -163,21 +169,26 @@
 </div>
 
 <header><h1>⚽ OTB Match Center</h1><div class="sub">Päivän ottelut · oikeat avauskokoonpanot · viimeiset 5 · boxin ulkopuoliset laukaukset · boxin ulkopuolelta kohti</div>
-<div class="controls"><input id="date" type="date"><button id="refresh">↻ Päivitä</button><button class="f active" data-l="ALL">Kaikki 5 sarjaa</button><button class="f" data-l="Premier League">PL</button><button class="f" data-l="LaLiga">LaLiga</button><button class="f" data-l="Serie A">Serie A</button><button class="f" data-l="Bundesliga">Bundesliga</button><button class="f" data-l="Ligue 1">Ligue 1</button></div></header>
+<div class="controls"><input id="date" type="date"><button id="refresh">↻ Päivitä</button><button class="f active" data-l="ALL">Kaikki sarjat</button><button class="f" data-l="Premier League">PL</button><button class="f" data-l="LaLiga">LaLiga</button><button class="f" data-l="Serie A">Serie A</button><button class="f" data-l="Bundesliga">Bundesliga</button><button class="f" data-l="Ligue 1">Ligue 1</button><button class="f" data-l="Champions League">UCL</button><button class="f" data-l="Europa League">UEL</button><button class="f" data-l="Conference League">UECL</button></div></header>
 <main>
 <div id="setup" class="setup"><b>Ensimmäinen käyttökerta</b><div style="color:#93a8c5;font-size:13px;margin-top:5px">Tarvitset PitchAPI:n ilmaisen API-avaimen. Se tallennetaan vain tähän selaimeen.</div><input id="key" type="password" placeholder="pk_live_... tai pk_test_..."><div class="row"><button id="save">Tallenna avain</button><button id="clear">Poista avain</button></div><div id="keymsg" class="status" style="margin-top:8px"></div></div>
 <div id="status" class="status">Valmis.</div><div id="diag" class="status" style="font-size:11px"></div><div id="out"></div></main><div id="drawer" class="drawer hidden"></div>
 <script>
 const API='/pitchapi/';
-const TARGETS={
-  'Premier League':'ENG',
-  'LaLiga':'ESP',
-  'Serie A':'ITA',
-  'Bundesliga':'GER',
-  'Ligue 1':'FRA'
+const MAIN_LEAGUES=['Premier League','LaLiga','Serie A','Bundesliga','Ligue 1','Champions League','Europa League','Conference League'];
+const MAIN_PATTERNS={
+  'Premier League':[/premier league/i],
+  'LaLiga':[/la ?liga/i,/laliga/i],
+  'Serie A':[/^serie a$/i],
+  'Bundesliga':[/^bundesliga$/i],
+  'Ligue 1':[/^ligue 1$/i],
+  'Champions League':[/champions league/i],
+  'Europa League':[/europa league/i],
+  'Conference League':[/conference league/i]
 };
-const ALLOWED=Object.keys(TARGETS);
-let filter='ALL',games=[],leagueMap={},lineupCache=new Map(),matchPlayersCache=new Map(),shotsCache=new Map(),historyCache=new Map();
+const MAIN_SET=new Set(MAIN_LEAGUES);
+const ALLOWED=MAIN_LEAGUES;
+let filter='ALL',games=[],leagueMap={},lineupCache=new Map(),matchPlayersCache=new Map(),shotsCache=new Map(),playerStatsCache=new Map(),historyCache=new Map(),otherAnalysisCache=new Map();
 const $=s=>document.querySelector(s),$$=s=>[...document.querySelectorAll(s)];
 function today(){let d=new Date();return new Date(d-d.getTimezoneOffset()*60000).toISOString().slice(0,10)}
 function esc(s){return String(s??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]))}
@@ -189,7 +200,30 @@ function localTime(utc){if(!utc)return '';return new Date(utc).toLocaleTimeStrin
 function setKeyUI(){const k=key();$('#key').value=k;$('#setup').style.display=k?'none':'block';if(k)$('#keymsg').innerHTML='<span class="ok">API-avain tallennettu tähän selaimeen.</span>'}
 $('#save').onclick=()=>{const v=$('#key').value.trim();if(!v){$('#keymsg').textContent='Syötä API-avain.';return}localStorage.setItem('otb_pitch_key',v);setKeyUI();load()};
 $('#clear').onclick=()=>{localStorage.removeItem('otb_pitch_key');setKeyUI();$('#status').textContent='API-avain poistettu.';$('#out').innerHTML=''};
-async function loadLeagues(){const d=await api('leagues');const arr=d.leagues||[];leagueMap={};for(const name of ALLOWED){const cc=TARGETS[name];const candidates=arr.filter(x=>x.country_code===cc);let x=candidates.find(x=>x.name===name)||candidates.find(x=>x.name?.toLowerCase()===name.toLowerCase());if(!x && name==='LaLiga')x=candidates.find(x=>/la ?liga|laliga/i.test(x.name||''));if(!x)throw Error(`PitchAPI: sarjaa ${name} (${cc}) ei löytynyt.`);leagueMap[name]=x}}
+async function loadLeagues(){
+  const d=await api('leagues');
+  const arr=d.leagues||[];
+  leagueMap={};
+  for(const wanted of MAIN_LEAGUES){
+    const x=arr.find(l=>(MAIN_PATTERNS[wanted]||[]).some(re=>re.test(l.name||'')));
+    if(x) leagueMap[wanted]=x;
+  }
+  for(const l of arr){
+    if(!l?.id||!l?.name) continue;
+    const already=Object.values(leagueMap).some(x=>String(x.id)===String(l.id));
+    if(!already) leagueMap[l.name]=l;
+  }
+  populateLeagueSelector();
+}
+function isPlayerLeague(name){return MAIN_SET.has(name)}
+function populateLeagueSelector(){
+  const sel=$('#v20League'); if(!sel)return;
+  const current=sel.value;
+  const main=MAIN_LEAGUES.filter(n=>leagueMap[n]);
+  const others=Object.keys(leagueMap).filter(n=>!MAIN_SET.has(n)).sort((a,b)=>a.localeCompare(b,'fi'));
+  sel.innerHTML='<option value="">⚽ Kaikki sarjat</option><optgroup label="⭐ Pelaaja-analyysi">'+main.map(n=>`<option value="${esc(n)}">${esc(n)}</option>`).join('')+'</optgroup><optgroup label="📊 Otteluanalyysi">'+others.map(n=>`<option value="${esc(n)}">${esc(n)}</option>`).join('')+'</optgroup>';
+  if([...sel.options].some(o=>o.value===current))sel.value=current;
+}
 async function load(){if(!key()&&!isPublicWorker()){setKeyUI();$('#status').textContent='Lisää ensin PitchAPI-avain.';return}$('#out').innerHTML='';$('#status').textContent='Haetaan päivän ottelut…';try{await loadLeagues();const date=$('#date').value;const d=await api(`date/${date}?status=all`);const allowedIds=new Set(Object.values(leagueMap).map(x=>x.id));games=(d.matches||[]).filter(m=>allowedIds.has(m.league?.id)).map(m=>{const target=ALLOWED.find(n=>leagueMap[n]?.id===m.league?.id);return {...m,league:{...(m.league||{}),name:target||m.league?.name}}}).sort((a,b)=>new Date(a.time_utc)-new Date(b.time_utc));$('#status').textContent=`${games.length} ottelua · PitchAPI`;render()}catch(e){$('#status').innerHTML=`<div class="err">${esc(e.message)}<br><small>Jos virhe on API-avain, tarkista avain ja paina Päivitä.</small></div>`}}
 function render(){const list=filter==='ALL'?games:games.filter(m=>m.league?.name===filter);if(!list.length){$('#out').innerHTML='<div class="status">Ei otteluita tällä suodattimella.</div>';return}$('#out').innerHTML=list.map(m=>`<section class="match"><div class="mh"><div><div class="teams">${esc(matchLabel(m))}</div><div class="lg">${esc(m.league?.name||'')}</div></div><div class="tm">${localTime(m.time_utc)}${m.status==='finished'?' · '+m.score_home+'–'+m.score_away:''}</div></div><div class="pitch" id="p${m.id.replace(/[^a-zA-Z0-9_-]/g,'')}"><div class="goal g1"></div><div class="goal g2"></div><span class="centerDot"></span><div class="players"><div class="status">Ladataan kokoonpanoa…</div></div></div><div class="analysis" data-analysis><h3>📊 Ottelun OTB-yhteenveto</h3><div class="mini">Ladataan viimeisten 5 ottelun perusteella…</div></div><div class="note">Ylärivi = boxin ulkopuolelta · alarivi = boxin ulkopuolelta kohti · napauta pelaajaa.</div></section>`).join('');list.forEach(loadGame)}
 function pid(p){return p.player_id||p.id||p.player?.id}function pName(p){return p.name||p.player?.name||'?'}
@@ -253,7 +287,7 @@ function place(starters,home){
   });
   return pts;
 }
-function card(p,teamId,matchId,x,y){const id=pid(p);const u=img(p);return `<div class="p" data-id="${esc(id)}" data-team="${esc(teamId)}" data-match="${esc(matchId)}" style="left:${x}%;top:${y}%"><img class="face" data-pid="${esc(id)}" src="${esc(u)}" onerror="imageFallback(this)"><div class="name">${esc(pName(p))}</div><div class="nums otb" data-otb>–/–/–/–/–</div><div class="nums ont" data-ont>–/–/–/–/–</div></div>`}
+function card(p,teamId,matchId,x,y){const id=pid(p);const u=img(p);return `<div class="p" data-id="${esc(id)}" data-team="${esc(teamId)}" data-match="${esc(matchId)}" style="left:${x}%;top:${y}%"><img class="face" data-pid="${esc(id)}" src="${esc(u)}" onerror="imageFallback(this)"><div class="name">${esc(pName(p))}</div><div class="nums otb" data-otb>–/–/–/–/–</div><div class="nums ont" data-ont>–/–/–/–/–</div><div class="nums" data-fouls>🟨R –/–/–/–/–</div><div class="nums" data-headers>🏹P –/–/–/–/–</div></div>`}
 async function getLineups(id){if(lineupCache.has(id))return lineupCache.get(id);const d=await api(`matches/${id}/lineups`);lineupCache.set(id,d);return d}
 async function getMatchPlayers(id){
   if(matchPlayersCache.has(id))return matchPlayersCache.get(id);
@@ -294,7 +328,6 @@ function imageFallback(el){
 
 
 function analysisScore(v){
-  // Simple, transparent ranking: volume + accuracy + consistency over the last five.
   const avg=v.totalOtb/5, acc=v.totalOtb? v.totalOn/v.totalOtb : 0;
   const consistency=v.gamesWithOtb/5;
   return avg*5 + acc*3 + consistency*2;
@@ -304,9 +337,11 @@ function playerAnalysis(el){
   const totalOtb=vals.reduce((a,v)=>a+v.otb,0);
   const totalOn=vals.reduce((a,v)=>a+v.on,0);
   const totalAll=vals.reduce((a,v)=>a+v.all,0);
+  const totalFouls=vals.reduce((a,v)=>a+(v.fouls||0),0);
+  const totalHeaders=vals.reduce((a,v)=>a+(v.headers||0),0);
   const gamesWithOtb=vals.filter(v=>v.otb>0).length;
   const score=analysisScore({totalOtb,totalOn,gamesWithOtb});
-  return {name:el.querySelector('.name')?.textContent||'?', totalOtb,totalOn,totalAll,gamesWithOtb,score};
+  return {name:el.querySelector('.name')?.textContent||'?', totalOtb,totalOn,totalAll,totalFouls,totalHeaders,gamesWithOtb,score,values:vals};
 }
 function renderAnalysis(m,home,away){
   const pitch=document.querySelector(`#p${m.id.replace(/[^a-zA-Z0-9_-]/g,'')}`);
@@ -324,7 +359,7 @@ function renderAnalysis(m,home,away){
   const rankHtml=top.map((x,i)=>{
     const acc=x.totalOtb?Math.round(100*x.totalOn/x.totalOtb):0;
     const star=x.score>=10?'★★★★★':x.score>=7?'★★★★☆':x.score>=5?'★★★☆☆':x.score>=3?'★★☆☆☆':'★☆☆☆☆';
-    return `<div class="rankrow ${i<2?'hot':''}"><div class="ranknum">${i+1}</div><div><div class="rankname">${esc(x.name)}</div><div class="rankmeta">${star} · ${x.totalOtb} OTB · ${x.totalOn} kohti · ${x.totalAll} kaikki · ${acc}% OTB-kohti</div></div><div class="rankscore">${x.score.toFixed(1)}</div></div>`;
+    return `<div class="rankrow ${i<2?'hot':''}"><div class="ranknum">${i+1}</div><div><div class="rankname">${esc(x.name)}</div><div class="rankmeta">${star} · ${x.totalOtb} OTB · ${x.totalOn} kohti · ${x.totalAll} kaikki · 🟨 ${x.totalFouls} rikkeet · 🏹 ${x.totalHeaders} puskut · ${acc}% OTB-kohti</div></div><div class="rankscore">${x.score.toFixed(1)}</div></div>`;
   }).join('');
   panel.innerHTML=`<h3>📊 Ottelun OTB-yhteenveto</h3><div class="mini">TOP 5 perustuu viimeiseen 5 otteluun: OTB-määrä + OTB kohti + tasaisuus. Mitä suurempi pistemäärä, sitä kiinnostavampi tilastollisesti.</div><div class="teamtotals"><div class="teamtotal">${esc(m.home_team?.name||'Kotijoukkue')}: <b>${teamTotal(h,'totalOtb')}</b> OTB · <b>${teamTotal(h,'totalOn')}</b> kohti</div><div class="teamtotal">${esc(m.away_team?.name||'Vierasjoukkue')}: <b>${teamTotal(a,'totalOtb')}</b> OTB · <b>${teamTotal(a,'totalOn')}</b> kohti</div></div><div class="rankgrid">${rankHtml}</div>`;
 }
@@ -333,8 +368,124 @@ async function loadGame(m){const box=$('#p'+m.id.replace(/[^a-zA-Z0-9_-]/g,'')+'
 async function teamMatches(teamId,leagueName,cutoffTime){const ck=teamId+':'+leagueName+':'+cutoffTime;if(historyCache.has(ck))return historyCache.get(ck);const lm=leagueMap[leagueName];if(!lm)throw Error('Sarjaa ei löytynyt');const d=await api(`leagues/${encodeURIComponent(lm.id)}/matches?status=played`);const cutoff=Date.parse(cutoffTime||'9999-12-31T23:59:59Z');const arr=(d.matches||[]).filter(m=>(m.home_team?.id===teamId||m.away_team?.id===teamId)&&m.status==='finished'&&Date.parse(m.time_utc)<cutoff).sort((a,b)=>new Date(b.time_utc)-new Date(a.time_utc)).slice(0,5);historyCache.set(ck,arr);return arr}
 async function shots(matchId){if(shotsCache.has(matchId))return shotsCache.get(matchId);const d=await api(`matches/${matchId}/shots`);const arr=[];for(const per of (d.periods||[]))arr.push(...(per.shots||[]));shotsCache.set(matchId,arr);return arr}
 function statsFor(arr,playerId){const ss=arr.filter(s=>String(s.player?.id)===String(playerId));let otb=0,otbOn=0;for(const s of ss){const outside=s.is_inside_box===false;if(outside)otb++;if(outside && s.is_on_target===true)otbOn++}return{otb,on:otbOn,all:ss.length,shots:ss}}
+async function getPlayerStats(matchId){
+  if(playerStatsCache.has(matchId))return playerStatsCache.get(matchId);
+  const d=await api(`matches/${matchId}/players`);
+  const map=new Map();
+  for(const row of (Array.isArray(d)?d:[])){
+    const id=row?.player?.id||row?.player_id||row?.id;
+    if(id)map.set(String(id),row);
+  }
+  playerStatsCache.set(matchId,map);
+  return map;
+}
+function statNumber(stat){
+  if(!stat)return 0;
+  if(typeof stat.value==='number')return stat.value;
+  return 0;
+}
+function playerMetric(row,patterns){
+  for(const group of (row?.stats||[])){
+    for(const [label,obj] of Object.entries(group?.stats||{})){
+      const s=obj?.stat||obj||{};
+      const key=String(s.key||obj?.key||'');
+      const hay=(label+' '+key+' '+String(group?.key||'')).toLowerCase();
+      if(patterns.some(re=>re.test(hay)))return statNumber(s);
+    }
+  }
+  return 0;
+}
+function playerFouls(row){return playerMetric(row,[/foul.*committ/i,/committ.*foul/i]);}
+
 async function loadHistory(m,teamId,starters){if(!teamId)return;try{const hist=await teamMatches(teamId,m.league.name,m.time_utc);const rows=await Promise.all(hist.map(async g=>({g,shots:await shots(g.id)})));for(const p of starters){const id=pid(p);const vals=rows.map(r=>{const z=statsFor(r.shots,id);return{...z,opp:matchLabel(r.g)}});const el=document.querySelector(`#p${m.id.replace(/[^a-zA-Z0-9_-]/g,'')} .p[data-id="${CSS.escape(String(id))}"]`);if(el){el.querySelector('[data-otb]').textContent=vals.map(v=>v.otb).join('/');el.querySelector('[data-ont]').textContent=vals.map(v=>v.on).join('/');el._history=vals;window.dispatchEvent(new CustomEvent('otb-history-ready',{detail:{matchId:m.id,playerId:String(id)}}));}}}catch(e){console.warn('history',e)}}
-async function openPlayer(id,name,teamId,leagueName,cutoffTime){const d=$('#drawer');d.classList.remove('hidden');d.innerHTML=`<button class="x" onclick="this.parentElement.classList.add('hidden')">✕</button><h2>${esc(name)}</h2><div class="status">Haetaan viimeisiä 5 ottelua…</div>`;try{const hist=await teamMatches(teamId,leagueName,cutoffTime),vals=[];for(const g of hist){const ss=statsFor(await shots(g.id),id);vals.push({...ss,opp:matchLabel(g)})}const t=vals.reduce((a,v)=>a+v.otb,0),o=vals.reduce((a,v)=>a+v.on,0),all=vals.reduce((a,v)=>a+v.all,0),active=vals.filter(v=>v.otb>0).length,avg=(t/Math.max(vals.length,1)).toFixed(1),acc=t?Math.round(100*o/t):0;d.innerHTML=`<button class="x" onclick="this.parentElement.classList.add('hidden')">✕</button><h2>${esc(name)}</h2><div class="grid"><div class="stat"><b>${t}</b>OTB</div><div class="stat"><b>${o}</b>OTB kohti</div><div class="stat"><b>${all}</b>kaikki</div></div><div class="mini">Keskiarvo: <b>${avg}</b> OTB/peli · OTB kohti ${acc}% · OTB vähintään kerran ${active}/${vals.length} pelissä</div><table><thead><tr><th>Ottelu</th><th>OTB</th><th>OTB kohti</th><th>Kaikki</th></tr></thead><tbody>${vals.map(v=>`<tr><td>${esc(v.opp)}</td><td>${v.otb}</td><td>${v.on}</td><td>${v.all}</td></tr>`).join('')}</tbody></table>`}catch(e){d.innerHTML=`<button class="x" onclick="this.parentElement.classList.add('hidden')">✕</button><h2>${esc(name)}</h2><div class="err">Tilastoja ei saatu: ${esc(e.message)}</div>`}}
+async function openPlayer(id,name,teamId,leagueName,cutoffTime){const d=$('#drawer');d.classList.remove('hidden');d.innerHTML=`<button class="x" onclick="this.parentElement.classList.add('hidden')">✕</button><h2>${esc(name)}</h2><div class="status">Haetaan viimeisiä 5 ottelua…</div>`;try{const hist=await teamMatches(teamId,leagueName,cutoffTime),vals=[];for(const g of hist){const ss=statsFor(await shots(g.id),id);vals.push({...ss,opp:matchLabel(g)})}const t=vals.reduce((a,v)=>a+v.otb,0),o=vals.reduce((a,v)=>a+v.on,0),all=vals.reduce((a,v)=>a+v.all,0),f=vals.reduce((a,v)=>a+(v.fouls||0),0),h=vals.reduce((a,v)=>a+(v.headers||0),0),active=vals.filter(v=>v.otb>0).length,avg=(t/Math.max(vals.length,1)).toFixed(1),acc=t?Math.round(100*o/t):0;d.innerHTML=`<button class="x" onclick="this.parentElement.classList.add('hidden')">✕</button><h2>${esc(name)}</h2><div class="grid"><div class="stat"><b>${t}</b>OTB</div><div class="stat"><b>${o}</b>OTB kohti</div><div class="stat"><b>${all}</b>kaikki</div><div class="stat"><b>${f}</b>Rikkeet</div><div class="stat"><b>${h}</b>Puskut</div></div><div class="mini">Keskiarvo: <b>${avg}</b> OTB/peli · OTB kohti ${acc}% · OTB vähintään kerran ${active}/${vals.length} pelissä</div><table><thead><tr><th>Ottelu</th><th>OTB</th><th>Kohti</th><th>Kaikki</th><th>Rikkeet</th><th>Puskut</th></tr></thead><tbody>${vals.map(v=>`<tr><td>${esc(v.opp)}</td><td>${v.otb}</td><td>${v.on}</td><td>${v.all}</td><td>${v.fouls||0}</td><td>${v.headers||0}</td></tr>`).join('')}</tbody></table>`}catch(e){d.innerHTML=`<button class="x" onclick="this.parentElement.classList.add('hidden')">✕</button><h2>${esc(name)}</h2><div class="err">Tilastoja ei saatu: ${esc(e.message)}</div>`}}
+
+async function teamFormForOther(teamId,leagueName,cutoff){
+  const hist=await teamMatches(teamId,leagueName,cutoff);
+  const rows=await Promise.all(hist.map(async g=>{
+    const stats=await api(`matches/${g.id}/stats`).catch(()=>null);
+    const events=await api(`matches/${g.id}/events`).catch(()=>null);
+    return {g,stats,events};
+  }));
+  function sideFor(g){return g.home_team?.id===teamId?'home':'away'}
+  function statFrom(d,patterns,side){
+    const groups=(d?.periods||[]).find(p=>p.period==='All')?.groups||[];
+    for(const gr of groups){
+      for(const it of (gr.items||[])){
+        const hay=(String(it.key||'')+' '+String(it.title||'')).toLowerCase();
+        if(patterns.some(re=>re.test(hay))){
+          const raw=it[side]; const n=Number(raw); if(Number.isFinite(n))return n;
+        }
+      }
+    }
+    return null;
+  }
+  return rows.map(r=>{
+    const s=sideFor(r.g), opp=s==='home'?'away':'home';
+    const ev=r.events?.events||[];
+    const cards=ev.filter(e=>/card/i.test(String(e.event_type||''))&&e.team_id===teamId).length;
+    return {
+      g:r.g,
+      gf:s==='home'?Number(r.g.score_home)||0:Number(r.g.score_away)||0,
+      ga:s==='home'?Number(r.g.score_away)||0:Number(r.g.score_home)||0,
+      corners:statFrom(r.stats,[/corner/],s),
+      fouls:statFrom(r.stats,[/foul/],s),
+      cards
+    };
+  });
+}
+function avgNonNull(rows,key){const a=rows.map(r=>r[key]).filter(v=>Number.isFinite(v));return a.length?a.reduce((x,y)=>x+y,0)/a.length:null}
+function poissonPmf(k,lambda){if(lambda<=0)return k===0?1:0;let p=Math.exp(-lambda);for(let i=1;i<=k;i++)p*=lambda/i;return p}
+function poissonOver(lambda,line){let max=Math.floor(line);let under=0;for(let k=0;k<=max;k++)under+=poissonPmf(k,lambda);return Math.max(0,Math.min(1,1-under))}
+function resultProbs(lh,la){
+  let home=0,draw=0,away=0;
+  for(let i=0;i<=8;i++)for(let j=0;j<=8;j++){const p=poissonPmf(i,lh)*poissonPmf(j,la);if(i>j)home+=p;else if(i===j)draw+=p;else away+=p}
+  const z=home+draw+away;return {home:home/z,draw:draw/z,away:away/z}
+}
+function pct(x){return Number.isFinite(x)?Math.round(x*100)+'%':'—'}
+function safeAvg(x){return Number.isFinite(x)?x.toFixed(1):'—'}
+async function loadOtherGame(m){
+  const box=document.querySelector(`[data-other-match="${CSS.escape(String(m.id))}"] .other-analysis`);
+  if(!box)return;
+  try{
+    const hid=m.home_team?.id, aid=m.away_team?.id, league=m.league?.name;
+    const [hf,af,h2h]=await Promise.all([
+      teamFormForOther(hid,league,m.time_utc),
+      teamFormForOther(aid,league,m.time_utc),
+      api(`matches/${m.id}/h2h`).catch(()=>null)
+    ]);
+    const h2=(h2h?.recent_matches||[]).filter(x=>x.finished).slice(0,5);
+    const h2HomeGoals=avgNonNull(h2.map(x=>({v:(x.home?.id===hid?x.score_home:x.score_away)})),'v');
+    const h2AwayGoals=avgNonNull(h2.map(x=>({v:(x.home?.id===aid?x.score_home:x.score_away)})),'v');
+    const hgf=avgNonNull(hf,'gf')??0, hga=avgNonNull(hf,'ga')??0, agf=avgNonNull(af,'gf')??0, aga=avgNonNull(af,'ga')??0;
+    const h2hAdjH=Number.isFinite(h2HomeGoals)?h2HomeGoals*.15:0, h2hAdjA=Number.isFinite(h2AwayGoals)?h2AwayGoals*.15:0;
+    const lh=Math.max(.15,(hgf+aga)/2+h2hAdjH), la=Math.max(.15,(agf+hga)/2+h2hAdjA);
+    const rp=resultProbs(lh,la), total=lh+la;
+    const hc=avgNonNull(hf,'corners'), ac=avgNonNull(af,'corners');
+    const hcards=avgNonNull(hf,'cards'), acards=avgNonNull(af,'cards');
+    const over15=poissonOver(total,1.5), over25=poissonOver(total,2.5), btts=(1-Math.exp(-lh))*(1-Math.exp(-la));
+    const over85corners=(Number.isFinite(hc)&&Number.isFinite(ac))?poissonOver(hc+ac,8.5):null;
+    const over35cards=(Number.isFinite(hcards)&&Number.isFinite(acards))?poissonOver(hcards+acards,3.5):null;
+    const confidence=Math.round(Math.max(0,Math.min(100,50+Math.min(25,h2.length*3)+Math.min(20,(hf.length+af.length)*2))));
+    const pick=(label,p,sub)=>`<div class="v23-pick"><strong>${label}</strong><div>${pct(p)} <span class="v23-muted">${sub||''}</span></div></div>`;
+    box.innerHTML=`<div class="v23-grid">
+      <div class="v23-card"><div class="v23-small">🔮 Odotetut maalit</div><b>${lh.toFixed(2)} – ${la.toFixed(2)}</b><div class="v23-small">${esc(m.home_team?.name||'Koti')} – ${esc(m.away_team?.name||'Vieras')}</div></div>
+      <div class="v23-card"><div class="v23-small">🏠 Kotivoitto</div><b>${pct(rp.home)}</b><div class="v23-small">Tasapeli ${pct(rp.draw)} · Vieras ${pct(rp.away)}</div></div>
+      <div class="v23-card"><div class="v23-small">📈 Data</div><b>${confidence}%</b><div class="v23-small">${hf.length}+${af.length} viimeistä · H2H ${h2.length}</div></div>
+    </div>
+    <div class="v23-grid">
+      ${pick('⚽ Yli 1,5 maalia',over15,`arvio ${total.toFixed(2)} maalia`)}
+      ${pick('⚽ Yli 2,5 maalia',over25,`Poisson-arvio`)}
+      ${pick('⚽ Molemmat tekevät maalin',btts,'BTTS')}
+      ${pick('🚩 Yli 8,5 kulmaa',over85corners,Number.isFinite(hc+ac)?`keskiarvo ${(hc+ac).toFixed(1)}`:'kulmadato puuttuu')}
+      ${pick('🟨 Yli 3,5 korttia',over35cards,Number.isFinite(hcards+acards)?`keskiarvo ${(hcards+acards).toFixed(1)}`:'korttidata puuttuu')}
+    </div>
+    <table class="v23-table"><thead><tr><th>Viimeiset</th><th>${esc(m.home_team?.name||'Koti')}</th><th>${esc(m.away_team?.name||'Vieras')}</th></tr></thead>
+    <tbody><tr><td>Maalit tehty</td><td>${safeAvg(hgf)}</td><td>${safeAvg(agf)}</td></tr><tr><td>Maalit päästetty</td><td>${safeAvg(hga)}</td><td>${safeAvg(aga)}</td></tr><tr><td>Kulmat</td><td>${safeAvg(hc)}</td><td>${safeAvg(ac)}</td></tr><tr><td>Kortit</td><td>${safeAvg(hcards)}</td><td>${safeAvg(acards)}</td></tr></tbody></table>
+    <div class="v23-muted" style="margin-top:8px">Arvio yhdistää viimeisten otteluiden maali-/tapahtumadataa, koti/vieras-asetelmaa ja viimeisiä keskinäisiä kohtaamisia. Se ei ole varma tulosennuste.</div>`;
+  }catch(e){box.innerHTML=`<div class="err">Otteluanalyysiä ei saatu: ${esc(e.message)}</div>`}
+}
+
 $('#date').value=today();if(isPublicWorker())$('#setup').style.display='none';$('#refresh').onclick=load;$('#date').onchange=load;$$('.f').forEach(b=>b.onclick=()=>{$$('.f').forEach(x=>x.classList.remove('active'));b.classList.add('active');filter=b.dataset.l;render()});setKeyUI();if(key()||isPublicWorker())load();
 </script>
 <script id="v20-enhancements-js">
