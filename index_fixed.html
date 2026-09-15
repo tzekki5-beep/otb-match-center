@@ -152,6 +152,15 @@ html,body{overflow-x:hidden}
 .league-tabs{min-height:42px}
 .league-tab{flex:0 0 auto}
 
+
+/* v4 clean public UI */
+#setup{display:none!important}
+.v20-toolbar{display:none!important}
+.v20-section:not(.v20-days){display:none!important}
+.v20-days{margin-top:0}
+.v20-days-row{display:flex;gap:7px;overflow-x:auto;padding-bottom:6px;scrollbar-width:thin}
+.v20-day{flex:0 0 auto;min-width:88px}
+
 </style>
 </head><body>
 
@@ -241,10 +250,10 @@ function today(){let d=new Date();return new Date(d-d.getTimezoneOffset()*60000)
 function esc(s){return String(s??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]))}
 function isPublicWorker(){return location.hostname.endsWith('.workers.dev')}
 function key(){return localStorage.getItem('otb_pitch_key')||''}
-async function api(path){const k=key();const headers={};if(k)headers['X-API-KEY']=k;const r=await fetch(API+path,{headers,cache:'no-store'});let d=null;try{d=await r.json()}catch{}if(!r.ok){const msg=d?.error?.message||d?.error?.code||('HTTP '+r.status); if(r.status===404 && API.startsWith('/pitchapi/')) throw Error('Netlify-proxy puuttuu tai vanha versio on edelleen käytössä. Lataa V4 ZIP ja julkaise se uudelleen Netlify Dropiin.'); throw Error(msg)}if(d?.error)throw Error(d.error.message||d.error.code||'API-virhe');return d.data}
+async function api(path){const k=key();const headers={};if(k)headers['X-API-KEY']=k;const r=await fetch(API+path,{headers,cache:'no-store'});let d=null;try{d=await r.json()}catch{}if(!r.ok){const msg=d?.error?.message||d?.error?.code||('HTTP '+r.status); if(isPublicWorker() && (r.status===401 || r.status===403)) throw Error('Cloudflare-proxy ei saanut PitchAPI-avainta. Tarkista Cloudflaren PITCHAPI_KEY-secret.'); throw Error(msg)}if(d?.error)throw Error(d.error.message||d.error.code||'API-virhe');return d.data}
 function matchLabel(m){return `${m.home_team?.name||''} – ${m.away_team?.name||''}`}
 function localTime(utc){if(!utc)return '';return new Date(utc).toLocaleTimeString('fi-FI',{hour:'2-digit',minute:'2-digit'})}
-function setKeyUI(){const k=key();$('#key').value=k;$('#setup').style.display=k?'none':'block';if(k)$('#keymsg').innerHTML='<span class="ok">API-avain tallennettu tähän selaimeen.</span>'}
+function setKeyUI(){if(isPublicWorker()){$('#setup').style.display='none';return}const k=key();$('#key').value=k;$('#setup').style.display=k?'none':'block';if(k)$('#keymsg').innerHTML='<span class="ok">API-avain tallennettu tähän selaimeen.</span>'}
 $('#save').onclick=()=>{const v=$('#key').value.trim();if(!v){$('#keymsg').textContent='Syötä API-avain.';return}localStorage.setItem('otb_pitch_key',v);setKeyUI();load()};
 $('#clear').onclick=()=>{localStorage.removeItem('otb_pitch_key');setKeyUI();$('#status').textContent='API-avain poistettu.';$('#out').innerHTML=''};
 async function loadLeagues(){
@@ -275,13 +284,48 @@ function populateLeagueSelector(){
   const otherSel=document.getElementById('otherLeagueSelect');
   if(otherSel){const old=otherSel.value;otherSel.innerHTML='<option value="">Valitse otteluanalyysin sarja…</option>'+others.map(n=>`<option value="${esc(n)}">${esc(n)}</option>`).join('');if(others.includes(old))otherSel.value=old;}
 }
-async function load(){if(!key()&&!isPublicWorker()){setKeyUI();$('#status').textContent='Lisää ensin PitchAPI-avain.';return}$('#out').innerHTML='';$('#status').textContent='Haetaan päivän ottelut…';try{await loadLeagues();const date=$('#date').value;const d=await api(`date/${date}?status=all`);const allowedIds=new Set(Object.values(leagueMap).map(x=>x.id));games=(d.matches||[]).filter(m=>allowedIds.has(m.league?.id)).map(m=>{const target=ALLOWED.find(n=>leagueMap[n]?.id===m.league?.id);return {...m,league:{...(m.league||{}),name:target||m.league?.name}}}).sort((a,b)=>new Date(a.time_utc)-new Date(b.time_utc));$('#status').textContent=`${games.length} ottelua · PitchAPI`;render()}catch(e){$('#status').innerHTML=`<div class="err">${esc(e.message)}<br><small>Jos virhe on API-avain, tarkista avain ja paina Päivitä.</small></div>`}}
+async function load(){if(!key()&&!isPublicWorker()){setKeyUI();$('#status').textContent='Lisää ensin PitchAPI-avain.';return}$('#out').innerHTML='';$('#status').textContent='Haetaan päivän ottelut…';try{await loadLeagues();const date=$('#date').value;const d=await api(`date/${date}?status=all`);const allowedIds=new Set(Object.values(leagueMap).map(x=>x.id));games=(d.matches||[]).filter(m=>allowedIds.has(m.league?.id)).map(m=>{const target=ALLOWED.find(n=>leagueMap[n]?.id===m.league?.id);return {...m,league:{...(m.league||{}),name:target||m.league?.name}}}).sort((a,b)=>new Date(a.time_utc)-new Date(b.time_utc));$('#status').textContent=`${games.length} ottelua · PitchAPI`;render()}catch(e){$('#status').innerHTML=`<div class="err">${esc(e.message)}<br><small>Julkisessa versiossa API-avain tulee Cloudflare Workerista — sitä ei tarvitse syöttää tähän selaimeen.</small></div>`}}
+async function loadLeagueDateIndex(leagueName){
+  const box=$('#v20Days');
+  if(!box)return;
+  const lm=leagueMap[leagueName];
+  if(!lm){box.innerHTML='<div class="status">Sarjan ottelupäiviä ei löytynyt.</div>';return;}
+  box.innerHTML='<div class="status">Ladataan sarjan ottelupäiviä…</div>';
+  try{
+    const d=await api(`leagues/${encodeURIComponent(lm.id)}/matches?status=all`);
+    const dates=[...new Set((d.matches||[]).map(m=>m.date||String(m.time_utc||'').slice(0,10)).filter(Boolean))].sort();
+    window.__leagueDates=dates;
+    renderLeagueDates(document.querySelector('#date')?.value||today());
+  }catch(e){box.innerHTML='<div class="status">Ottelupäiviä ei saatu ladattua.</div>';console.warn(e)}
+}
+function renderLeagueDates(active){
+  const box=$('#v20Days'); if(!box)return;
+  const dates=window.__leagueDates||[];
+  if(!dates.length){box.innerHTML='<div class="status">Valitse sarja nähdäksesi kaikki sen ottelupäivät.</div>';return;}
+  box.innerHTML=dates.map(iso=>{
+    const d=new Date(iso+'T12:00:00');
+    const label=d.toLocaleDateString('fi-FI',{weekday:'short'});
+    const date=d.toLocaleDateString('fi-FI',{day:'2-digit',month:'2-digit'});
+    return `<button class="v20-day${iso===active?' active':''}" data-iso="${iso}">${label}<small>${date}</small></button>`;
+  }).join('');
+  box.querySelectorAll('.v20-day').forEach(b=>b.onclick=()=>{
+    const iso=b.dataset.iso; const el=$('#date'); el.value=iso; el.dispatchEvent(new Event('change',{bubbles:true})); renderLeagueDates(iso);
+  });
+}
+window.otbSelectLeague=async function(leagueName){
+  filter=leagueName||'ALL';
+  document.querySelectorAll('.league-tab').forEach(x=>x.classList.toggle('active',x.dataset.league===filter));
+  if(filter==='ALL'){$('#out').innerHTML='<div class="status select-league-prompt">👆 Valitse ylhäältä sarja nähdäksesi ottelut.</div>';return;}
+  await loadLeagueDateIndex(filter);
+  load();
+};
+
 function render(){
   if(filter==='ALL'){
     $('#out').innerHTML='<div class="status select-league-prompt">👆 Valitse ylhäältä sarja nähdäksesi ottelut.</div>';
     return;
   }
-  const list=games.filter(m=>m.league?.name===filter);if(!list.length){$('#out').innerHTML='<div class="status">Ei otteluita tällä suodattimella.</div>';return}$('#out').innerHTML=list.map(m=>`<section class="match"><div class="mh"><div><div class="teams">${esc(matchLabel(m))}</div><div class="lg">${esc(m.league?.name||'')}</div></div><div class="tm">${localTime(m.time_utc)}${m.status==='finished'?' · '+m.score_home+'–'+m.score_away:''}</div></div><div class="pitch" id="p${m.id.replace(/[^a-zA-Z0-9_-]/g,'')}"><div class="goal g1"></div><div class="goal g2"></div><span class="centerDot"></span><div class="players"><div class="status">Ladataan kokoonpanoa…</div></div></div><div class="analysis" data-analysis><h3>📊 Ottelun OTB-yhteenveto</h3><div class="mini">Ladataan viimeisten 5 ottelun perusteella…</div></div><div class="note">Ylärivi = boxin ulkopuolelta · alarivi = boxin ulkopuolelta kohti · napauta pelaajaa.</div></section>`).join('');list.forEach(loadGame)}
+  const list=games.filter(m=>m.league?.name===filter);if(!list.length){$('#out').innerHTML='<div class="status">Ei otteluita tällä suodattimella.</div>';return}$('#out').innerHTML=list.map(m=>`<section class="match"><div class="mh"><div><div class="teams">${esc(matchLabel(m))}</div><div class="lg">${esc(m.league?.name||'')}</div></div><div class="tm">${localTime(m.time_utc)}${m.status==='finished'?' · '+m.score_home+'–'+m.score_away:''}</div></div><div class="pitch" id="p${m.id.replace(/[^a-zA-Z0-9_-]/g,'')}"><div class="goal g1"></div><div class="goal g2"></div><span class="centerDot"></span><div class="players"><div class="status">Ladataan kokoonpanoa…</div></div></div><div class="note">OUT = boxin ulkopuolelta · pelaajaa painamalla näet tarkat tilastot.</div></section>`).join('');list.forEach(loadGame)}
 function pid(p){return p.player_id||p.id||p.player?.id}function pName(p){return p.name||p.player?.name||'?'}
 function img(p){return p.image_url||p.player?.image_url||p.image?.url||''}
 async function enrichPlayerImages(starters){
@@ -548,10 +592,7 @@ $('#date').value=today();if(isPublicWorker())$('#setup').style.display='none';$(
     if(tab){
       document.querySelectorAll('.league-tab').forEach(x=>x.classList.remove('active'));
       tab.classList.add('active');
-      filter=tab.dataset.league;
-      const b=document.querySelector(`.f[data-l="${CSS.escape(filter)}"]`);
-      if(b){document.querySelectorAll('.f').forEach(x=>x.classList.remove('active'));b.classList.add('active');}
-      render();
+      window.otbSelectLeague(tab.dataset.league);
       return;
     }
     const mode=e.target.closest('.league-mode-btn');
@@ -574,11 +615,8 @@ $('#date').value=today();if(isPublicWorker())$('#setup').style.display='none';$(
       $('#out').innerHTML='<div class="status select-league-prompt">👆 Valitse otteluanalyysin sarja nähdäksesi ottelut.</div>';
       return;
     }
-    filter=v;
-    const b=document.querySelector(`.f[data-l="${CSS.escape(v)}"]`);
-    if(b){document.querySelectorAll('.f').forEach(x=>x.classList.remove('active'));b.classList.add('active');}
-    render();
-  });$('#date').onchange=load;$$('.f').forEach(b=>b.onclick=()=>{$$('.f').forEach(x=>x.classList.remove('active'));b.classList.add('active');filter=b.dataset.l;render()});setKeyUI();if(key()||isPublicWorker())load();
+    window.otbSelectLeague(v);
+  });$('#date').onchange=()=>{if(filter!=='ALL')load();};$$('.f').forEach(b=>b.onclick=()=>{$$('.f').forEach(x=>x.classList.remove('active'));b.classList.add('active');filter=b.dataset.l;render()});setKeyUI(); loadLeagues().then(()=>{$('#out').innerHTML='<div class="status select-league-prompt">👆 Valitse ylhäältä sarja nähdäksesi ottelut.</div>';}).catch(e=>{$('#out').innerHTML='<div class="err">Sarjoja ei saatu ladattua: '+esc(e.message)+'</div>';});
 </script>
 <script id="v20-enhancements-js">
 (function(){
@@ -689,8 +727,8 @@ $('#date').value=today();if(isPublicWorker())$('#setup').style.display='none';$(
       b.innerHTML=`${label}<small>${date}</small>`; b.onclick=()=>setAppDate(iso); box.appendChild(b);
     }
   }
-  renderDays(document.querySelector('input[type="date"]')?.value);
-  document.querySelector('input[type="date"]')?.addEventListener('change',e=>renderDays(e.target.value));
+  // v4: date buttons are populated from the selected league's full season fixture list.
+  document.querySelector('input[type="date"]')?.addEventListener('change',e=>{ if(window.__leagueDates) renderLeagueDates(e.target.value); });
   document.querySelectorAll('.f').forEach(btn=>btn.addEventListener('click',()=>{const sel=$("v20League"); if(sel)sel.value=btn.dataset.l==='ALL'?'':btn.dataset.l;}));
 
   // Top league selector controls the existing league filter buttons.
