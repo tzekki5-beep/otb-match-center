@@ -186,7 +186,7 @@ html,body{overflow-x:hidden}
 
 /* v7: pääsarjojen pelaajatilastojen pikavalinta */
 .player-stat-bar{display:flex;gap:6px;flex-wrap:wrap;padding:9px 12px;background:#071d25;border-top:1px solid #21434d;border-bottom:1px solid #21434d}
-.player-stat-btn{background:#173b3c;color:#dce9eb;border:1px solid #527273;border-radius:9px;padding:7px 9px;font-size:11px;font-weight:900;cursor:pointer}
+.player-stat-btn{background:#173b3c;color:#dce9eb;border:1px solid #527273;border-radius:10px;padding:10px 14px;font-size:13px;font-weight:900;cursor:pointer}
 .player-stat-btn.active{background:#4389c8;border-color:#75aee0;color:#fff}
 .player-stat-caption{width:100%;font-size:10px;color:#8fa7ae;margin-bottom:1px}
 .player-stat-values{font-size:7px;line-height:1.05;font-weight:900;white-space:nowrap;margin-top:1px;min-height:9px;width:100%;overflow:hidden;text-overflow:clip}
@@ -196,11 +196,18 @@ html,body{overflow-x:hidden}
 @media(max-width:600px){.player-stat-btn{padding:7px 8px;font-size:10px}.stat-mode-label{width:100%;margin-left:0}}
 
 <style id="compact-player-stats-final">
-.p .player-stat-values{font-size:7px!important;line-height:1!important;white-space:nowrap!important;display:block!important;overflow:hidden!important;width:100%!important;margin-top:1px!important}
-.p .nums{display:block!important;font-size:7px!important;line-height:1!important;font-weight:800!important;white-space:nowrap!important;margin-top:1px!important;min-height:9px!important}
-.p{width:92px}
-@media(max-width:430px){.p{width:84px}.p .player-stat-values{font-size:6.5px!important}}
-.p .nums{display:block!important;font-size:7px!important;line-height:1!important;font-weight:800!important;white-space:nowrap!important;margin-top:1px!important;min-height:9px!important}.p .player-stat-values{display:none;font-size:7px!important;line-height:1!important;white-space:nowrap!important;margin-top:1px!important;min-height:9px!important;overflow:hidden!important;width:100%!important}.p{width:92px}@media(max-width:430px){.p{width:84px}.p .nums,.p .player-stat-values{font-size:6.5px!important}}
+.p{width:112px!important}
+.p .name{font-size:11px!important;max-width:104px!important;padding:3px 5px!important;line-height:1.05!important}
+.p .face{width:50px!important;height:50px!important}
+.p .nums{display:block!important;font-size:10px!important;line-height:1.05!important;font-weight:900!important;white-space:nowrap!important;margin-top:2px!important;min-height:12px!important;letter-spacing:-.15px!important}
+.p .player-stat-values{display:block!important;font-size:10px!important;line-height:1.05!important;font-weight:900!important;white-space:nowrap!important;letter-spacing:-.15px!important;margin-top:2px!important;min-height:12px!important;overflow:hidden!important;width:100%!important}
+.p .player-stat-values .high{padding:1px 3px!important;border-radius:4px!important}
+@media(max-width:430px){
+  .p{width:96px!important}
+  .p .face{width:44px!important;height:44px!important}
+  .p .name{font-size:9px!important;max-width:90px!important}
+  .p .nums,.p .player-stat-values{font-size:8px!important}
+}
 </style>
 <style id="compact-player-stats-readable">
 .p{width:96px!important}
@@ -503,16 +510,41 @@ function renderPlayerStat(el,mode){
   const box=el.querySelector('[data-player-stat-values]');
   const legacy=el.querySelector('[data-otb]');
   if(!box)return;
+  const otbVals=hist.map(v=>Number(v.otb)||0);
+  const onVals=hist.map(v=>Number(v.on)||0);
+
   if(mode==='otb'){
-    if(legacy){legacy.style.display='block';legacy.innerHTML=hist.map((v,i)=>`<span class="${statHighClass(hist.map(x=>Number(x.otb)||0),i)}">${Number(v.otb)||0}/${Number(v.on)||0}</span>`).join(' ');}
-    box.style.display='none';
+    if(legacy){
+      legacy.style.display='block';
+      legacy.innerHTML=
+        `<span style="font-size:8px;opacity:.72;margin-right:3px">OTB</span>`+
+        hist.map((v,i)=>`<span class="${statHighClass(otbVals,i)}">${Number(v.otb)||0}</span>`).join(' ');
+    }
+    box.style.display='block';
+    box.innerHTML=
+      `<span style="font-size:8px;opacity:.72;margin-right:3px">KOHTI</span>`+
+      hist.map((v,i)=>`<span class="${statHighClass(onVals,i)}">${Number(v.on)||0}</span>`).join(' ');
     return;
   }
+
   if(legacy)legacy.style.display='none';
   box.style.display='block';
-  const vals=hist.map(v=>mode==='shots'?(Number(v.all)||0):mode==='all'?(Number(v.all)||0):mode==='fouls'?(Number(v.fouls)||0):mode==='headers'?(Number(v.headers)||0):v.cardsObj||{yellow:0,red:0});
+
+  let vals;
+  if(mode==='shots'||mode==='all') vals=hist.map(v=>Number(v.all)||0);
+  else if(mode==='fouls') vals=hist.map(v=>Number(v.fouls)||0);
+  else if(mode==='headers') vals=hist.map(v=>Number(v.headers)||0);
+  else vals=hist.map(v=>v.cardsObj||{yellow:0,red:0});
+
   const nums=vals.map(v=>typeof v==='number'?v:0);
-  box.innerHTML=vals.map((v,i)=>formatPlayerStat(v,mode,i,nums)).join(' ');
+
+  if(mode==='cards'){
+    box.innerHTML=
+      `<span style="font-size:8px;opacity:.72;margin-right:3px">KORTIT</span>`+
+      vals.map((v,i)=>formatPlayerStat(v,mode,i,nums)).join(' ');
+  }else{
+    box.innerHTML=vals.map((v,i)=>formatPlayerStat(v,mode,i,nums)).join(' ');
+  }
 }
 function setPlayerStatMode(matchId,mode){const bar=document.querySelector(`[data-stat-bar="${CSS.escape(String(matchId))}"]`);if(!bar)return;bar.querySelectorAll('.player-stat-btn').forEach(b=>b.classList.toggle('active',b.dataset.stat===mode));const pitch=document.querySelector(`#p${String(matchId).replace(/[^a-zA-Z0-9_-]/g,'')}`);if(!pitch)return;pitch.querySelectorAll('.p').forEach(el=>renderPlayerStat(el,mode));bar.dataset.mode=mode}
 const playerMatchStatsFallbackCache=new Map();
@@ -926,3 +958,9 @@ $('#date').value=today();if(isPublicWorker())$('#setup').style.display='none';$(
 </script>
 
 </body></html>
+
+<style id="final-ui-tuning">
+.player-stat-bar{padding:11px 13px!important;gap:8px!important}
+.player-stat-caption{font-size:11px!important}
+.stat-mode-label{font-size:11px!important}
+</style>
