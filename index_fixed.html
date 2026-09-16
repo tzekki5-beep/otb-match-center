@@ -184,6 +184,17 @@ html,body{overflow-x:hidden}
 .other-league-panel select{min-width:310px;background:#102b2c;color:#fff;border:1px solid #527273;border-radius:10px;padding:10px 12px;font:inherit}
 @media(max-width:700px){.other-league-panel select{width:100%;min-width:0}}
 
+/* v7: pääsarjojen pelaajatilastojen pikavalinta */
+.player-stat-bar{display:flex;gap:6px;flex-wrap:wrap;padding:9px 12px;background:#071d25;border-top:1px solid #21434d;border-bottom:1px solid #21434d}
+.player-stat-btn{background:#173b3c;color:#dce9eb;border:1px solid #527273;border-radius:9px;padding:7px 9px;font-size:11px;font-weight:900;cursor:pointer}
+.player-stat-btn.active{background:#4389c8;border-color:#75aee0;color:#fff}
+.player-stat-caption{width:100%;font-size:10px;color:#8fa7ae;margin-bottom:1px}
+.player-stat-values{font-size:10px;line-height:1.2;font-weight:900;white-space:nowrap;margin-top:2px;min-height:12px}
+.player-stat-values .high{display:inline-block;padding:1px 4px;border-radius:5px;background:#4389c8;color:#fff;box-shadow:0 0 0 1px #75aee0}
+.player-stat-values .card-yellow{color:#ffd84a}.player-stat-values .card-red{color:#ff7385}
+.stat-mode-label{font-size:10px;color:#b7c9ce;margin-left:auto;align-self:center;font-weight:800}
+@media(max-width:600px){.player-stat-btn{padding:7px 8px;font-size:10px}.stat-mode-label{width:100%;margin-left:0}}
+
 </style>
 </head><body>
 
@@ -356,7 +367,7 @@ function render(){
   const list=games.filter(m=>m.league?.name===filter);
   if(!list.length){$('#out').innerHTML='<div class="status">Ei otteluita tällä päivällä tässä sarjassa.</div>';return}
   if(MAIN_SET.has(filter)){
-    $('#out').innerHTML=list.map(m=>`<section class="match"><div class="mh"><div><div class="teams">${esc(matchLabel(m))}</div><div class="lg">${esc(m.league?.name||'')}</div></div><div class="tm">${localTime(m.time_utc)}${m.status==='finished'?' · '+m.score_home+'–'+m.score_away:''}</div></div><div class="pitch" id="p${m.id.replace(/[^a-zA-Z0-9_-]/g,'')}"><div class="goal g1"></div><div class="goal g2"></div><span class="centerDot"></span><div class="players"><div class="status">Ladataan kokoonpanoa…</div></div></div><div class="note">OUT = boxin ulkopuolelta · pelaajaa painamalla näet tarkat tilastot.</div></section>`).join('');
+    $('#out').innerHTML=list.map(m=>`<section class="match"><div class="mh"><div><div class="teams">${esc(matchLabel(m))}</div><div class="lg">${esc(m.league?.name||'')}</div></div><div class="tm">${localTime(m.time_utc)}${m.status==='finished'?' · '+m.score_home+'–'+m.score_away:''}</div></div><div class="player-stat-bar" data-stat-bar="${esc(m.id)}"><div class="player-stat-caption">Pelaajien viimeiset 5 ottelua · valitse näytettävä tilasto</div><button class="player-stat-btn active" data-stat="otb">OTB / OTB kohti</button><button class="player-stat-btn" data-stat="shots">Laukaukset</button><button class="player-stat-btn" data-stat="cards">Kortit</button><button class="player-stat-btn" data-stat="fouls">Rikkeet</button><button class="player-stat-btn" data-stat="headers">Pääpallot</button><button class="player-stat-btn" data-stat="all">Kaikki laukaukset</button><span class="stat-mode-label">Viimeiset 5</span></div><div class="pitch" id="p${m.id.replace(/[^a-zA-Z0-9_-]/g,'')}"><div class="goal g1"></div><div class="goal g2"></div><span class="centerDot"></span><div class="players"><div class="status">Ladataan kokoonpanoa…</div></div></div><div class="note">OUT = boxin ulkopuolelta · pelaajaa painamalla näet tarkat tilastot.</div></section>`).join('');
     list.forEach(loadGame);
   }else{
     $('#out').innerHTML=list.map(m=>`<section class="other-match match-analysis-card" data-other-match="${esc(m.id)}"><div class="ma-head"><div class="ma-teams"><div class="ma-team">${m.home_team?.image_url?`<img class="ma-logo" src="${esc(m.home_team.image_url)}" alt="">`:''}<span>${esc(m.home_team?.name||'')}</span></div><div class="ma-vs">VS</div><div class="ma-team away"><span>${esc(m.away_team?.name||'')}</span>${m.away_team?.image_url?`<img class="ma-logo" src="${esc(m.away_team.image_url)}" alt="">`:''}</div></div><div class="ma-time">${localTime(m.time_utc)}${m.status==='finished'?' · '+m.score_home+'–'+m.score_away:''}</div></div><div class="ma-body"><div class="other-analysis"><div class="status">Lasketaan joukkueiden tilastofaktoja…</div></div></div><div class="ma-foot">📊 Perustuu PitchAPI:n viimeisiin otteluihin, joukkueiden tilastoihin ja H2H-kohtaamisiin. Ennuste on tilastollinen arvio, ei varma tulos.</div></section>`).join('');
@@ -424,7 +435,7 @@ function place(starters,home){
   });
   return pts;
 }
-function card(p,teamId,matchId,x,y){const id=pid(p);const u=img(p);return `<div class="p" data-id="${esc(id)}" data-team="${esc(teamId)}" data-match="${esc(matchId)}" style="left:${x}%;top:${y}%"><img class="face" data-pid="${esc(id)}" src="${esc(u)}" onerror="imageFallback(this)"><div class="name">${esc(pName(p))}</div><div class="nums otb" data-otb>–/–/–/–/–</div><span data-ont style="display:none"></span></div>`}
+function card(p,teamId,matchId,x,y){const id=pid(p);const u=img(p);return `<div class="p" data-id="${esc(id)}" data-team="${esc(teamId)}" data-match="${esc(matchId)}" style="left:${x}%;top:${y}%"><img class="face" data-pid="${esc(id)}" src="${esc(u)}" onerror="imageFallback(this)"><div class="name">${esc(pName(p))}</div><div class="nums otb" data-otb>–/–/–/–/–</div><div class="player-stat-values" data-player-stat-values></div><span data-ont style="display:none"></span></div>`}
 async function getLineups(id){if(lineupCache.has(id))return lineupCache.get(id);const d=await api(`matches/${id}/lineups`);lineupCache.set(id,d);return d}
 async function getMatchPlayers(id){
   if(matchPlayersCache.has(id))return matchPlayersCache.get(id);
@@ -534,7 +545,36 @@ function playerMetric(row,patterns){
 }
 function playerFouls(row){return playerMetric(row,[/foul.*committ/i,/committ.*foul/i]);}
 
-async function loadHistory(m,teamId,starters){if(!teamId)return;try{const hist=await teamMatches(teamId,m.league.name,m.time_utc);const rows=await Promise.all(hist.map(async g=>{const [shotsData,playerData,eventData]=await Promise.all([shots(g.id),getPlayerStats(g.id).catch(()=>new Map()),api(`matches/${g.id}/events`).catch(()=>({events:[]}))]);return{g,shots:shotsData,players:playerData,events:eventData?.events||[]}}));for(const p of starters){const id=pid(p);const vals=rows.map(r=>{const z=statsFor(r.shots,id);const prow=r.players.get(String(id));const fouls=playerFouls(prow);const cards=r.events.filter(e=>String(e.player?.id)===String(id)&&/card/i.test(String(e.event_type||''))).length;return{...z,fouls,cards,opp:matchLabel(r.g)}});const el=document.querySelector(`#p${m.id.replace(/[^a-zA-Z0-9_-]/g,'')} .p[data-id="${CSS.escape(String(id))}"]`);if(el){el.querySelector('[data-otb]').textContent=vals.map(v=>v.otb).join('/');const onEl=el.querySelector('[data-ont]');if(onEl)onEl.textContent=vals.map(v=>v.on).join('/');el._history=vals;window.dispatchEvent(new CustomEvent('otb-history-ready',{detail:{matchId:m.id,playerId:String(id)}}));}}}catch(e){console.warn('history',e)}}
+function statHighClass(values,i){
+  const nums=values.map(v=>Number(v)||0), max=Math.max(...nums,0), v=Number(nums[i])||0;
+  if(max>0 && v===max && v>=Math.max(3,Math.ceil(mean(nums)*1.7))) return 'high';
+  return '';
+}
+function formatPlayerStat(v,mode,i,values){
+  const n=Number(v)||0, high=statHighClass(values,i);
+  if(mode==='cards'){
+    const y=Number(v?.yellow)||0,r=Number(v?.red)||0;
+    if(r) return `<span class="${high}"><span class="card-red">🟥${r}</span></span>`;
+    if(y) return `<span class="${high}"><span class="card-yellow">🟨${y}</span></span>`;
+    return `<span class="${high}">0</span>`;
+  }
+  return `<span class="${high}">${esc(String(n))}</span>`;
+}
+function renderPlayerStat(el,mode){
+  const hist=Array.isArray(el._history)?el._history:[]; const box=el.querySelector('[data-player-stat-values]'); if(!box)return;
+  const vals=hist.map(v=>mode==='otb'?[Number(v.otb)||0,Number(v.on)||0]:mode==='shots'?(Number(v.shotOn)||0):mode==='all'?(Number(v.all)||0):mode==='fouls'?(Number(v.fouls)||0):mode==='headers'?(Number(v.headers)||0):v.cardsObj||{yellow:0,red:0});
+  if(mode==='otb'){box.innerHTML=hist.map((v,i)=>`<span class="${statHighClass(hist.map(x=>Number(x.otb)||0),i)}">${Number(v.otb)||0}/${Number(v.on)||0}</span>`).join(' · ');return;}
+  const nums=vals.map(v=>typeof v==='number'?v:0); box.innerHTML=vals.map((v,i)=>formatPlayerStat(v,mode,i,nums)).join(' · ');
+}
+function setPlayerStatMode(matchId,mode){
+  const bar=document.querySelector(`[data-stat-bar="${CSS.escape(String(matchId))}"]`); if(!bar)return;
+  bar.querySelectorAll('.player-stat-btn').forEach(b=>b.classList.toggle('active',b.dataset.stat===mode));
+  const pitch=document.querySelector(`#p${String(matchId).replace(/[^a-zA-Z0-9_-]/g,'')}`); if(!pitch)return;
+  pitch.querySelectorAll('.p').forEach(el=>renderPlayerStat(el,mode));
+  bar.dataset.mode=mode;
+}
+
+async function loadHistory(m,teamId,starters){if(!teamId)return;try{const hist=await teamMatches(teamId,m.league.name,m.time_utc);const rows=await Promise.all(hist.map(async g=>{const [shotsData,playerData,eventData]=await Promise.all([shots(g.id),getPlayerStats(g.id).catch(()=>new Map()),api(`matches/${g.id}/events`).catch(()=>({events:[]}))]);return{g,shots:shotsData,players:playerData,events:eventData?.events||[]}}));for(const p of starters){const id=pid(p);const vals=rows.map(r=>{const z=statsFor(r.shots,id);const prow=r.players.get(String(id));const fouls=playerFouls(prow);const ce=r.events.filter(e=>String(e.player?.id)===String(id)&&/card/i.test(String(e.event_type||'')));const yellow=ce.filter(e=>/yellow/i.test(String(e.event_type||''))).length;const red=ce.filter(e=>/red/i.test(String(e.event_type||''))).length;const cards=yellow+red;return{...z,fouls,cards,cardsObj:{yellow,red},opp:matchLabel(r.g)}});const el=document.querySelector(`#p${m.id.replace(/[^a-zA-Z0-9_-]/g,'')} .p[data-id="${CSS.escape(String(id))}"]`);if(el){el.querySelector('[data-otb]').textContent=vals.map(v=>v.otb+'/'+v.on).join(' · ');const onEl=el.querySelector('[data-ont]');if(onEl)onEl.textContent=vals.map(v=>v.on).join('/');el._history=vals;renderPlayerStat(el,'otb');window.dispatchEvent(new CustomEvent('otb-history-ready',{detail:{matchId:m.id,playerId:String(id)}}));}}}catch(e){console.warn('history',e)}}
 async function openPlayer(id,name,teamId,leagueName,cutoffTime){const d=$('#drawer');d.classList.remove('hidden');d.innerHTML=`<button class="x" onclick="this.parentElement.classList.add('hidden')">✕</button><h2>${esc(name)}</h2><div class="status">Haetaan viimeisiä 5 ottelua…</div>`;try{const hist=await teamMatches(teamId,leagueName,cutoffTime),vals=[];for(const g of hist){const [shotsData,playerData,eventData]=await Promise.all([shots(g.id),getPlayerStats(g.id).catch(()=>new Map()),api(`matches/${g.id}/events`).catch(()=>({events:[]}))]);const ss=statsFor(shotsData,id);const prow=playerData.get(String(id));const fouls=playerFouls(prow);const cards=(eventData?.events||[]).filter(e=>String(e.player?.id)===String(id)&&/card/i.test(String(e.event_type||''))).length;vals.push({...ss,fouls,cards,opp:matchLabel(g)})}const t=vals.reduce((a,v)=>a+v.otb,0),o=vals.reduce((a,v)=>a+v.on,0),shotOn=vals.reduce((a,v)=>a+(v.shotOn||0),0),all=vals.reduce((a,v)=>a+v.all,0),c=vals.reduce((a,v)=>a+(v.cards||0),0),h=vals.reduce((a,v)=>a+(v.headers||0),0),f=vals.reduce((a,v)=>a+(v.fouls||0),0),active=vals.filter(v=>v.otb>0).length,avg=(t/Math.max(vals.length,1)).toFixed(1),acc=t?Math.round(100*o/t):0;d.innerHTML=`<button class="x" onclick="this.parentElement.classList.add('hidden')">✕</button><h2>${esc(name)}</h2><div class="grid"><div class="stat"><b>${shotOn}</b>Laukaukset kohti</div><div class="stat"><b>${o}</b>OTB kohti</div><div class="stat"><b>${t}</b>OUT / OTB</div><div class="stat"><b>${all}</b>Lauotut</div><div class="stat"><b>${c}</b>Kortit</div><div class="stat"><b>${h}</b>Puskut</div><div class="stat"><b>${f}</b>Rikkeet</div></div><div class="mini">Viimeiset ${vals.length} ottelua · OTB-keskiarvo <b>${avg}</b>/peli · OTB kohti ${acc}% · OTB vähintään kerran ${active}/${vals.length} pelissä</div><table><thead><tr><th>Ottelu</th><th>Kohti</th><th>OTB</th><th>OTB kohti</th><th>Lauotut</th><th>Kortit</th><th>Puskut</th><th>Rikkeet</th></tr></thead><tbody>${vals.map(v=>`<tr><td>${esc(v.opp)}</td><td>${v.shotOn||0}</td><td>${v.otb}</td><td>${v.on}</td><td>${v.all}</td><td>${v.cards||0}</td><td>${v.headers||0}</td><td>${v.fouls||0}</td></tr>`).join('')}</tbody></table>`}catch(e){d.innerHTML=`<button class="x" onclick="this.parentElement.classList.add('hidden')">✕</button><h2>${esc(name)}</h2><div class="err">Tilastoja ei saatu: ${esc(e.message)}</div>`}}
 
 async function teamFormForOther(teamId,leagueName,cutoff){
@@ -656,6 +696,12 @@ async function loadOtherGame(m){
 
 $('#date').value=today();if(isPublicWorker())$('#setup').style.display='none';$('#refresh').onclick=load;
   document.addEventListener('click',e=>{
+    const statBtn=e.target.closest('.player-stat-btn');
+    if(statBtn){
+      const bar=statBtn.closest('[data-stat-bar]');
+      if(bar){setPlayerStatMode(bar.dataset.statBar,statBtn.dataset.stat);}
+      return;
+    }
     const tab=e.target.closest('.league-tab');
     if(tab){
       document.querySelectorAll('.league-tab').forEach(x=>x.classList.remove('active'));
