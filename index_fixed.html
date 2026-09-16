@@ -195,26 +195,29 @@ html,body{overflow-x:hidden}
 .stat-mode-label{font-size:10px;color:#b7c9ce;margin-left:auto;align-self:center;font-weight:800}
 @media(max-width:600px){.player-stat-btn{padding:7px 8px;font-size:10px}.stat-mode-label{width:100%;margin-left:0}}
 
-<style id="compact-player-stats-final">
-.p{width:112px!important}
-.p .name{font-size:11px!important;max-width:104px!important;padding:3px 5px!important;line-height:1.05!important}
-.p .face{width:50px!important;height:50px!important}
-.p .nums{display:block!important;font-size:10px!important;line-height:1.05!important;font-weight:900!important;white-space:nowrap!important;margin-top:2px!important;min-height:12px!important;letter-spacing:-.15px!important}
-.p .player-stat-values{display:block!important;font-size:10px!important;line-height:1.05!important;font-weight:900!important;white-space:nowrap!important;letter-spacing:-.15px!important;margin-top:2px!important;min-height:12px!important;overflow:hidden!important;width:100%!important}
-.p .player-stat-values .high{padding:1px 3px!important;border-radius:4px!important}
-@media(max-width:430px){
-  .p{width:96px!important}
-  .p .face{width:44px!important;height:44px!important}
-  .p .name{font-size:9px!important;max-width:90px!important}
-  .p .nums,.p .player-stat-values{font-size:8px!important}
-}
 </style>
-<style id="compact-player-stats-readable">
-.p{width:96px!important}
-.p .nums{display:block!important;font-size:10px!important;line-height:1.05!important;font-weight:900!important;white-space:nowrap!important;letter-spacing:-.25px!important;margin-top:2px!important;min-height:11px!important;overflow:hidden!important}
-.p .player-stat-values{display:none!important;font-size:10px!important;line-height:1.05!important;font-weight:900!important;white-space:nowrap!important;letter-spacing:-.25px!important;margin-top:2px!important;min-height:11px!important;overflow:hidden!important}
-.p .player-stat-values .high{padding:0 2px!important}
-@media(max-width:430px){.p{width:88px!important}.p .nums,.p .player-stat-values{font-size:9px!important}}
+
+<style id="final-player-stat-ui">
+.player-stat-bar{padding:11px 13px!important;gap:8px!important}
+.player-stat-caption{font-size:11px!important}
+.stat-mode-label{font-size:11px!important}
+.player-stat-btn{padding:11px 16px!important;font-size:14px!important;border-radius:11px!important}
+.p{width:118px!important}
+.p .name{font-size:12px!important;max-width:112px!important;padding:3px 5px!important;line-height:1.05!important}
+.p .face{width:52px!important;height:52px!important}
+.p .player-stat-values{display:block!important;font-size:12px!important;line-height:1.15!important;font-weight:900!important;white-space:nowrap!important;margin-top:3px!important;min-height:28px!important;overflow:visible!important;width:100%!important}
+.p .stat-line{display:flex!important;align-items:baseline!important;justify-content:center!important;gap:5px!important;min-height:14px!important}
+.p .stat-label{font-size:9px!important;opacity:.72!important;min-width:34px!important;text-align:right!important;font-weight:900!important}
+.p .stat-values{font-size:12px!important;letter-spacing:1px!important}
+.p .player-stat-values .high{padding:1px 3px!important;border-radius:4px!important}
+.player-stat-values .card-yellow,.player-stat-values .card-red{font-size:14px!important}
+@media(max-width:430px){
+  .p{width:102px!important}
+  .p .face{width:46px!important;height:46px!important}
+  .p .name{font-size:10px!important;max-width:98px!important}
+  .p .player-stat-values,.p .stat-values{font-size:10px!important}
+  .p .stat-label{font-size:8px!important;min-width:28px!important}
+}
 </style>
 </head><body>
 
@@ -440,7 +443,7 @@ function place(starters,home){
 }
 function card(p,teamId,matchId,x,y){
   const id=pid(p),key=playerKey(p),u=img(p);
-  return `<div class="p" data-id="${esc(key)}" data-player-id="${esc(id||'')}" data-player-name="${esc(pName(p))}" data-team="${esc(teamId)}" data-match="${esc(matchId)}" style="left:${x}%;top:${y}%"><img class="face" data-pid="${esc(id||'')}" src="${esc(u)}" onerror="imageFallback(this)"><div class="name">${esc(pName(p))}</div><div class="nums otb" data-otb>–/– · –/– · –/– · –/– · –/–</div><div class="player-stat-values" data-player-stat-values></div><span data-ont style="display:none"></span></div>`;
+  return `<div class="p" data-id="${esc(key)}" data-player-id="${esc(id||'')}" data-player-name="${esc(pName(p))}" data-team="${esc(teamId)}" data-match="${esc(matchId)}" style="left:${x}%;top:${y}%"><img class="face" data-pid="${esc(id||'')}" src="${esc(u)}" onerror="imageFallback(this)"><div class="name">${esc(pName(p))}</div><div class="player-stat-values" data-player-stat-values><div class="stat-line"><span class="stat-label">OTB</span><span class="stat-values">– – – – –</span></div><div class="stat-line"><span class="stat-label">KOHTI</span><span class="stat-values">– – – – –</span></div></div></div>`;
 }
 async function getLineups(id){if(lineupCache.has(id))return lineupCache.get(id);const d=await api(`matches/${id}/lineups`);lineupCache.set(id,d);return d}
 async function getMatchPlayers(id){
@@ -503,98 +506,63 @@ async function getPlayerStats(matchId){if(playerStatsCache.has(matchId))return p
 function statNumber(stat){if(!stat)return 0;if(typeof stat.value==='number')return stat.value;if(typeof stat.total==='number')return stat.total;if(typeof stat.value==='string'&&Number.isFinite(Number(stat.value)))return Number(stat.value);return 0}
 function playerMetric(row,patterns){for(const group of (row?.stats||[])){for(const [label,obj] of Object.entries(group?.stats||{})){const s=obj?.stat||obj||{},key=String(s.key||obj?.key||''),hay=(label+' '+key+' '+String(group?.key||'')).toLowerCase();if(patterns.some(re=>re.test(hay)))return statNumber(s);}}return 0}
 function playerFouls(row){return playerMetric(row,[/foul.*committ/i,/committ.*foul/i,/fouls?$/i])}
-function statHighClass(values,i){const nums=values.map(v=>Number(v)||0),max=Math.max(...nums,0),v=Number(nums[i])||0,avg=nums.length?nums.reduce((a,b)=>a+b,0)/nums.length:0;if(max>0&&v===max&&v>=Math.max(3,Math.ceil(avg*1.7)))return'high';return''}
-function formatPlayerStat(v,mode,i,values){const high=statHighClass(values,i);if(mode==='cards'){const y=Number(v?.yellow)||0,r=Number(v?.red)||0;if(r)return `<span class="${high}"><span class="card-red">🟥${r}</span></span>`;if(y)return `<span class="${high}"><span class="card-yellow">🟨${y}</span></span>`;return `<span class="${high}">0</span>`;}return `<span class="${high}">${esc(String(Number(v)||0))}</span>`}
+function statHighClass(values,i){const nums=values.map(v=>Number(v)||0),max=Math.max(...nums,0),v=Number(nums[i])||0,avg=nums.length?nums.reduce((a,b)=>a+b,0)/nums.length:0;return max>0&&v===max&&v>=Math.max(2,Math.ceil(avg*1.5))?'high':'';}
+function formatPlayerStat(v,mode,i,values){const high=statHighClass(values,i);if(mode==='cards'){const y=Number(v?.yellow)||0,r=Number(v?.red)||0;if(r)return `<span class="${high}"><span class="card-red">🟥</span></span>`;if(y)return `<span class="${high}"><span class="card-yellow">🟨</span></span>`;return `<span class="${high}">0</span>`;}return `<span class="${high}">${esc(String(Number(v)||0))}</span>`}
 function renderPlayerStat(el,mode){
-  const hist=Array.isArray(el._history)?el._history:[];
-  const box=el.querySelector('[data-player-stat-values]');
-  const legacy=el.querySelector('[data-otb]');
+  const hist=Array.isArray(el._history)?el._history:[],box=el.querySelector('[data-player-stat-values]');
   if(!box)return;
-  const otbVals=hist.map(v=>Number(v.otb)||0);
-  const onVals=hist.map(v=>Number(v.on)||0);
-
+  const otb=hist.map(v=>Number(v.otb)||0),on=hist.map(v=>Number(v.on)||0);
+  const joinVals=vals=>vals.map((v,i)=>`<span class="${statHighClass(vals,i)}">${Number(v)||0}</span>`).join(' ');
   if(mode==='otb'){
-    if(legacy){
-      legacy.style.display='block';
-      legacy.innerHTML=
-        `<span style="font-size:8px;opacity:.72;margin-right:3px">OTB</span>`+
-        hist.map((v,i)=>`<span class="${statHighClass(otbVals,i)}">${Number(v.otb)||0}</span>`).join(' ');
-    }
-    box.style.display='block';
-    box.innerHTML=
-      `<span style="font-size:8px;opacity:.72;margin-right:3px">KOHTI</span>`+
-      hist.map((v,i)=>`<span class="${statHighClass(onVals,i)}">${Number(v.on)||0}</span>`).join(' ');
+    box.innerHTML=`<div class="stat-line"><span class="stat-label">OTB</span><span class="stat-values">${joinVals(otb)}</span></div><div class="stat-line"><span class="stat-label">KOHTI</span><span class="stat-values">${joinVals(on)}</span></div>`;
     return;
   }
-
-  if(legacy)legacy.style.display='none';
-  box.style.display='block';
-
-  let vals;
-  if(mode==='shots'||mode==='all') vals=hist.map(v=>Number(v.all)||0);
-  else if(mode==='fouls') vals=hist.map(v=>Number(v.fouls)||0);
-  else if(mode==='headers') vals=hist.map(v=>Number(v.headers)||0);
-  else vals=hist.map(v=>v.cardsObj||{yellow:0,red:0});
-
-  const nums=vals.map(v=>typeof v==='number'?v:0);
-
-  if(mode==='cards'){
-    box.innerHTML=
-      `<span style="font-size:8px;opacity:.72;margin-right:3px">KORTIT</span>`+
-      vals.map((v,i)=>formatPlayerStat(v,mode,i,nums)).join(' ');
-  }else{
-    box.innerHTML=vals.map((v,i)=>formatPlayerStat(v,mode,i,nums)).join(' ');
-  }
+  let vals,label;
+  if(mode==='shots'){vals=hist.map(v=>Number(v.shotOn)||0);label='KOHTI';}
+  else if(mode==='all'){vals=hist.map(v=>Number(v.all)||0);label='LAUK';}
+  else if(mode==='fouls'){vals=hist.map(v=>Number(v.fouls)||0);label='RIKKEET';}
+  else if(mode==='headers'){vals=hist.map(v=>Number(v.headers)||0);label='PÄÄT';}
+  else{vals=hist.map(v=>v.cardsObj||{yellow:0,red:0});label='KORTIT';}
+  const body=mode==='cards'?vals.map((v,i)=>formatPlayerStat(v,mode,i,[])).join(' '):vals.map((v,i)=>formatPlayerStat(v,mode,i,vals)).join(' ');
+  box.innerHTML=`<div class="stat-line"><span class="stat-label">${label}</span><span class="stat-values">${body}</span></div>`;
 }
 function setPlayerStatMode(matchId,mode){const bar=document.querySelector(`[data-stat-bar="${CSS.escape(String(matchId))}"]`);if(!bar)return;bar.querySelectorAll('.player-stat-btn').forEach(b=>b.classList.toggle('active',b.dataset.stat===mode));const pitch=document.querySelector(`#p${String(matchId).replace(/[^a-zA-Z0-9_-]/g,'')}`);if(!pitch)return;pitch.querySelectorAll('.p').forEach(el=>renderPlayerStat(el,mode));bar.dataset.mode=mode}
 const playerMatchStatsFallbackCache=new Map();
+const matchHistoryBundleCache=new Map();
 async function getPlayerMatchStats(matchId,playerId){if(!playerId)return null;const ck=String(matchId)+':'+String(playerId);if(playerMatchStatsFallbackCache.has(ck))return playerMatchStatsFallbackCache.get(ck);try{const d=await api(`matches/${encodeURIComponent(matchId)}/players/${encodeURIComponent(playerId)}`);playerMatchStatsFallbackCache.set(ck,d||null);return d||null}catch(e){playerMatchStatsFallbackCache.set(ck,null);return null}}
 async function buildTeamHistoryRows(hist){
   return Promise.all(hist.map(async g=>{
-    const [shotsData,bulkPlayers,eventData]=await Promise.all([
-      shots(g.id).catch(()=>[]),
-      getPlayerStats(g.id).catch(()=>new Map()),
-      api(`matches/${g.id}/events`).catch(()=>({events:[]}))
-    ]);
-    return {g,shots:shotsData,players:bulkPlayers,events:Array.isArray(eventData?.events)?eventData.events:[]};
+    const ck=String(g.id);
+    if(matchHistoryBundleCache.has(ck))return matchHistoryBundleCache.get(ck);
+    const promise=(async()=>{
+      const [shotsData,bulkPlayers,eventData]=await Promise.all([shots(g.id).catch(()=>[]),getPlayerStats(g.id).catch(()=>new Map()),api(`matches/${g.id}/events`).catch(()=>({events:[]}))]);
+      return {g,shots:shotsData,players:bulkPlayers,events:Array.isArray(eventData?.events)?eventData.events:[]};
+    })();
+    matchHistoryBundleCache.set(ck,promise);
+    return promise;
   }));
 }
 async function buildHistoryRows(rows,playerRef){
   const refId=typeof playerRef==='object'?pid(playerRef):playerRef,refName=typeof playerRef==='object'?pName(playerRef):'';
-  return Promise.all(rows.map(async r=>{
-    let prow=findPlayerRow(r.players,playerRef);
-    if(!prow&&refId) prow=await getPlayerMatchStats(r.g.id,refId);
-    const z=statsFor(r.shots,playerRef),events=r.events||[];
+  return rows.map(r=>{
+    const prow=findPlayerRow(r.players,playerRef),z=statsFor(r.shots,playerRef),events=r.events||[];
     const ce=events.filter(e=>{
-      const eid=e?.player?.id??e?.player_id??e?.playerId;
-      const en=e?.player?.name??e?.player_name;
-      const byId=refId!=null&&eid!=null&&String(eid)===String(refId);
-      const byName=refName&&en&&normName(en)===normName(refName);
-      return (byId||byName)&&/card/i.test(String(e?.event_type||e?.type||''));
+      const eid=e?.player?.id??e?.player_id??e?.playerId,en=e?.player?.name??e?.player_name??e?.playerName;
+      const byId=refId!=null&&eid!=null&&String(eid)===String(refId),byName=refName&&en&&normName(en)===normName(refName);
+      return (byId||byName)&&/^(yellowcard|redcard|yellow card|red card|second yellow|second_yellow)$/i.test(String(e?.event_type||e?.type||''));
     });
-    const yellow=ce.filter(e=>/yellow/i.test(String(e?.event_type||e?.type||''))).length;
-    const red=ce.filter(e=>/red/i.test(String(e?.event_type||e?.type||''))).length;
-    return {...z,fouls:playerMetric(prow,[/foul.*committ/i,/committ.*foul/i,/fouls?$/i]),cards:yellow+red,cardsObj:{yellow,red},opp:matchLabel(r.g),matchId:r.g.id,played:!!prow};
-  }));
+    const yellow=ce.filter(e=>/yellow/i.test(String(e?.event_type||e?.type||''))).length,red=ce.filter(e=>/red/i.test(String(e?.event_type||e?.type||''))).length;
+    return {...z,fouls:playerMetric(prow,[/fouls?_committed/i,/foul.*committ/i,/committ.*foul/i,/fouls?$/i]),cards:yellow+red,cardsObj:{yellow,red},opp:matchLabel(r.g),matchId:r.g.id,played:!!prow};
+  });
 }
 async function loadHistory(m,teamId,starters){
   if(!teamId||!Array.isArray(starters)||!starters.length)return;
   try{
-    const hist=await teamMatches(teamId,m.league.name,m.time_utc);
-    const rows=await buildTeamHistoryRows(hist);
-    const pitchId=`#p${m.id.replace(/[^a-zA-Z0-9_-]/g,'')}`;
+    const hist=await teamMatches(teamId,m.league.name,m.time_utc),rows=await buildTeamHistoryRows(hist),pitchId=`#p${m.id.replace(/[^a-zA-Z0-9_-]/g,'')}`;
     await Promise.all(starters.map(async p=>{
-      const key=playerKey(p);
-      let vals=[];
-      try{vals=await buildHistoryRows(rows,p)}catch(e){
-        console.warn('player history',key,e);
-        vals=hist.map(g=>({otb:0,on:0,shotOn:0,all:0,headers:0,shots:[],fouls:0,cards:0,cardsObj:{yellow:0,red:0},opp:matchLabel(g),matchId:g.id,played:false}));
-      }
-      const el=document.querySelector(`${pitchId} .p[data-id="${CSS.escape(key)}"]`);
-      if(!el)return;
-      el._history=vals;
-      renderPlayerStat(el,'otb');
-      window.dispatchEvent(new CustomEvent('otb-history-ready',{detail:{matchId:m.id,playerId:String(pid(p)||key)}}));
+      const key=playerKey(p);let vals=[];
+      try{vals=await buildHistoryRows(rows,p);}catch(e){console.warn('player history',key,e);vals=hist.map(g=>({otb:0,on:0,shotOn:0,all:0,headers:0,shots:[],fouls:0,cards:0,cardsObj:{yellow:0,red:0},opp:matchLabel(g),matchId:g.id,played:false}));}
+      const el=document.querySelector(`${pitchId} .p[data-id="${CSS.escape(key)}"]`);if(!el)return;el._history=vals;renderPlayerStat(el,'otb');window.dispatchEvent(new CustomEvent('otb-history-ready',{detail:{matchId:m.id,playerId:String(pid(p)||key)}}));
     }));
   }catch(e){console.warn('history',e)}
 }
@@ -959,8 +927,3 @@ $('#date').value=today();if(isPublicWorker())$('#setup').style.display='none';$(
 
 </body></html>
 
-<style id="final-ui-tuning">
-.player-stat-bar{padding:11px 13px!important;gap:8px!important}
-.player-stat-caption{font-size:11px!important}
-.stat-mode-label{font-size:11px!important}
-</style>
