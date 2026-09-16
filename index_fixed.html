@@ -202,6 +202,13 @@ html,body{overflow-x:hidden}
 @media(max-width:430px){.p{width:84px}.p .player-stat-values{font-size:6.5px!important}}
 .p .nums{display:block!important;font-size:7px!important;line-height:1!important;font-weight:800!important;white-space:nowrap!important;margin-top:1px!important;min-height:9px!important}.p .player-stat-values{display:none;font-size:7px!important;line-height:1!important;white-space:nowrap!important;margin-top:1px!important;min-height:9px!important;overflow:hidden!important;width:100%!important}.p{width:92px}@media(max-width:430px){.p{width:84px}.p .nums,.p .player-stat-values{font-size:6.5px!important}}
 </style>
+<style id="compact-player-stats-readable">
+.p{width:96px!important}
+.p .nums{display:block!important;font-size:10px!important;line-height:1.05!important;font-weight:900!important;white-space:nowrap!important;letter-spacing:-.25px!important;margin-top:2px!important;min-height:11px!important;overflow:hidden!important}
+.p .player-stat-values{display:none!important;font-size:10px!important;line-height:1.05!important;font-weight:900!important;white-space:nowrap!important;letter-spacing:-.25px!important;margin-top:2px!important;min-height:11px!important;overflow:hidden!important}
+.p .player-stat-values .high{padding:0 2px!important}
+@media(max-width:430px){.p{width:88px!important}.p .nums,.p .player-stat-values{font-size:9px!important}}
+</style>
 </head><body>
 
 <div style="margin:8px 0;padding:8px 10px;border-radius:9px;background:rgba(16,43,44,.75);font-size:12px;opacity:.85">
@@ -510,18 +517,54 @@ function renderPlayerStat(el,mode){
 function setPlayerStatMode(matchId,mode){const bar=document.querySelector(`[data-stat-bar="${CSS.escape(String(matchId))}"]`);if(!bar)return;bar.querySelectorAll('.player-stat-btn').forEach(b=>b.classList.toggle('active',b.dataset.stat===mode));const pitch=document.querySelector(`#p${String(matchId).replace(/[^a-zA-Z0-9_-]/g,'')}`);if(!pitch)return;pitch.querySelectorAll('.p').forEach(el=>renderPlayerStat(el,mode));bar.dataset.mode=mode}
 const playerMatchStatsFallbackCache=new Map();
 async function getPlayerMatchStats(matchId,playerId){if(!playerId)return null;const ck=String(matchId)+':'+String(playerId);if(playerMatchStatsFallbackCache.has(ck))return playerMatchStatsFallbackCache.get(ck);try{const d=await api(`matches/${encodeURIComponent(matchId)}/players/${encodeURIComponent(playerId)}`);playerMatchStatsFallbackCache.set(ck,d||null);return d||null}catch(e){playerMatchStatsFallbackCache.set(ck,null);return null}}
-async function buildHistoryRows(hist,playerRef){
-  const refId=typeof playerRef==='object'?pid(playerRef):playerRef,refName=typeof playerRef==='object'?pName(playerRef):'';
+async function buildTeamHistoryRows(hist){
   return Promise.all(hist.map(async g=>{
-    const [shotsData,bulkPlayers,eventData]=await Promise.all([shots(g.id).catch(()=>[]),getPlayerStats(g.id).catch(()=>new Map()),api(`matches/${g.id}/events`).catch(()=>({events:[]}))]);
-    let prow=findPlayerRow(bulkPlayers,playerRef);if(!prow&&refId)prow=await getPlayerMatchStats(g.id,refId);
-    const z=statsFor(shotsData,playerRef),events=Array.isArray(eventData?.events)?eventData.events:[],ce=events.filter(e=>{const eid=e?.player?.id??e?.player_id??e?.playerId;const en=e?.player?.name??e?.player_name;const matchId=refId!=null&&eid!=null&&String(eid)===String(refId);const matchName=refName&&en&&normName(en)===normName(refName);return (matchId||matchName)&&/card/i.test(String(e?.event_type||e?.type||''));});
-    const yellow=ce.filter(e=>/yellow/i.test(String(e?.event_type||e?.type||''))).length,red=ce.filter(e=>/red/i.test(String(e?.event_type||e?.type||''))).length;
-    return{...z,fouls:playerFouls(prow),cards:yellow+red,cardsObj:{yellow,red},opp:matchLabel(g),matchId:g.id,played:!!prow};
+    const [shotsData,bulkPlayers,eventData]=await Promise.all([
+      shots(g.id).catch(()=>[]),
+      getPlayerStats(g.id).catch(()=>new Map()),
+      api(`matches/${g.id}/events`).catch(()=>({events:[]}))
+    ]);
+    return {g,shots:shotsData,players:bulkPlayers,events:Array.isArray(eventData?.events)?eventData.events:[]};
+  }));
+}
+async function buildHistoryRows(rows,playerRef){
+  const refId=typeof playerRef==='object'?pid(playerRef):playerRef,refName=typeof playerRef==='object'?pName(playerRef):'';
+  return Promise.all(rows.map(async r=>{
+    let prow=findPlayerRow(r.players,playerRef);
+    if(!prow&&refId) prow=await getPlayerMatchStats(r.g.id,refId);
+    const z=statsFor(r.shots,playerRef),events=r.events||[];
+    const ce=events.filter(e=>{
+      const eid=e?.player?.id??e?.player_id??e?.playerId;
+      const en=e?.player?.name??e?.player_name;
+      const byId=refId!=null&&eid!=null&&String(eid)===String(refId);
+      const byName=refName&&en&&normName(en)===normName(refName);
+      return (byId||byName)&&/card/i.test(String(e?.event_type||e?.type||''));
+    });
+    const yellow=ce.filter(e=>/yellow/i.test(String(e?.event_type||e?.type||''))).length;
+    const red=ce.filter(e=>/red/i.test(String(e?.event_type||e?.type||''))).length;
+    return {...z,fouls:playerMetric(prow,[/foul.*committ/i,/committ.*foul/i,/fouls?$/i]),cards:yellow+red,cardsObj:{yellow,red},opp:matchLabel(r.g),matchId:r.g.id,played:!!prow};
   }));
 }
 async function loadHistory(m,teamId,starters){
-  if(!teamId)return;try{const hist=await teamMatches(teamId,m.league.name,m.time_utc);await Promise.all(starters.map(async p=>{const key=playerKey(p);let vals=[];try{vals=await buildHistoryRows(hist,p)}catch(e){console.warn('player history',key,e);vals=hist.map(g=>({otb:0,on:0,shotOn:0,all:0,headers:0,shots:[],fouls:0,cards:0,cardsObj:{yellow:0,red:0},opp:matchLabel(g),matchId:g.id,played:false}));}const sel=`#p${m.id.replace(/[^a-zA-Z0-9_-]/g,'')} .p[data-id="${CSS.escape(key)}"]`,el=document.querySelector(sel);if(!el)return;const otbEl=el.querySelector('[data-otb]');if(otbEl)otbEl.textContent=vals.map(v=>(Number(v.otb)||0)+'/'+(Number(v.on)||0)).join(' · ');const onEl=el.querySelector('[data-ont]');if(onEl)onEl.textContent=vals.map(v=>Number(v.on)||0).join('/');el._history=vals;renderPlayerStat(el,'otb');window.dispatchEvent(new CustomEvent('otb-history-ready',{detail:{matchId:m.id,playerId:String(pid(p)||key)}}));}));}catch(e){console.warn('history',e)}
+  if(!teamId||!Array.isArray(starters)||!starters.length)return;
+  try{
+    const hist=await teamMatches(teamId,m.league.name,m.time_utc);
+    const rows=await buildTeamHistoryRows(hist);
+    const pitchId=`#p${m.id.replace(/[^a-zA-Z0-9_-]/g,'')}`;
+    await Promise.all(starters.map(async p=>{
+      const key=playerKey(p);
+      let vals=[];
+      try{vals=await buildHistoryRows(rows,p)}catch(e){
+        console.warn('player history',key,e);
+        vals=hist.map(g=>({otb:0,on:0,shotOn:0,all:0,headers:0,shots:[],fouls:0,cards:0,cardsObj:{yellow:0,red:0},opp:matchLabel(g),matchId:g.id,played:false}));
+      }
+      const el=document.querySelector(`${pitchId} .p[data-id="${CSS.escape(key)}"]`);
+      if(!el)return;
+      el._history=vals;
+      renderPlayerStat(el,'otb');
+      window.dispatchEvent(new CustomEvent('otb-history-ready',{detail:{matchId:m.id,playerId:String(pid(p)||key)}}));
+    }));
+  }catch(e){console.warn('history',e)}
 }
 async function openPlayer(id,name,teamId,leagueName,cutoffTime){const d=$('#drawer');d.classList.remove('hidden');d.innerHTML=`<button class="x" onclick="this.parentElement.classList.add('hidden')">✕</button><h2>${esc(name)}</h2><div class="status">Haetaan viimeisiä 5 ottelua…</div>`;try{const hist=await teamMatches(teamId,leagueName,cutoffTime),ref={id:id||null,name},vals=await buildHistoryRows(hist,ref),t=vals.reduce((a,v)=>a+v.otb,0),o=vals.reduce((a,v)=>a+v.on,0),shotOn=vals.reduce((a,v)=>a+(v.shotOn||0),0),all=vals.reduce((a,v)=>a+v.all,0),c=vals.reduce((a,v)=>a+(v.cards||0),0),h=vals.reduce((a,v)=>a+(v.headers||0),0),f=vals.reduce((a,v)=>a+(v.fouls||0),0),active=vals.filter(v=>v.otb>0).length,avg=(t/Math.max(vals.length,1)).toFixed(1),acc=t?Math.round(100*o/t):0;d.innerHTML=`<button class="x" onclick="this.parentElement.classList.add('hidden')">✕</button><h2>${esc(name)}</h2><div class="grid"><div class="stat"><b>${shotOn}</b>Laukaukset kohti</div><div class="stat"><b>${o}</b>OTB kohti</div><div class="stat"><b>${t}</b>OUT / OTB</div><div class="stat"><b>${all}</b>Lauotut</div><div class="stat"><b>${c}</b>Kortit</div><div class="stat"><b>${h}</b>Puskut</div><div class="stat"><b>${f}</b>Rikkeet</div></div><div class="mini">Viimeiset ${vals.length} ottelua · OTB-keskiarvo <b>${avg}</b>/peli · OTB kohti ${acc}% · OTB vähintään kerran ${active}/${vals.length} pelissä</div><table><thead><tr><th>Ottelu</th><th>Kohti</th><th>OTB</th><th>OTB kohti</th><th>Lauotut</th><th>Kortit</th><th>Puskut</th><th>Rikkeet</th></tr></thead><tbody>${vals.map(v=>`<tr><td>${esc(v.opp)}</td><td>${v.shotOn||0}</td><td>${v.otb}</td><td>${v.on}</td><td>${v.all}</td><td>${v.cards||0}</td><td>${v.headers||0}</td><td>${v.fouls||0}</td></tr>`).join('')}</tbody></table>`}catch(e){d.innerHTML=`<button class="x" onclick="this.parentElement.classList.add('hidden')">✕</button><h2>${esc(name)}</h2><div class="err">Tilastoja ei saatu: ${esc(e.message)}</div>`}}
 
