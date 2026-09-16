@@ -6,7 +6,7 @@
 <style>
 :root{--bg:#071120;--card:#0d1a2e;--line:#29405f;--txt:#edf4ff;--muted:#93a8c5;--accent:#4389c8;--good:#39c98b;--bad:#ff7385}
 *{box-sizing:border-box}body{margin:0;background:var(--bg);color:var(--txt);font-family:system-ui,-apple-system,Segoe UI,Roboto,sans-serif}header{padding:18px 15px 13px;background:#081323;position:sticky;top:0;z-index:5;border-bottom:1px solid var(--line)}h1{font-size:27px;margin:0}.sub{color:var(--muted);margin-top:4px;line-height:1.35}.controls{display:flex;gap:8px;flex-wrap:wrap;margin-top:14px}button,input[type=date],input[type=password]{font:inherit;background:#102039;color:var(--txt);border:1px solid #2b4565;border-radius:12px;padding:10px 13px}button.active{background:var(--accent)}main{max-width:1150px;margin:auto;padding:15px}.status{color:var(--muted);margin-bottom:12px}.err{background:#391722;color:#ffbcc6;border:1px solid #713544;padding:12px;border-radius:12px}.setup{background:#0d1a2e;border:1px solid #29405f;border-radius:16px;padding:15px;margin-bottom:14px}.setup input{width:100%;margin:8px 0}.setup .row{display:flex;gap:8px}.setup .row button{flex:1}.ok{color:var(--good)}
-.match{background:#061c24;border:1px solid #173b45;border-radius:15px;margin:14px 0;overflow:hidden}.mh{padding:13px 14px;border-bottom:1px solid #21434d;display:flex;justify-content:space-between;gap:10px;background:#061a22}.teams{font-weight:800;font-size:16px}.lg{font-size:12px;color:#8fa7ae;margin-top:3px}.tm{white-space:nowrap;color:#d5e1e5;font-weight:700}.pitch{margin:0;background:#06252c;border:0;border-radius:0;min-height:900px;padding:0;position:relative;overflow:hidden}.pitch:before{content:"";position:absolute;left:50%;top:0;bottom:0;border-left:3px solid #d9e1e455}.pitch:after{content:"";position:absolute;width:112px;height:112px;border:3px solid #d9e1e455;border-radius:50%;left:calc(50% - 56px);top:calc(50% - 56px)}.pitch .centerDot{display:block;position:absolute;width:10px;height:10px;border-radius:50%;background:#dfe6e7;left:calc(50% - 5px);top:calc(50% - 5px);z-index:0}.goal{position:absolute;left:15%;right:15%;height:20%;border:3px solid #d9e1e455;background:transparent}.g1{top:0}.g2{bottom:0}.pitch .goal:after{content:"";position:absolute;left:24%;right:24%;height:48%;border:3px solid #d9e1e455}.g1:after{bottom:-3px}.g2:after{top:-3px}.players{position:relative;z-index:1;height:900px;width:100%}.p{text-align:center;width:92px;cursor:pointer;position:absolute;transform:translate(-50%,-50%);filter:drop-shadow(0 2px 2px #0009)}.face{width:52px;height:52px;border-radius:50%;object-fit:cover;background:#dbe5e8;border:3px solid #f2f4f4;display:block;margin:0 auto 2px}.name{display:inline-block;background:#06141b;color:#f2f5f6;border-radius:5px;padding:2px 4px;font-size:9px;font-weight:800;line-height:1.05;max-width:82px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}.nums{display:block!important;font-size:7px!important;line-height:1!important;font-weight:800!important;white-space:nowrap!important;margin-top:1px!important;min-height:9px!important}.otb{color:#eef4f5}.ont{color:#b9d6df}.note{padding:9px 14px 12px;color:#8fa7ae;font-size:12px;background:#061a22}.drawer{position:fixed;left:0;right:0;bottom:0;z-index:20;background:#061a22;border-top:1px solid #3a5962;border-radius:20px 20px 0 0;max-height:82vh;overflow:auto;padding:18px;box-shadow:0 -20px 60px #000b}.x{float:right}.grid{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin:14px 0}.stat{background:#0b2832;border:1px solid #2a4d57;border-radius:12px;padding:9px;text-align:center}.stat b{font-size:20px;display:block}table{width:100%;border-collapse:collapse;font-size:12px}td,th{padding:7px;border-bottom:1px solid #263f48;text-align:center}td:first-child,th:first-child{text-align:left}.hidden{display:none}
+.match{background:#061c24;border:1px solid #173b45;border-radius:15px;margin:14px 0;overflow:hidden}.mh{padding:13px 14px;border-bottom:1px solid #21434d;display:flex;justify-content:space-between;gap:10px;background:#061a22}.teams{font-weight:800;font-size:16px}.lg{font-size:12px;color:#8fa7ae;margin-top:3px}.tm{white-space:nowrap;color:#d5e1e5;font-weight:700}.pitch{margin:0;background:#06252c;border:0;border-radius:0;min-height:900px;padding:0;position:relative;overflow:hidden}.pitch:before{content:"";position:absolute;left:50%;top:0;bottom:0;border-left:3px solid #d9e1e455}.pitch:after{content:"";position:absolute;width:112px;height:112px;border:3px solid #d9e1e455;border-radius:50%;left:calc(50% - 56px);top:calc(50% - 56px)}.pitch .centerDot{display:block;position:absolute;width:10px;height:10px;border-radius:50%;background:#dfe6e7;left:calc(50% - 5px);top:calc(50% - 5px);z-index:0}.goal{position:absolute;left:15%;right:15%;height:20%;border:3px solid #d9e1e455;background:transparent}.g1{top:0}.g2{bottom:0}.pitch .goal:after{content:"";position:absolute;left:24%;right:24%;height:48%;border:3px solid #d9e1e455}.g1:after{bottom:-3px}.g2:after{top:-3px}.players{position:relative;z-index:1;height:900px;width:100%}.p{text-align:center;width:92px;cursor:pointer;position:absolute;transform:translate(-50%,-50%);filter:drop-shadow(0 2px 2px #0009)}.face{width:52px;height:52px;border-radius:50%;object-fit:cover;background:#dbe5e8;border:3px solid #f2f4f4;display:block;margin:0 auto 2px}.name{display:inline-block;background:#06141b;color:#f2f5f6;border-radius:5px;padding:2px 4px;font-size:9px;font-weight:800;line-height:1.05;max-width:82px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}.otb{color:#eef4f5}.ont{color:#b9d6df}.note{padding:9px 14px 12px;color:#8fa7ae;font-size:12px;background:#061a22}.drawer{position:fixed;left:0;right:0;bottom:0;z-index:20;background:#061a22;border-top:1px solid #3a5962;border-radius:20px 20px 0 0;max-height:82vh;overflow:auto;padding:18px;box-shadow:0 -20px 60px #000b}.x{float:right}.grid{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin:14px 0}.stat{background:#0b2832;border:1px solid #2a4d57;border-radius:12px;padding:9px;text-align:center}.stat b{font-size:20px;display:block}table{width:100%;border-collapse:collapse;font-size:12px}td,th{padding:7px;border-bottom:1px solid #263f48;text-align:center}td:first-child,th:first-child{text-align:left}.hidden{display:none}
 @media(max-width:430px){.pitch{min-height:820px;padding:0}.players{height:820px}.p{width:84px}.face{width:44px;height:44px}.name{font-size:8px;max-width:76px}.player-stat-values{font-size:6.5px}}
 @media(min-width:780px){.match{display:inline-block;vertical-align:top;width:calc(50% - 8px);margin-right:8px}}
 
@@ -202,21 +202,21 @@ html,body{overflow-x:hidden}
 .player-stat-caption{font-size:11px!important}
 .stat-mode-label{font-size:11px!important}
 .player-stat-btn{padding:11px 16px!important;font-size:14px!important;border-radius:11px!important}
-.p{width:118px!important}
-.p .name{font-size:12px!important;max-width:112px!important;padding:3px 5px!important;line-height:1.05!important}
-.p .face{width:52px!important;height:52px!important}
-.p .player-stat-values{display:block!important;font-size:12px!important;line-height:1.15!important;font-weight:900!important;white-space:nowrap!important;margin-top:3px!important;min-height:28px!important;overflow:visible!important;width:100%!important}
-.p .stat-line{display:flex!important;align-items:baseline!important;justify-content:center!important;gap:5px!important;min-height:14px!important}
-.p .stat-label{font-size:9px!important;opacity:.72!important;min-width:34px!important;text-align:right!important;font-weight:900!important}
-.p .stat-values{font-size:12px!important;letter-spacing:1px!important}
+.p{width:124px!important}
+.p .name{font-size:14px!important;max-width:122px!important;padding:4px 6px!important;line-height:1.05!important}
+.p .face{width:54px!important;height:54px!important}
+.p .player-stat-values{display:block!important;font-size:13px!important;line-height:1.18!important;font-weight:900!important;white-space:nowrap!important;margin-top:4px!important;min-height:30px!important;overflow:visible!important;width:100%!important}
+.p .stat-line{display:flex!important;align-items:baseline!important;justify-content:center!important;gap:5px!important;min-height:15px!important}
+.p .stat-label{font-size:10px!important;opacity:.72!important;min-width:38px!important;text-align:right!important;font-weight:900!important}
+.p .stat-values{font-size:13px!important;letter-spacing:1px!important}
 .p .player-stat-values .high{padding:1px 3px!important;border-radius:4px!important}
-.player-stat-values .card-yellow,.player-stat-values .card-red{font-size:14px!important}
+.player-stat-values .card-yellow,.player-stat-values .card-red{font-size:15px!important}
 @media(max-width:430px){
-  .p{width:102px!important}
-  .p .face{width:46px!important;height:46px!important}
-  .p .name{font-size:10px!important;max-width:98px!important}
-  .p .player-stat-values,.p .stat-values{font-size:10px!important}
-  .p .stat-label{font-size:8px!important;min-width:28px!important}
+  .p{width:108px!important}
+  .p .face{width:48px!important;height:48px!important}
+  .p .name{font-size:11.5px!important;max-width:106px!important}
+  .p .player-stat-values,.p .stat-values{font-size:11.5px!important}
+  .p .stat-label{font-size:8.5px!important;min-width:30px!important}
 }
 </style>
 </head><body>
@@ -252,7 +252,7 @@ html,body{overflow-x:hidden}
     <input id="v20Search" placeholder="🔎 Hae pelaajaa..." />
   </div>
   <div class="v20-section v20-days">
-    <div class="v20-title">📅 Ottelupäivät</div>
+    <div class="v20-title">📅 Tulevat ottelupäivät</div>
     <div id="v20Days" class="v20-days-row"></div>
   </div>
   <div class="v20-section" style="display:none">
@@ -355,7 +355,14 @@ async function loadLeagueDateIndex(leagueName){
   box.innerHTML='<div class="status">Ladataan sarjan ottelupäiviä…</div>';
   try{
     const d=await api(`leagues/${encodeURIComponent(lm.id)}/matches?status=all`);
-    const dates=[...new Set((d.matches||[]).map(m=>m.date||String(m.time_utc||'').slice(0,10)).filter(Boolean))].sort();
+    // Näytä vain tästä päivästä eteenpäin kaikki sarjan saatavilla olevat ottelupäivät.
+    // Ei vanhoja päiviä, eikä keinotekoista 7 päivän rajaa.
+    const todayIso=today();
+    // Only today and future fixtures; PitchAPI returns the current season fixtures when status=all.
+    const dates=[...new Set((d.matches||[])
+      .map(m=>m.date||String(m.time_utc||'').slice(0,10))
+      .filter(Boolean)
+      .filter(iso=>iso>=todayIso))].sort();
     window.__leagueDates=dates;
     renderLeagueDates(document.querySelector('#date')?.value||today());
   }catch(e){box.innerHTML='<div class="status">Ottelupäiviä ei saatu ladattua.</div>';console.warn(e)}
@@ -773,15 +780,12 @@ $('#date').value=today();if(isPublicWorker())$('#setup').style.display='none';$(
     cards.forEach(c=>{
       const img=c.querySelector("[data-pid]")||c.querySelector("img");
       const id=img?.dataset?.pid||"";
-      const txt=c.innerText||"";
-      const lines=txt.split(/\n+/).map(x=>x.trim()).filter(Boolean);
-      if(!id && !lines.length)return;
-      const name=lines.find(x=>x && !/^[0-9/]+$/.test(x))||"Pelaaja";
-      const nums=lines.filter(x=>/^[0-9/]+$/.test(x));
-      const vals=(nums[0]||"").split("/").map(Number).filter(Number.isFinite);
-      const hiddenOn=(c.querySelector('[data-ont]')?.textContent||""); const on=(hiddenOn||nums[1]||"").split("/").map(Number).filter(Number.isFinite);
       const hist=Array.isArray(c._history)?c._history:[];
-      const all=hist.length?hist.map(v=>Number(v.all)||0):[];
+      if(!id && !hist.length)return;
+      const name=c.dataset.playerName||c.querySelector('.name')?.textContent||"Pelaaja";
+      const vals=hist.map(v=>Number(v.otb)||0);
+      const on=hist.map(v=>Number(v.on)||0);
+      const all=hist.map(v=>Number(v.all)||0);
       out.push({id,name,values:vals,total:vals.reduce((a,b)=>a+b,0),onTotal:on.reduce((a,b)=>a+b,0),allTotal:all.reduce((a,b)=>a+b,0),games:vals.length,avg:mean(vals),onAvg:mean(on)});
     });
     return out;
@@ -797,30 +801,6 @@ $('#date').value=today();if(isPublicWorker())$('#setup').style.display='none';$(
   $("v20Search")?.addEventListener("input",refresh);
   window.addEventListener("otb-history-ready",()=>setTimeout(refresh,50));
 
-  // Seven-day date navigator: 3 days back + today + 3 days forward.
-  function isoLocal(d){
-    const x=new Date(d); x.setHours(12,0,0,0);
-    return new Date(x-x.getTimezoneOffset()*60000).toISOString().slice(0,10);
-  }
-  function setAppDate(iso){
-    const el=document.querySelector('input[type="date"]');
-    if(!el)return; el.value=iso;
-    el.dispatchEvent(new Event("change",{bubbles:true}));
-    el.dispatchEvent(new Event("input",{bubbles:true}));
-    renderDays(iso);
-  }
-  function renderDays(active){
-    const box=$("v20Days"); if(!box)return;
-    const base=new Date((active||document.querySelector('input[type="date"]')?.value||new Date().toISOString().slice(0,10))+"T12:00:00");
-    box.innerHTML='';
-    for(let i=-3;i<=3;i++){
-      const d=new Date(base); d.setDate(base.getDate()+i); const iso=isoLocal(d);
-      const label=i===0?'Tänään':d.toLocaleDateString('fi-FI',{weekday:'short'});
-      const date=d.toLocaleDateString('fi-FI',{day:'2-digit',month:'2-digit'});
-      const b=document.createElement('button'); b.className='v20-day'+(iso===active?' active':'');
-      b.innerHTML=`${label}<small>${date}</small>`; b.onclick=()=>setAppDate(iso); box.appendChild(b);
-    }
-  }
   // v4: date buttons are populated from the selected league's full season fixture list.
   document.querySelector('input[type="date"]')?.addEventListener('change',e=>{ if(window.__leagueDates) renderLeagueDates(e.target.value); });
   document.querySelectorAll('.f').forEach(btn=>btn.addEventListener('click',()=>{const sel=$("v20League"); if(sel)sel.value=btn.dataset.l==='ALL'?'':btn.dataset.l;}));
@@ -899,13 +879,12 @@ $('#date').value=today();if(isPublicWorker())$('#setup').style.display='none';$(
     cards.forEach((c,idx)=>{
       const img=c.querySelector("[data-pid]")||c.querySelector("img");
       const id=img?.dataset?.pid||"";
-      const lines=(c.innerText||"").split(/\n+/).map(x=>x.trim()).filter(Boolean);
-      const nums=lines.filter(x=>/^[0-9/]+$/.test(x));
-      const name=lines.find(x=>x&&!/^[0-9/]+$/.test(x))||"Pelaaja";
-      const vals=(nums[0]||"").split("/").map(Number).filter(Number.isFinite);
-      const hiddenOn=(c.querySelector('[data-ont]')?.textContent||""); const on=(hiddenOn||nums[1]||"").split("/").map(Number).filter(Number.isFinite);
       const hist=Array.isArray(c._history)?c._history:[];
-      const all=hist.length?hist.map(v=>Number(v.all)||0):[];
+      if(!id && !hist.length)return;
+      const name=c.dataset.playerName||c.querySelector('.name')?.textContent||"Pelaaja";
+      const vals=hist.map(v=>Number(v.otb)||0);
+      const on=hist.map(v=>Number(v.on)||0);
+      const all=hist.map(v=>Number(v.all)||0);
       // Infer side from vertical position relative to pitch center.
       const r=c.getBoundingClientRect(), pr=document.querySelector(".pitch")?.getBoundingClientRect();
       let side="";
