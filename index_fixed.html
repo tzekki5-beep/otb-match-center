@@ -217,7 +217,15 @@ html,body{overflow-x:hidden}
 .shot-summary{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:7px}.shot-summary .stat{padding:8px}.shot-summary .stat b{font-size:18px}.player-metric-grid{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:7px;margin:10px 0}.player-metric{background:#0b2832;border:1px solid #294b55;border-radius:9px;padding:8px}.player-metric b{display:block;font-size:16px}.player-metric span{font-size:10px;color:#9fb5bd}.raw-group{margin:10px 0}.raw-title{font-weight:900;font-size:13px;margin-bottom:6px}.raw-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:6px}.raw-item{background:#0b2832;border-radius:8px;padding:7px;font-size:11px}.raw-item b{float:right}.drawer-table{font-size:11px}.drawer-table td,.drawer-table th{padding:6px 5px}.drawer-note{font-size:10px;color:#8fa7ae;margin-top:7px}
 @media(max-width:650px){.shotmap-wrap{grid-template-columns:1fr}.player-metric-grid{grid-template-columns:repeat(2,minmax(0,1fr))}}
 </style>
-<style id="lineup-status-ui">.lineup-status{position:absolute;left:50%;top:8px;transform:translateX(-50%);z-index:3;background:#071b22dd;border:1px solid #527273;border-radius:9px;padding:6px 10px;font-size:11px;font-weight:800;white-space:nowrap;max-width:92%;overflow:hidden;text-overflow:ellipsis;text-align:center}.lineup-status.predicted{color:#ffd84a;border-color:#806d24}.lineup-status.official{color:#39c98b;border-color:#2b7859}@media(max-width:600px){.lineup-status{font-size:9px;padding:5px 7px;top:5px}}</style></head><body>
+<style id="lineup-status-ui">.lineup-status{position:absolute;left:50%;top:8px;transform:translateX(-50%);z-index:3;background:#071b22dd;border:1px solid #527273;border-radius:9px;padding:6px 10px;font-size:11px;font-weight:800;white-space:nowrap;max-width:92%;overflow:hidden;text-overflow:ellipsis;text-align:center}.lineup-status.predicted{color:#ffd84a;border-color:#806d24}.lineup-status.official{color:#39c98b;border-color:#2b7859}@media(max-width:600px){.lineup-status{font-size:9px;padding:5px 7px;top:5px}}</style>
+<style id="lineup-readability-v2">
+.p{width:132px!important}
+.p .face{width:64px!important;height:64px!important;margin-bottom:4px!important}
+.p .name{font-size:14px!important;line-height:1.12!important;max-width:128px!important;padding:4px 7px!important;border-radius:6px!important}
+.p .nums,.p .player-stat-values{font-size:13px!important;line-height:1.15!important;font-weight:900!important;letter-spacing:-.2px!important;min-height:15px!important;margin-top:4px!important;overflow:visible!important}
+.p .player-stat-values{display:none!important}
+@media(max-width:600px){.p{width:110px!important}.p .face{width:54px!important;height:54px!important}.p .name{font-size:11px!important;max-width:106px!important}.p .nums,.p .player-stat-values{font-size:10px!important}}
+</style></head><body>
 
 <div style="margin:8px 0;padding:8px 10px;border-radius:9px;background:rgba(16,43,44,.75);font-size:12px;opacity:.85">
   OTB Match Center · julkinen web-versio
@@ -432,10 +440,14 @@ function place(starters,home){
      the players land in the positions actually published for the XI. */
   const hasCoords=starters.filter(p=>Number.isFinite(Number(p?.pitch_x))&&Number.isFinite(Number(p?.pitch_y))&&(Number(p.pitch_x)!==0||Number(p.pitch_y)!==0)).length>=7;
   if(hasCoords){
-    return starters.map(p=>{
-      let x=Number(p.pitch_x)*100,y=Number(p.pitch_y)*100;
-      if(x>100)x=Math.min(100,x); if(y>100)y=Math.min(100,y);
-      return {p,x:Math.max(7,Math.min(93,x)),y:Math.max(5,Math.min(95,y))};
+    const coordVals=starters.flatMap(p=>[Number(p?.pitch_x),Number(p?.pitch_y)]).filter(Number.isFinite);
+    const scale=coordVals.some(v=>Math.abs(v)>1.5)?1:100;
+     return starters.map(p=>{
+      let x=Number(p.pitch_x)*scale,rawY=Number(p.pitch_y)*scale;
+      let y=home?100-rawY:rawY;
+      x=Math.max(7,Math.min(93,x));
+      y=Math.max(7,Math.min(93,y));
+      return {p,x,y};
     });
   }
   const groups={gk:[],def:[],mid:[],att:[]};
@@ -527,7 +539,27 @@ function statsFor(arr,playerRef){
 }
 async function getPlayerStats(matchId){if(playerStatsCache.has(matchId))return playerStatsCache.get(matchId);const d=await api(`matches/${matchId}/players`),map=new Map();for(const row of (Array.isArray(d)?d:[])){const pl=row?.player||{},id=pl.id||pl.player_id||row?.player_id||row?.playerId||row?.id,name=pl.name||row?.name||row?.player_name;if(id)map.set(String(id),row);if(name)map.set('name:'+normName(name),row);}playerStatsCache.set(matchId,map);return map}
 function statNumber(stat){if(!stat)return 0;if(typeof stat.value==='number')return stat.value;if(typeof stat.total==='number')return stat.total;if(typeof stat.value==='string'&&Number.isFinite(Number(stat.value)))return Number(stat.value);return 0}
-function playerMetric(row,patterns){for(const group of (row?.stats||[])){for(const [label,obj] of Object.entries(group?.stats||{})){const s=obj?.stat||obj||{},key=String(s.key||obj?.key||''),hay=(label+' '+key+' '+String(group?.key||'')).toLowerCase();if(patterns.some(re=>re.test(hay)))return statNumber(s);}}return 0}
+function playerMetric(row,patterns){
+  let found=null;
+  const walk=(node,path='')=>{
+    if(found!==null||node==null)return;
+    if(Array.isArray(node)){for(const v of node)walk(v,path);return}
+    if(typeof node!=='object')return;
+    const labels=[path,node.label,node.name,node.key,node.stat?.key,node.stat?.label].filter(v=>v!==undefined&&v!==null).join(' ').toLowerCase();
+    if(patterns.some(re=>re.test(labels))){
+      const s=node.stat&&typeof node.stat==='object'?node.stat:node;
+      const n=statNumber(s);
+      if(Number.isFinite(n)){found=n;return;}
+    }
+    for(const [k,v] of Object.entries(node)){
+      if(k==='player'||k==='team'||k==='image_url')continue;
+      walk(v,(path+' '+k).trim());
+      if(found!==null)return;
+    }
+  };
+  walk(row);
+  return found===null?0:found;
+}
 function playerFouls(row){return playerMetric(row,[/foul.*committ/i,/committ.*foul/i,/fouls?$/i])}
 function statHighClass(values,i){const nums=values.map(v=>Number(v)||0),max=Math.max(...nums,0),v=Number(nums[i])||0,avg=nums.length?nums.reduce((a,b)=>a+b,0)/nums.length:0;if(max>0&&v===max&&v>=Math.max(3,Math.ceil(avg*1.7)))return'high';return''}
 function formatPlayerStat(v,mode,i,values){const high=statHighClass(values,i);if(mode==='cards'){const y=Number(v?.yellow)||0,r=Number(v?.red)||0;if(r)return `<span class="${high}"><span class="card-red">🟥${r}</span></span>`;if(y)return `<span class="${high}"><span class="card-yellow">🟨${y}</span></span>`;return `<span class="${high}">0</span>`;}return `<span class="${high}">${esc(String(Number(v)||0))}</span>`}
@@ -553,21 +585,35 @@ async function getPlayerMatchStats(matchId,playerId){if(!playerId)return null;co
 const playerShotsCache=new Map();
 async function getPlayerShots(matchId,playerId){if(!playerId)return[];const ck=String(matchId)+':'+String(playerId);if(playerShotsCache.has(ck))return playerShotsCache.get(ck);try{const d=await api(`matches/${encodeURIComponent(matchId)}/players/${encodeURIComponent(playerId)}/shots`);const a=Array.isArray(d?.shots)?d.shots:[];playerShotsCache.set(ck,a);return a}catch(e){playerShotsCache.set(ck,[]);return[]}}
 function flattenPlayerStats(row){
-  const out=[]; for(const group of (row?.stats||[])){for(const [label,obj] of Object.entries(group?.stats||{})){const s=obj?.stat||obj||{};if(!s||s.type==='boolean')continue;const key=String(s.key||obj?.key||'');let value=s.value;let total=s.total;if(typeof value==='string'&&value!==''&&!Number.isFinite(Number(value)))continue;if(value!==undefined&&Number.isFinite(Number(value)))value=Number(value);if(total!==undefined&&Number.isFinite(Number(total)))total=Number(total);out.push({label,key,value,total,type:s.type,group:String(group?.key||'')});}}
+  const out=[];
+  const walk=(node,path='')=>{
+    if(node==null)return;
+    if(Array.isArray(node)){for(const v of node)walk(v,path);return}
+    if(typeof node!=='object')return;
+    const key=String(node.key||node.stat?.key||'');
+    const label=String(node.label||node.stat?.label||node.name||key);
+    const s=node.stat&&typeof node.stat==='object'?node.stat:node;
+    let value=s.value,total=s.total;
+    if(typeof value==='string'&&value!==''&&Number.isFinite(Number(value)))value=Number(value);
+    if(typeof total==='string'&&total!==''&&Number.isFinite(Number(total)))total=Number(total);
+    if(s.type!=='boolean'&&(Number.isFinite(Number(value))||Number.isFinite(Number(total)))&&(key||label))out.push({label,key,value:Number.isFinite(Number(value))?Number(value):undefined,total:Number.isFinite(Number(total))?Number(total):undefined,type:s.type,group:path});
+    for(const [k,v] of Object.entries(node)){if(k!=='player'&&k!=='team'&&k!=='image_url'&&k!=='stat')walk(v,(path+' '+k).trim());}
+  };
+  walk(row);
   return out;
 }
 function statFind(row,patterns){const a=flattenPlayerStats(row);return a.find(x=>patterns.some(re=>re.test((x.label+' '+x.key+' '+x.group).toLowerCase())))}
 function statVal(row,patterns){const x=statFind(row,patterns);return x&&Number.isFinite(Number(x.value))?Number(x.value):null}
 function fmtMetric(v){if(v===null||v===undefined||!Number.isFinite(Number(v)))return'—';const n=Number(v);return Number.isInteger(n)?String(n):n.toFixed(2).replace(/0+$/,'').replace(/\.$/,'')}
 function aggregateRows(rows){
-  const keys={goals:[/\bgoals?\b/],assists:[/\bassists?\b/],xg:[/^xg$/,/expected.?goals/],xa:[/^xa$/,/expected.?assists/],shots:[/total.?shots/,/^shots$/],shotsOn:[/shots.?on.?target/,/on.?target/],touches:[/^touches$/],passes:[/^passes$/,/pass attempts/],accuratePasses:[/accurate.?passes/],keyPasses:[/key.?passes/],crosses:[/^crosses$/],dribbles:[/dribbles/,/take.?ons/],tackles:[/^tackles$/],interceptions:[/interceptions/],clearances:[/clearances/],blocks:[/^blocks$/],recoveries:[/recoveries/],duelsWon:[/duels won/,/won duels/],aerialsWon:[/aerial.*won/],fouls:[/foul.*committ/,/committ.*foul/],foulsWon:[/foul.*won/,/won.*foul/],minutes:[/minutes/],rating:[/^rating$/]};
+  const keys={goals:[/\bgoals?\b/],assists:[/\bassists?\b/],xg:[/(^|\s)xg(\s|$)/,/expected.?goals/],xa:[/(^|\s)xa(\s|$)/,/expected.?assists/],shots:[/total.?shots/,/\bshots?\b/],shotsOn:[/shots.?on.?target/,/on.?target/],touches:[/\btouches\b/],passes:[/\bpasses\b/,/pass attempts/],accuratePasses:[/accurate.?passes/],keyPasses:[/key.?passes/],crosses:[/\bcrosses\b/],dribbles:[/dribbles/,/take.?ons/],tackles:[/\btackles\b/],interceptions:[/interceptions/],clearances:[/clearances/],blocks:[/\bblocks\b/],recoveries:[/recoveries/],duelsWon:[/duels won/,/won duels/],aerialsWon:[/aerial.*won/],fouls:[/foul.*committ/,/committ.*foul/,/\bfouls?\b/],foulsWon:[/foul.*won/,/won.*foul/],minutes:[/minutes/],rating:[/\brating\b/]};
   const out={}; for(const [name,patterns] of Object.entries(keys)){let sum=0,seen=0;for(const r of rows){const v=statVal(r,patterns);if(v!==null){sum+=v;seen++}}out[name]=seen?sum:null}
   return out;
 }
 function shotOutcome(s){const e=String(s?.event_type||'').toLowerCase();if(e==='goal'||e.includes('goal'))return'goal';if(s?.is_blocked)return'block';if(s?.is_on_target===true)return'on';return'off'}
 function shotMapSvg(shots){
   const arr=Array.isArray(shots)?shots:[];
-  const dots=arr.map((s,i)=>{const x=Number(s?.y),y=Number(s?.x);if(!Number.isFinite(x)||!Number.isFinite(y))return'';const cx=Math.max(2,Math.min(66,x)),cy=Math.max(2,Math.min(103,y));const r=Math.max(1.6,Math.min(3.4,1.5+Number(s?.expected_goals||0)*4));const cls=shotOutcome(s);const title=`${s?.minute??'?'}' · ${fmtMetric(s?.expected_goals)} xG · ${String(s?.shot_type||'').replace(/([a-z])([A-Z])/g,'$1 $2')}`;return `<circle class="shot-dot ${cls}" cx="${cx}" cy="${cy}" r="${r}"><title>${esc(title)}</title></circle>`}).join('');
+  const dots=arr.map((s,i)=>{const x=Number(s?.y),shotX=Number(s?.x);if(!Number.isFinite(x)||!Number.isFinite(shotX))return'';const cx=Math.max(2,Math.min(66,x)),cy=Math.max(2,Math.min(103,105-shotX));const r=Math.max(1.6,Math.min(3.4,1.5+Number(s?.expected_goals||0)*4));const cls=shotOutcome(s);const title=`${s?.minute??'?'}' · ${fmtMetric(s?.expected_goals)} xG · ${String(s?.shot_type||'').replace(/([a-z])([A-Z])/g,'$1 $2')}`;return `<circle class="shot-dot ${cls}" cx="${cx}" cy="${cy}" r="${r}"><title>${esc(title)}</title></circle>`}).join('');
   return `<div class="shotmap"><svg viewBox="0 0 68 105" role="img" aria-label="Pelaajan laukaisukartta"><rect x="0" y="0" width="68" height="105" rx="2" fill="#0c3030"/><line x1="0" y1="52.5" x2="68" y2="52.5" stroke="#8aa4a8" stroke-opacity=".35"/><circle cx="34" cy="52.5" r="9.15" fill="none" stroke="#8aa4a8" stroke-opacity=".35"/><rect x="16.5" y="88.5" width="35" height="16.5" fill="none" stroke="#8aa4a8" stroke-opacity=".45"/><rect x="25" y="96" width="18" height="9" fill="none" stroke="#8aa4a8" stroke-opacity=".45"/><rect x="27.5" y="0" width="13" height="3" fill="none" stroke="#8aa4a8" stroke-opacity=".45"/>${dots}</svg><div class="shot-legend"><span><i style="background:#39c98b"></i>Maali</span><span><i style="background:#4389c8"></i>Kohti</span><span><i style="background:#ffd84a"></i>Blokattu</span><span><i style="background:#d9e1e4"></i>Ohi</span></div></div>`;
 }
 function renderPlayerMetrics(rows,shots,events){
