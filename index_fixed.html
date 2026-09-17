@@ -331,7 +331,7 @@ html,body{overflow-x:hidden}
   .p .name{font-size:10px!important;max-width:90px!important}
 }
 </style>
-<script>window.OTB_BUILD="v36";</script><style id="otb-final-player-stats-v35">
+<script>window.OTB_BUILD="v17";</script><style id="otb-final-player-stats-v35">
 .p .nums{display:block!important;white-space:normal!important;overflow:visible!important;font-size:10px!important;line-height:1.05!important;min-height:25px!important;margin-top:3px!important;text-align:center!important}
 .p .nums .statline{display:flex!important;justify-content:center!important;align-items:center!important;gap:3px!important;height:12px!important;white-space:nowrap!important}
 .p .nums .statlabel{font-size:8px!important;opacity:.72!important;min-width:31px!important;text-align:right!important;letter-spacing:-.2px!important}
@@ -521,7 +521,28 @@ function populateLeagueSelector(){
   const otherSel=document.getElementById('otherLeagueSelect');
   if(otherSel){const old=otherSel.value;otherSel.innerHTML='<option value="">Valitse otteluanalyysin sarja…</option>'+others.map(n=>`<option value="${esc(n)}">${esc(n)}</option>`).join('');if(others.includes(old))otherSel.value=old;}
 }
-async function load(){if(!key()&&!isPublicWorker()){setKeyUI();$('#status').textContent='Lisää ensin PitchAPI-avain.';return}$('#out').innerHTML='';$('#status').textContent='Haetaan päivän ottelut…';try{await loadLeagues();const date=$('#date').value;const d=await api(`date/${date}?status=all`);const allowedIds=new Set(Object.values(leagueMap).map(x=>x.id));games=(d.matches||[]).filter(m=>allowedIds.has(m.league?.id)).map(m=>{const target=ALLOWED.find(n=>leagueMap[n]?.id===m.league?.id);return {...m,league:{...(m.league||{}),name:target||m.league?.name}}});games=await Promise.all(games.map(async m=>{const fetchTeam=async(t)=>{if(!t?.id||t.image_url)return t;try{const d=await api(`teams/${encodeURIComponent(t.id)}`);const q=d?.team||d;return {...t,...(q&&typeof q==='object'?q:{}),image_url:q?.image_url||q?.logo_url||q?.logo?.url||t.image_url||''};}catch(e){return t}};return {...m,home_team:await fetchTeam(m.home_team),away_team:await fetchTeam(m.away_team)}}));games.sort((a,b)=>new Date(a.time_utc)-new Date(b.time_utc));$('#status').textContent=`${games.length} ottelua · PitchAPI`;render()}catch(e){$('#status').innerHTML=`<div class="err">${esc(e.message)}<br><small>Julkisessa versiossa API-avain tulee Cloudflare Workerista — sitä ei tarvitse syöttää tähän selaimeen.</small></div>`}}
+async function load(){if(!key()&&!isPublicWorker()){setKeyUI();$('#status').textContent='Lisää ensin PitchAPI-avain.';return}$('#out').innerHTML='';$('#status').textContent='Haetaan päivän ottelut…';try{await loadLeagues();const date=$('#date').value;let matches=[];
+  // Use the selected league's own fixture endpoint. The global /date endpoint
+  // can omit UEFA competitions on some dates, so UCL/UEL/UECL must be read
+  // directly from their league fixture lists.
+  const lm=leagueMap[filter];
+  if(filter!=='ALL'&&lm?.id){
+    let d=null;
+    try{d=await api(`leagues/${encodeURIComponent(lm.id)}/matches?status=all`)}catch(e){d=null}
+    const source=Array.isArray(d?.matches)?d.matches:[];
+    matches=source.filter(m=>{const md=m?.date||String(m?.time_utc||'').slice(0,10);return md===date});
+    if(!matches.length){
+      // Fallback to the global date endpoint if the league endpoint has no
+      // dated result or the provider uses a different date field.
+      try{const gd=await api(`date/${date}?status=all`);matches=(gd?.matches||[]).filter(m=>String(m?.league?.id)===String(lm.id))}catch(e){}
+    }
+  }else{
+    const d=await api(`date/${date}?status=all`);
+    const allowedIds=new Set(Object.values(leagueMap).map(x=>String(x.id)));
+    matches=(d.matches||[]).filter(m=>allowedIds.has(String(m?.league?.id)));
+  }
+  games=matches.map(m=>{const target=ALLOWED.find(n=>String(leagueMap[n]?.id)===String(m?.league?.id));return {...m,league:{...(m.league||{}),name:target||filter||m.league?.name}}});
+  games=await Promise.all(games.map(async m=>{const fetchTeam=async(t)=>{if(!t?.id||t.image_url)return t;try{const d=await api(`teams/${encodeURIComponent(t.id)}`);const q=d?.team||d;return {...t,...(q&&typeof q==='object'?q:{}),image_url:q?.image_url||q?.logo_url||q?.logo?.url||t.image_url||''};}catch(e){return t}};return {...m,home_team:await fetchTeam(m.home_team),away_team:await fetchTeam(m.away_team)}}));games.sort((a,b)=>new Date(a.time_utc)-new Date(b.time_utc));$('#status').textContent=`${games.length} ottelua · PitchAPI`;render()}catch(e){$('#status').innerHTML=`<div class="err">${esc(e.message)}<br><small>Julkisessa versiossa API-avain tulee Cloudflare Workerista — sitä ei tarvitse syöttää tähän selaimeen.</small></div>`}}
 async function loadLeagueDateIndex(leagueName){
   const box=$('#v20Days');
   if(!box)return;
