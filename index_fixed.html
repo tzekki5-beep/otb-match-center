@@ -258,6 +258,17 @@ html,body{overflow-x:hidden}
 .card-yellow,.card-red{display:inline-block!important;font-size:10px!important}
 @media(max-width:600px){.pitch{min-height:1080px!important;height:1080px!important}.pitch .players{height:1080px!important;min-height:1080px!important}.p{width:92px!important}.p .face{width:52px!important;height:52px!important}.p .name{font-size:10px!important;max-width:92px!important}.p .nums,.p .player-stat-values{font-size:9px!important}}
 </style>
+
+<style id="v30-final-lineup-and-stats">
+.pitch{min-height:1280px!important;height:1280px!important;overflow:visible!important}
+.pitch .players{height:1280px!important;min-height:1280px!important}
+.p{width:108px!important;z-index:3!important}
+.p .face{width:58px!important;height:58px!important}
+.p .name{font-size:12px!important;max-width:108px!important;padding:4px 5px!important;line-height:1.12!important}
+.p .nums,.p .player-stat-values{font-size:10px!important;line-height:1.15!important;font-weight:900!important;white-space:nowrap!important;overflow:visible!important;min-height:13px!important;margin-top:3px!important}
+.p.stat-mode-alt .nums{display:none!important}.p.stat-mode-alt .player-stat-values{display:block!important}
+@media(max-width:600px){.pitch{min-height:1080px!important;height:1080px!important}.pitch .players{height:1080px!important;min-height:1080px!important}.p{width:92px!important}.p .face{width:52px!important;height:52px!important}.p .name{font-size:10px!important;max-width:92px!important}.p .nums,.p .player-stat-values{font-size:9px!important}}
+</style>
 </head><body>
 
 <div style="margin:8px 0;padding:8px 10px;border-radius:9px;background:rgba(16,43,44,.75);font-size:12px;opacity:.85">
@@ -429,7 +440,7 @@ function render(){
   const list=games.filter(m=>m.league?.name===filter);
   if(!list.length){$('#out').innerHTML='<div class="status">Ei otteluita tällä päivällä tässä sarjassa.</div>';return}
   if(MAIN_SET.has(filter)){
-    $('#out').innerHTML=list.map(m=>`<section class="match"><div class="mh"><div><div class="teams">${esc(matchLabel(m))}</div><div class="lg">${esc(m.league?.name||'')}</div></div><div class="tm">${localTime(m.time_utc)}${m.status==='finished'?' · '+m.score_home+'–'+m.score_away:''}</div></div><div class="player-stat-bar" data-stat-bar="${esc(m.id)}"><div class="player-stat-caption">Pelaajien viimeiset 5 ottelua · valitse näytettävä tilasto</div><button class="player-stat-btn active" data-stat="otb">OTB / OTB kohti</button><button class="player-stat-btn" data-stat="shots">Laukaukset</button><button class="player-stat-btn" data-stat="cards">Kortit</button><button class="player-stat-btn" data-stat="fouls">Rikkeet</button><button class="player-stat-btn" data-stat="headers">Pääpallot</button><button class="player-stat-btn" data-stat="all">Kaikki laukaukset</button><span class="stat-mode-label">Viimeiset 5</span></div><div class="pitch" id="p${m.id.replace(/[^a-zA-Z0-9_-]/g,'')}"><div class="goal g1"></div><div class="goal g2"></div><span class="centerDot"></span><div class="players"><div class="status">Ladataan kokoonpanoa…</div></div></div><div class="note">OUT = boxin ulkopuolelta · pelaajaa painamalla näet tarkat tilastot.</div></section>`).join('');
+    $('#out').innerHTML=list.map(m=>`<section class="match"><div class="mh"><div><div class="teams">${esc(matchLabel(m))}</div><div class="lg">${esc(m.league?.name||'')}</div></div><div class="tm">${localTime(m.time_utc)}${m.status==='finished'?' · '+m.score_home+'–'+m.score_away:''}</div></div><div class="player-stat-bar" data-stat-bar="${esc(m.id)}" data-mode="otb"><div class="player-stat-caption">Pelaajien viimeiset 5 ottelua · valitse näytettävä tilasto</div><button class="player-stat-btn active" data-stat="otb">OTB / OTB kohti</button><button class="player-stat-btn" data-stat="shots">Laukaukset</button><button class="player-stat-btn" data-stat="cards">Kortit</button><button class="player-stat-btn" data-stat="fouls">Rikkeet</button><button class="player-stat-btn" data-stat="headers">Pääpallot</button><button class="player-stat-btn" data-stat="all">Kaikki laukaukset</button><span class="stat-mode-label">Viimeiset 5</span></div><div class="pitch" id="p${m.id.replace(/[^a-zA-Z0-9_-]/g,'')}"><div class="goal g1"></div><div class="goal g2"></div><span class="centerDot"></span><div class="players"><div class="status">Ladataan kokoonpanoa…</div></div></div><div class="note">OUT = boxin ulkopuolelta · pelaajaa painamalla näet tarkat tilastot.</div></section>`).join('');
     list.forEach(m=>loadGame(m,false));
     if(lineupRefreshTimer)clearInterval(lineupRefreshTimer);
     lineupRefreshTimer=setInterval(()=>{if(document.visibilityState==='hidden')return;list.filter(m=>m.status!=='finished').forEach(m=>loadGame(m,true));},300000);
@@ -468,43 +479,34 @@ function positionGroup(p){
   return 'mid';
 }
 function place(starters,home,formation=''){
-  /* PitchAPI:n lineupissa pitch_x on pituussuunta (0 = oma maali, 1 = vastustajan maali)
-     ja pitch_y on leveyssuunta (0 = vasen, 1 = oikea). Tämä on tärkeä ero:
-     vanha toteutus käytti akseleita väärin, jolloin esim. maalivahti päätyi keskelle kenttää. */
-  const valid=starters.filter(p=>Number.isFinite(Number(p?.pitch_x))&&Number.isFinite(Number(p?.pitch_y)));
-  if(valid.length>=7){
-    const nums=String(formation||'').split('-').map(Number).filter(n=>Number.isFinite(n)&&n>0);
-    const counts=nums.length?[1,...nums]:[1,4,4,2];
-    const sorted=[...starters].filter(p=>Number.isFinite(Number(p?.pitch_x))&&Number.isFinite(Number(p?.pitch_y)))
-      .sort((a,b)=>Number(a.pitch_x)-Number(b.pitch_x)||Number(a.pitch_y)-Number(b.pitch_y));
-    const rows=[];let cursor=0;
-    counts.forEach(count=>{const row=sorted.slice(cursor,cursor+count);cursor+=count;if(row.length)rows.push(row);});
-    if(cursor<sorted.length)rows.push(sorted.slice(cursor));
-    const out=[];
-    rows.forEach(row=>{
-      const depth=row.reduce((sum,p)=>sum+Number(p.pitch_x),0)/row.length;
-      const y=Math.max(6,Math.min(94,home?(100-depth*100):(depth*100)));
-      const xs=row.map(p=>Math.max(0,Math.min(1,Number(p.pitch_y)))).sort((a,b)=>a-b);
-      const minGap=11.5;
-      let positions=xs.map(v=>v*100);
-      if(positions.length>1){
-        const gap=Math.min(minGap,84/(positions.length-1));
-        const center=positions.reduce((a,b)=>a+b,0)/positions.length;
-        const begin=center-gap*(positions.length-1)/2;
-        positions=positions.map((_,i)=>Math.max(7,Math.min(93,begin+i*gap)));
-      }else if(positions.length===1){positions=[Math.max(7,Math.min(93,positions[0]))]}
-      row.slice().sort((a,b)=>Number(a.pitch_y)-Number(b.pitch_y)).forEach((p,i)=>out.push({p,x:positions[i],y}));
+  /* Vertical pitch: build real formation rows first. PitchAPI coordinates are
+     used only to order players inside each row, never to decide the visual depth. */
+  const nums=String(formation||'').match(/\d+/g)?.map(Number).filter(n=>n>0)||[];
+  const counts=nums.length>=3?[1,...nums]:[1,4,4,2];
+  const players=[...starters];
+  const depth=p=>Number.isFinite(Number(p?.pitch_x))?Number(p.pitch_x):0.5;
+  const width=p=>Number.isFinite(Number(p?.pitch_y))?Number(p.pitch_y):0.5;
+  players.sort((a,b)=>depth(a)-depth(b)||width(a)-width(b));
+  const gkIndex=players.findIndex(p=>positionGroup(p)==='gk');
+  if(gkIndex>=0){const [gk]=players.splice(gkIndex,1);players.unshift(gk)}
+  const rows=[];let cursor=0;
+  counts.forEach(n=>{if(cursor<players.length){rows.push(players.slice(cursor,cursor+n));cursor+=n;}});
+  if(cursor<players.length)rows.push(players.slice(cursor));
+  const rowDepthHome=rows.length===5?[92,73,55,37,19]:rows.length===4?[91,68,45,22]:rows.length===6?[93,78,63,48,33,18]:[92,72,52,32,12];
+  const rowDepthAway=rowDepthHome.map(v=>100-v);
+  const out=[];
+  rows.forEach((row,ri)=>{
+    const ordered=row.slice().sort((a,b)=>width(a)-width(b));
+    const n=ordered.length;
+    const edge=n>=6?8:n===5?10:n===4?13:n===3?18:n===2?30:50;
+    const span=100-edge*2;
+    ordered.forEach((player,i)=>{
+      const x=n===1?50:edge+(span*i/(n-1));
+      const y=(home?rowDepthHome:rowDepthAway)[Math.min(ri,rowDepthHome.length-1)];
+      out.push({p:player,x,y});
     });
-    return out;
-  }
-  /* Fallback: only used when PitchAPI has no usable formation coordinates. */
-  const groups={gk:[],def:[],mid:[],att:[]};
-  starters.forEach(p=>groups[positionGroup(p)].push(p));
-  const lines=[];if(groups.gk.length)lines.push(groups.gk);if(groups.def.length)lines.push(groups.def);if(groups.mid.length)lines.push(groups.mid);if(groups.att.length)lines.push(groups.att);
-  if(lines.length<3){lines.length=0;lines.push(starters.slice(0,1),starters.slice(1,5),starters.slice(5,9),starters.slice(9));}
-  const homeY=[94,76,55,34],awayY=[6,24,45,66],pts=[];
-  lines.forEach((arr,ri)=>{const y=(home?homeY:awayY)[Math.min(ri,3)];arr.forEach((p,i)=>pts.push({p,x:(i+1)*100/(arr.length+1),y}));});
-  return pts;
+  });
+  return out;
 }
 function card(p,teamId,matchId,x,y){
   const id=pid(p),key=playerKey(p),u=img(p);
@@ -576,7 +578,7 @@ async function shots(matchId){if(shotsCache.has(matchId))return shotsCache.get(m
 function statsFor(arr,playerRef){
   const refId=typeof playerRef==='object'?pid(playerRef):playerRef,refName=typeof playerRef==='object'?pName(playerRef):'';
   const ss=(Array.isArray(arr)?arr:[]).filter(s=>{const sid=s?.player?.id??s?.player_id??s?.playerId??s?.athlete_id;const sn=s?.player?.name??s?.player_name??s?.playerName;return (refId!=null&&sid!=null&&String(sid)===String(refId))||(refName&&sn&&normName(sn)===normName(refName));});
-  let otb=0,otbOn=0,shotOn=0,headers=0;for(const s of ss){const outside=s?.is_inside_box===false;if(outside)otb++;if(outside&&s?.is_on_target===true)otbOn++;if(s?.is_on_target===true)shotOn++;if(String(s?.shot_type||'').toLowerCase()==='header')headers++;}
+  let otb=0,otbOn=0,shotOn=0,headers=0;for(const s of ss){const insideVal=s?.is_inside_box;const onVal=s?.is_on_target;const outside=insideVal===false||insideVal===0||String(insideVal).toLowerCase()==='false';const on=onVal===true||onVal===1||String(onVal).toLowerCase()==='true';if(outside)otb++;if(outside&&on)otbOn++;if(on)shotOn++;if(/header|head/i.test(String(s?.shot_type||'')))headers++;}
   return{otb,on:otbOn,shotOn,all:ss.length,headers,shots:ss};
 }
 async function getPlayerStats(matchId){if(playerStatsCache.has(matchId))return playerStatsCache.get(matchId);const d=await api(`matches/${matchId}/players`),map=new Map();for(const row of (Array.isArray(d)?d:[])){const pl=row?.player||{},id=pl.id||pl.player_id||row?.player_id||row?.playerId||row?.id,name=pl.name||row?.name||row?.player_name;if(id)map.set(String(id),row);if(name)map.set('name:'+normName(name),row);}playerStatsCache.set(matchId,map);return map}
@@ -602,7 +604,7 @@ function playerMetric(row,patterns){
   walk(row);
   return found===null?0:found;
 }
-function playerFouls(row){return playerMetric(row,[/foul.*committ/i,/committ.*foul/i,/fouls?$/i])}
+function playerFouls(row){return playerMetric(row,[/fouls?\s*committed/i,/committed\s*fouls?/i,/foul.*committ/i,/committ.*foul/i,/fouls?$/i,/\bfouls?\b/i])}
 function statHighClass(values,i){const nums=values.map(v=>Number(v)||0),max=Math.max(...nums,0),v=Number(nums[i])||0,avg=nums.length?nums.reduce((a,b)=>a+b,0)/nums.length:0;if(max>0&&v===max&&v>=Math.max(3,Math.ceil(avg*1.7)))return'high';return''}
 function formatPlayerStat(v,mode,i,values){
   const high=statHighClass(values,i);
@@ -707,9 +709,14 @@ async function buildHistoryRows(rows,playerRef){
       const byName=refName&&en&&normName(en)===normName(refName);
       return (byId||byName)&&!!cardType(e);
     });
-    const yellow=ce.filter(e=>cardType(e)==='yellow').length;
-    const red=ce.filter(e=>cardType(e)==='red').length;
-    return {...z,fouls:playerMetric(prow,[/foul.*committ/i,/committ.*foul/i,/fouls?$/i]),cards:yellow+red,cardsObj:{yellow,red},opp:matchLabel(r.g),matchId:r.g.id,played:!!prow};
+    let yellow=ce.filter(e=>cardType(e)==='yellow').length;
+    let red=ce.filter(e=>cardType(e)==='red').length;
+    if(!yellow&&!red&&prow){
+      yellow=playerMetric(prow,[/yellow\s*cards?/i,/yellow\s*card/i,/\byellow\b/i]);
+      red=playerMetric(prow,[/red\s*cards?/i,/red\s*card/i,/\bred\b/i]);
+    }
+    const fouls=playerFouls(prow);
+    return {...z,fouls,cards:yellow+red,cardsObj:{yellow,red},opp:matchLabel(r.g),matchId:r.g.id,played:!!prow};
   }));
 }
 async function loadHistory(m,teamId,starters){
