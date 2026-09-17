@@ -415,6 +415,15 @@ html,body{overflow-x:hidden}
 .p .nums .high{font-size:19px!important;padding:0 4px!important;border-radius:5px!important}
 @media(max-width:600px){.p .nums{font-size:14px!important;min-height:32px!important}.p .nums .statline{height:15px!important}.p .nums .statlabel{font-size:9px!important;min-width:34px!important}.p .nums .statvals{font-size:14px!important}.p .nums .high{font-size:15px!important}}
 </style>
+<style id="v45-player-stats-extra-readable">
+.p .nums{display:block!important;font-size:17px!important;line-height:1.2!important;font-weight:1000!important;white-space:normal!important;overflow:visible!important;min-height:40px!important;margin-top:6px!important;text-align:center!important;text-shadow:0 2px 3px #000!important}
+.p .nums .statline{height:20px!important;gap:7px!important;justify-content:center!important;align-items:center!important;white-space:nowrap!important}
+.p .nums .statlabel{font-size:12px!important;line-height:1!important;min-width:52px!important;letter-spacing:0!important;font-weight:1000!important;text-align:right!important}
+.p .nums .statvals{font-size:17px!important;line-height:1!important;font-weight:1000!important;letter-spacing:0!important;text-shadow:0 2px 3px #000!important}
+.p .nums .high{font-size:18px!important;padding:1px 5px!important;border-radius:5px!important;font-weight:1000!important}
+.p .player-stat-values{font-size:17px!important;line-height:1.2!important;min-height:20px!important;overflow:visible!important;font-weight:1000!important}
+@media(max-width:600px){.p .nums{font-size:14px!important;min-height:34px!important}.p .nums .statline{height:17px!important;gap:5px!important}.p .nums .statlabel{font-size:10px!important;min-width:44px!important}.p .nums .statvals{font-size:14px!important}.p .nums .high{font-size:15px!important}.p .player-stat-values{font-size:14px!important}}
+</style>
 </head><body>
 
 <div style="margin:8px 0;padding:8px 10px;border-radius:9px;background:rgba(16,43,44,.75);font-size:12px;opacity:.85">
@@ -925,19 +934,41 @@ async function fetchLeaguePlayed(league,season){
   return arr;
 }
 async function teamMatches(teamId,leagueName,cutoffTime){
-  const ck=teamId+':TEAM_ALL:'+cutoffTime;
+  const ck=String(teamId)+':TEAM_ALL_CATALOG:'+String(cutoffTime||'');
   if(historyCache.has(ck))return historyCache.get(ck);
   const cutoff=Date.parse(cutoffTime||'9999-12-31T23:59:59Z');
-  // Always use the team's five latest matches across the main competitions.
-  // The selected fixture's competition must not restrict the history.
-  const lists=await Promise.all(MAIN_LEAGUES.map(n=>leagueMap[n]).filter(Boolean).map(fetchLeaguePlayed));
-  const merged=new Map();
-  for(const list of lists)for(const mm of list){
-    if(mm.status!=='finished'||Date.parse(mm.time_utc)>=cutoff)continue;
-    if(String(mm.home_team?.id)!==String(teamId)&&String(mm.away_team?.id)!==String(teamId))continue;
-    merged.set(String(mm.id),mm);
+  const isUefa=/Europa League|Conference League|Champions League/i.test(leagueName||'');
+  let leagues=[];
+  if(isUefa){
+    // UEFA-ottelussa historia EI saa tulla UEFA-otteluista. PitchAPI:n
+    // nykyinen REST-rajapinta ei tarjoa team/{id}/matches-endpointia,
+    // joten haetaan kaikki katalogin sarjat ja poimitaan tästä joukkueesta
+    // viisi uusinta ennen nykyistä ottelua. Näin myös Salzburgin,
+    // Benfican, Ajaxin, Galatasarayn jne. kotisarjat löytyvät.
+    leagues=Object.values(leagueMap||{}).filter(l=>l?.id);
+  }else{
+    const lm=leagueMap[leagueName];
+    if(lm?.id)leagues=[lm];
   }
-  const arr=[...merged.values()].sort((a,b)=>new Date(b.time_utc)-new Date(a.time_utc)).slice(0,5);
+  const unique=[];const seen=new Set();
+  for(const l of leagues){const id=String(l.id);if(!seen.has(id)){seen.add(id);unique.push(l)}}
+  const found=new Map();
+  const add=(items)=>{
+    for(const m of (Array.isArray(items)?items:[])){
+      const belongs=String(m.home_team?.id)===String(teamId)||String(m.away_team?.id)===String(teamId);
+      if(belongs&&m.status==='finished'&&Date.parse(m.time_utc)<cutoff)found.set(String(m.id),m);
+    }
+  };
+  // Pienet erät estävät liian suuren rinnakkaispyyntöpiikin. Kaikki
+  // katalogin sarjat käydään läpi, jotta oikea kotisarja ei jää väliin.
+  for(let i=0;i<unique.length;i+=8){
+    const batch=unique.slice(i,i+8);
+    const results=await Promise.all(batch.map(async l=>{
+      try{const d=await api(`leagues/${encodeURIComponent(l.id)}/matches?status=played`);return Array.isArray(d?.matches)?d.matches:[]}catch(e){return[]}
+    }));
+    results.forEach(add);
+  }
+  const arr=[...found.values()].sort((a,b)=>new Date(b.time_utc)-new Date(a.time_utc)).slice(0,5);
   historyCache.set(ck,arr);
   return arr;
 }
