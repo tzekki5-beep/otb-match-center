@@ -344,23 +344,24 @@ html,body{overflow-x:hidden}
 .raw-match-item b{display:block;font-size:12px;margin-top:2px}
 @media(max-width:650px){.raw-match-grid{grid-template-columns:repeat(2,minmax(0,1fr))}}
 </style>
-<style id="v41-pitch-and-team-logos">
-/* v41: standard football penalty/goal areas + corner arcs + team logos */
+<style id="v42-pitch-and-team-logos">
+/* v42: proper football markings, four true corner arcs, and visible team logos */
 .pitch{position:relative!important;}
-.goal{left:16%!important;right:16%!important;height:17%!important;border:2px solid #d9e1e47a!important;}
-.pitch .goal:after{left:34%!important;right:34%!important;height:43%!important;border:2px solid #d9e1e47a!important;}
+/* Standard 105x68 pitch proportions: penalty area ≈59.3% wide and 15.7% deep. */
+.goal{left:20.35%!important;right:20.35%!important;height:15.7%!important;border:2px solid #d9e1e47a!important;}
+.pitch .goal:after{left:27.1%!important;right:27.1%!important;height:35%!important;border:2px solid #d9e1e47a!important;}
 .g1:after{bottom:-2px!important;top:auto!important}
 .g2:after{top:-2px!important;bottom:auto!important}
-.corner{position:absolute;width:38px;height:38px;border:2px solid #d9e1e47a;z-index:1;pointer-events:none}
-.corner.tl{left:0;top:0;border-left:0;border-top:0;border-radius:0 0 38px 0}
-.corner.tr{right:0;top:0;border-right:0;border-top:0;border-radius:0 0 0 38px}
-.corner.bl{left:0;bottom:0;border-left:0;border-bottom:0;border-radius:0 38px 0 0}
-.corner.br{right:0;bottom:0;border-right:0;border-bottom:0;border-radius:38px 0 0 0}
+.corner{position:absolute;width:30px;height:30px;border:0!important;z-index:1;pointer-events:none}
+.corner.tl{left:0;top:0;border-right:2px solid #d9e1e47a!important;border-bottom:2px solid #d9e1e47a!important;border-radius:0 0 30px 0}
+.corner.tr{right:0;top:0;border-left:2px solid #d9e1e47a!important;border-bottom:2px solid #d9e1e47a!important;border-radius:0 0 0 30px}
+.corner.bl{left:0;bottom:0;border-right:2px solid #d9e1e47a!important;border-top:2px solid #d9e1e47a!important;border-radius:0 30px 0 0}
+.corner.br{right:0;bottom:0;border-left:2px solid #d9e1e47a!important;border-top:2px solid #d9e1e47a!important;border-radius:30px 0 0 0}
 .mh-team{display:flex;align-items:center;gap:9px;min-width:0}
 .mh-team.away{justify-content:flex-end;text-align:right}
-.mh-logo{width:38px;height:38px;object-fit:contain;background:#fff;border-radius:50%;padding:3px;flex:0 0 38px;border:1px solid #527273}
+.mh-logo{width:42px;height:42px;object-fit:contain;background:#fff;border-radius:50%;padding:4px;flex:0 0 42px;border:1px solid #527273;display:block}
 .mh-team-text{min-width:0}
-@media(max-width:600px){.mh-logo{width:32px;height:32px;flex-basis:32px}.mh-team{gap:6px}.corner{width:28px;height:28px}.corner.tl{border-radius:0 0 28px 0}.corner.tr{border-radius:0 0 0 28px}.corner.bl{border-radius:0 28px 0 0}.corner.br{border-radius:28px 0 0 0}}
+@media(max-width:600px){.mh-logo{width:34px;height:34px;flex-basis:34px}.mh-team{gap:6px}.corner{width:24px;height:24px}.corner.tl{border-radius:0 0 24px 0}.corner.tr{border-radius:0 0 0 24px}.corner.bl{border-radius:0 24px 0 0}.corner.br{border-radius:24px 0 0 0}}
 </style>
 </head><body>
 
@@ -489,7 +490,7 @@ function populateLeagueSelector(){
   const otherSel=document.getElementById('otherLeagueSelect');
   if(otherSel){const old=otherSel.value;otherSel.innerHTML='<option value="">Valitse otteluanalyysin sarja…</option>'+others.map(n=>`<option value="${esc(n)}">${esc(n)}</option>`).join('');if(others.includes(old))otherSel.value=old;}
 }
-async function load(){if(!key()&&!isPublicWorker()){setKeyUI();$('#status').textContent='Lisää ensin PitchAPI-avain.';return}$('#out').innerHTML='';$('#status').textContent='Haetaan päivän ottelut…';try{await loadLeagues();const date=$('#date').value;const d=await api(`date/${date}?status=all`);const allowedIds=new Set(Object.values(leagueMap).map(x=>x.id));games=(d.matches||[]).filter(m=>allowedIds.has(m.league?.id)).map(m=>{const target=ALLOWED.find(n=>leagueMap[n]?.id===m.league?.id);return {...m,league:{...(m.league||{}),name:target||m.league?.name}}}).sort((a,b)=>new Date(a.time_utc)-new Date(b.time_utc));$('#status').textContent=`${games.length} ottelua · PitchAPI`;render()}catch(e){$('#status').innerHTML=`<div class="err">${esc(e.message)}<br><small>Julkisessa versiossa API-avain tulee Cloudflare Workerista — sitä ei tarvitse syöttää tähän selaimeen.</small></div>`}}
+async function load(){if(!key()&&!isPublicWorker()){setKeyUI();$('#status').textContent='Lisää ensin PitchAPI-avain.';return}$('#out').innerHTML='';$('#status').textContent='Haetaan päivän ottelut…';try{await loadLeagues();const date=$('#date').value;const d=await api(`date/${date}?status=all`);const allowedIds=new Set(Object.values(leagueMap).map(x=>x.id));games=(d.matches||[]).filter(m=>allowedIds.has(m.league?.id)).map(m=>{const target=ALLOWED.find(n=>leagueMap[n]?.id===m.league?.id);return {...m,league:{...(m.league||{}),name:target||m.league?.name}}});games=await Promise.all(games.map(async m=>{const fetchTeam=async(t)=>{if(!t?.id||t.image_url)return t;try{const d=await api(`teams/${encodeURIComponent(t.id)}`);const q=d?.team||d;return {...t,...(q&&typeof q==='object'?q:{}),image_url:q?.image_url||q?.logo_url||q?.logo?.url||t.image_url||''};}catch(e){return t}};return {...m,home_team:await fetchTeam(m.home_team),away_team:await fetchTeam(m.away_team)}}));games.sort((a,b)=>new Date(a.time_utc)-new Date(b.time_utc));$('#status').textContent=`${games.length} ottelua · PitchAPI`;render()}catch(e){$('#status').innerHTML=`<div class="err">${esc(e.message)}<br><small>Julkisessa versiossa API-avain tulee Cloudflare Workerista — sitä ei tarvitse syöttää tähän selaimeen.</small></div>`}}
 async function loadLeagueDateIndex(leagueName){
   const box=$('#v20Days');
   if(!box)return;
