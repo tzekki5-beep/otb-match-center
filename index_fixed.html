@@ -288,6 +288,19 @@ html,body{overflow-x:hidden}
 .player-stat-values .card-yellow,.player-stat-values .card-red{font-size:16px!important}
 @media(max-width:600px){.pitch{min-height:1100px!important;height:1100px!important}.pitch .players{height:1100px!important;min-height:1100px!important}.p{width:102px!important}.p .face{width:56px!important;height:56px!important}.p .name{font-size:12px!important;max-width:102px!important}.p .nums,.p .player-stat-values{font-size:12px!important;min-height:15px!important}.player-stat-values .card-yellow,.player-stat-values .card-red{font-size:12px!important}}
 </style>
+
+<style id="v26-final-lineup-ui">
+.pitch{min-height:980px!important;background:#0b4a3f!important}
+.pitch .players{height:980px!important}
+.p{width:92px!important;filter:drop-shadow(0 2px 2px #0009)!important}
+.p .face{width:50px!important;height:50px!important;border-width:3px!important}
+.p .name{font-size:11px!important;line-height:1.08!important;max-width:96px!important;padding:3px 5px!important}
+.p .nums,.p .player-stat-values{font-size:10px!important;line-height:1.05!important;font-weight:900!important;letter-spacing:-.2px!important;margin-top:3px!important;min-height:11px!important;overflow:visible!important}
+.player-stat-values{white-space:nowrap!important}
+.shotmap-wrap{grid-template-columns:minmax(220px,300px) 1fr!important}
+.shotmap svg{max-height:430px!important}
+@media(max-width:600px){.pitch{min-height:900px!important}.pitch .players{height:900px!important}.p{width:78px!important}.p .face{width:44px!important;height:44px!important}.p .name{font-size:9px!important;max-width:82px!important}.p .nums,.p .player-stat-values{font-size:8px!important}}
+</style>
 </head><body>
 
 <div style="margin:8px 0;padding:8px 10px;border-radius:9px;background:rgba(16,43,44,.75);font-size:12px;opacity:.85">
@@ -485,81 +498,69 @@ async function enrichPlayerImages(starters){
   }));
 }
 function posText(p){
-  const v=p?.position||p?.position_name||p?.positionName||p?.role||p?.player?.position||'';
-  if(typeof v==='object') return String(v.name||v.short_name||v.abbreviation||v.code||'');
+  const v=p?.position||p?.position_name||p?.positionName||p?.position_short||p?.positionShort||p?.position_code||p?.positionCode||p?.role||p?.player?.position||p?.player?.position_name||p?.player?.position_short||p?.player?.position_code||'';
+  if(typeof v==='object') return String(v.name||v.short_name||v.shortName||v.abbreviation||v.code||'');
   return String(v);
 }
 function positionGroup(p){
   const raw=posText(p).toLowerCase().replace(/[._-]+/g,' ').trim();
-  if(/goal|keeper|goalkeeper|\bgk\b|\bgk\d*\b|\b1\b/.test(raw)) return 'gk';
-  if(/defen|defender|centre back|center back|centreback|centerback|full back|fullback|wing back|wingback|sweeper|libero|\bcb\b|\brb\b|\blb\b|\brwb\b|\blwb\b|\brcb\b|\blcb\b|\b2\b|\b3\b|\b4\b|\b5\b/.test(raw)) return 'def';
-  if(/forward|striker|attacker|winger|inside forward|second striker|centre forward|center forward|\bst\b|\bcf\b|\bss\b|\blw\b|\brw\b|\blf\b|\brf\b|\bfw\b|\bfwd\b|\b9\b|\b10\b/.test(raw)) return 'att';
-  if(/mid|middle|defensive mid|central mid|attacking mid|\bcm\b|\bdm\b|\bam\b|\blm\b|\brm\b|\bwm\b|\bmc\b|\bmd\b|\bme\b|\bmi\b|\b6\b|\b8\b/.test(raw)) return 'mid';
+  if(/goalkeeper|goal keeper|keeper|gk|gk\d*|goalie|portero|1/.test(raw)) return 'gk';
+  if(/centre back|center back|centreback|centerback|full back|fullback|wing back|wingback|defender|defence|defense|sweeper|libero|cb|rb|lb|rwb|lwb|rcb|lcb|2|3|4|5/.test(raw)) return 'def';
+  if(/forward|striker|attacker|winger|inside forward|second striker|centre forward|center forward|st|cf|ss|lw|rw|lf|rf|fw|fwd|9|10/.test(raw)) return 'att';
+  if(/midfielder|midfield|middle|defensive mid|central mid|attacking mid|cm|dm|am|lm|rm|wm|mc|md|me|mi|6|8|7|11/.test(raw)) return 'mid';
   return '';
 }
 function place(starters,home,formation=''){
-  /* Oikea pystykentän kokoonpano. Käytetään ensin muodostelmaa, jos API antaa
-     sen. Muuten tunnistetaan pelipaikat useilla yleisillä koodeilla (GK/CB/LB/
-     RB/DM/CM/AM/LW/RW/ST jne.) ja tarvittaessa käytetään PitchAPI:n syvyyttä
-     erottamaan saman pelipaikkaryhmän kaksi eri linjaa. */
-  const valid=starters.filter(p=>Number.isFinite(Number(p?.pitch_x))&&Number.isFinite(Number(p?.pitch_y)));
   const depth=p=>Number.isFinite(Number(p?.pitch_x))?Number(p.pitch_x):0.5;
   const width=p=>Number.isFinite(Number(p?.pitch_y))?Number(p.pitch_y):0.5;
-  const nums=String(formation||'').match(/\d+/g)?.map(Number).filter(n=>n>0)||[];
-  let gk=starters.filter(p=>positionGroup(p)==='gk');
-  if(!gk.length && valid.length>=7){
-    const keeper=[...valid].sort((a,b)=>depth(a)-depth(b))[0];
-    if(keeper)gk=[keeper];
+  const group=p=>positionGroup(p);
+  let gk=starters.filter(p=>group(p)==='gk');
+  const used=new Set(gk);
+  const outfield=starters.filter(p=>!used.has(p));
+  // If the feed does not mark the goalkeeper, use the player whose role/depth
+  // most strongly indicates the own-goal end, but never sacrifice a known GK.
+  if(!gk.length && outfield.length){
+    const keeper=[...outfield].sort((a,b)=>depth(a)-depth(b))[0];
+    gk=[keeper]; outfield.splice(outfield.indexOf(keeper),1);
   }
-  const gkSet=new Set(gk.slice(0,1));
-  const outfield=starters.filter(p=>!gkSet.has(p));
+  let nums=String(formation||'').match(/\d+/g)?.map(Number).filter(n=>n>0)||[];
+  if(nums.reduce((a,b)=>a+b,0)!==outfield.length) nums=[];
   const rows=[];
-
-  if(nums.length>=3){
+  if(nums.length>=2){
     const sorted=[...outfield].sort((a,b)=>depth(a)-depth(b)||width(a)-width(b));
     let cursor=0;
     nums.forEach(n=>{const row=sorted.slice(cursor,cursor+n);if(row.length)rows.push(row);cursor+=n;});
-    if(cursor<sorted.length)rows.push(sorted.slice(cursor));
   }else{
-    const defs=outfield.filter(p=>positionGroup(p)==='def');
-    const mids=outfield.filter(p=>positionGroup(p)==='mid');
-    const atts=outfield.filter(p=>positionGroup(p)==='att');
-    const unknown=outfield.filter(p=>!positionGroup(p));
+    const defs=outfield.filter(p=>group(p)==='def');
+    const mids=outfield.filter(p=>group(p)==='mid');
+    const atts=outfield.filter(p=>group(p)==='att');
     if(defs.length)rows.push(defs);
     if(mids.length){
       const sm=[...mids].sort((a,b)=>depth(a)-depth(b));
-      if(sm.length>=5){
-        let gap=0,gi=-1;for(let i=1;i<sm.length;i++){const g=depth(sm[i])-depth(sm[i-1]);if(g>gap){gap=g;gi=i}}
-        if(gap>=0.075&&gi>0&&gi<sm.length){rows.push(sm.slice(0,gi),sm.slice(gi));}else rows.push(sm);
+      // Split a double-pivot / attacking-midfield line when depth clearly shows it.
+      if(sm.length>=4){
+        let gap=0,idx=-1;for(let i=1;i<sm.length;i++){const d=depth(sm[i])-depth(sm[i-1]);if(d>gap){gap=d;idx=i}}
+        if(gap>=0.10&&idx>0&&idx<sm.length)rows.push(sm.slice(0,idx),sm.slice(idx));else rows.push(sm);
       }else rows.push(sm);
     }
     if(atts.length)rows.push([...atts].sort((a,b)=>depth(a)-depth(b)));
-    if(unknown.length){
-      const so=[...unknown].sort((a,b)=>depth(a)-depth(b));
-      if(!defs.length&&!mids.length&&!atts.length){
-        const a=so.slice(0,4),b=so.slice(4,7),c=so.slice(7);if(a.length)rows.push(a);if(b.length)rows.push(b);if(c.length)rows.push(c);
-      }else rows.push(so);
-    }
+    const assigned=new Set([...defs,...mids,...atts]);
+    const unknown=outfield.filter(p=>!assigned.has(p));
+    if(unknown.length)rows.push([...unknown].sort((a,b)=>depth(a)-depth(b)));
   }
-  if(!rows.length){
-    const so=[...outfield].sort((a,b)=>depth(a)-depth(b));
-    rows.push(so.slice(0,4),so.slice(4,7),so.slice(7));
-  }
+  // Keep the common football shape even when the API omits positions.
+  if(!rows.length){const sorted=[...outfield].sort((a,b)=>depth(a)-depth(b));rows.push(sorted.slice(0,4),sorted.slice(4,7),sorted.slice(7));}
   const allRows=gk.length?[gk.slice(0,1),...rows]:rows;
   const nRows=allRows.length;
-  const homeY=nRows>=6?[92,77,63,48,33,18]:nRows===5?[92,73,53,33,15]:nRows===4?[92,68,45,22]:[92,70,48,26];
+  const homeY=nRows>=5?[94,77,60,43,29]:[94,72,49,28];
   const awayY=homeY.map(v=>100-v);
   const out=[];
   allRows.forEach((row,ri)=>{
     const ordered=row.slice().sort((a,b)=>width(a)-width(b));
     const n=ordered.length;
-    const edge=n>=6?7:n===5?10:n===4?14:n===3?21:n===2?32:50;
+    const edge=n>=6?8:n===5?10:n===4?14:n===3?22:n===2?34:50;
     const span=100-edge*2;
-    ordered.forEach((player,i)=>{
-      const x=n===1?50:edge+(span*i/(n-1));
-      const y=(home?homeY:awayY)[Math.min(ri,homeY.length-1)];
-      out.push({p:player,x,y});
-    });
+    ordered.forEach((player,i)=>out.push({p:player,x:n===1?50:edge+span*i/(n-1),y:(home?homeY:awayY)[Math.min(ri,homeY.length-1)]}));
   });
   return out;
 }
@@ -590,8 +591,16 @@ function findPlayerRow(map,ref){
   return null;
 }
 async function mergeImages(starters,map){
-  const merged=starters.map(p=>{const q=findPlayerRow(map,p);return q?{...q,...p,image_url:p?.image_url||p?.player?.image_url||q.image_url}:p;});
-  return enrichPlayerImages(merged);
+  const merged=starters.map(p=>{const q=findPlayerRow(map,p);return q?{...q,...p,image_url:p?.image_url||p?.player?.image_url||q.image_url,position:p?.position||q.position||q.position_name||q.position_short||q.position_code}:p;});
+  return Promise.all(merged.map(async p=>{
+    if(posText(p)) return p;
+    const id=pid(p); if(!id) return p;
+    try{
+      const d=await api(`players/${encodeURIComponent(id)}`); const q=d?.player||d;
+      if(q&&typeof q==='object') return {...p,...q,image_url:p.image_url||q.image_url||q.image?.url||''};
+    }catch(e){}
+    return p;
+  }));
 }
 function imageFallback(el){
   const id=el.dataset.pid||'';
@@ -729,7 +738,7 @@ function renderPlayerMetrics(rows,shots,events){
   const yellow=(events||[]).filter(e=>/yellow/i.test(String(e?.event_type||e?.type||''))).length,red=(events||[]).filter(e=>/red/i.test(String(e?.event_type||e?.type||''))).length;
   return {a,xg,inside,outside,on,goals,yellow,red,shots:ss.length};
 }
-function rawGroupHtml(title,items){const good=items.filter(x=>x[1]!==null&&x[1]!==undefined);if(!good.length)return'';return `<div class="raw-group"><div class="raw-title">${title}</div><div class="raw-grid">${good.map(x=>`<div class="raw-item">${esc(x[0])}<b>${esc(String(x[1]))}</b></div>`).join('')}</div></div>`}
+function rawGroupHtml(title,items){const good=items||[];if(!good.length)return'';return `<div class="raw-group"><div class="raw-title">${title}</div><div class="raw-grid">${good.map(x=>`<div class="raw-item">${esc(x[0])}<b>${esc(x[1]===null||x[1]===undefined?'—':String(x[1]))}</b></div>`).join('')}</div></div>`}
 async function buildPlayerPanelData(hist,playerRef){
   const rows=await buildHistoryRows(await buildTeamHistoryRows(hist),playerRef);const shotLists=await Promise.all(hist.map(g=>getPlayerShots(g.id,typeof playerRef==='object'?pid(playerRef):playerRef)));const shots=shotLists.flat();
   const events=[]; for(let i=0;i<hist.length;i++){try{const d=await api(`matches/${hist[i].id}/events`);for(const e of (d?.events||[])){const eid=e?.player?.id??e?.player_id;const en=e?.player?.name??e?.player_name;if((playerRef&&eid!=null&&String(eid)===String(typeof playerRef==='object'?pid(playerRef):playerRef))||(en&&normName(en)===normName(typeof playerRef==='object'?pName(playerRef):'')))events.push(e)}}catch(e){}}
@@ -803,7 +812,7 @@ async function openPlayer(id,name,teamId,leagueName,cutoffTime){
   const cards=[['Maalit',metrics.goals],['xG',metrics.xg.toFixed(2)],['Laukaukset',metrics.shots],['Kohti',metrics.on],['Boksista',metrics.inside],['Ulkopuolelta',metrics.outside],['🟨 Keltaiset',metrics.yellow],['🟥 Punaiset',metrics.red],['Rikkeet',a.fouls===null?'—':fmtMetric(a.fouls)]];
   const raw1=[['Arvosana',fmtMetric(a.rating)],['Minuutit',fmtMetric(a.minutes)],['Maalit',fmtMetric(a.goals)],['Syötöt',fmtMetric(a.assists)],['xG',fmtMetric(a.xg)],['xA',fmtMetric(a.xa)],['Laukaukset',fmtMetric(a.shots)],['Kosketukset',fmtMetric(a.touches)],['Syötöt',fmtMetric(a.passes)],['Tarkat syötöt',fmtMetric(a.accuratePasses)],['Avainsyötöt',fmtMetric(a.keyPasses)],['Keskitykset',fmtMetric(a.crosses)]];
   const raw2=[['Kuljetukset / haastot',fmtMetric(a.dribbles)],['Taklaukset',fmtMetric(a.tackles)],['Katkot',fmtMetric(a.interceptions)],['Purkaukset',fmtMetric(a.clearances)],['Blokit',fmtMetric(a.blocks)],['Riistot/palautukset',fmtMetric(a.recoveries)],['Voitetut kaksinkamppailut',fmtMetric(a.duelsWon)],['Voitetut ilmakaksinkamppailut',fmtMetric(a.aerialsWon)],['Rikkeet',fmtMetric(a.fouls)],['Rikkeet vastaan',fmtMetric(a.foulsWon)]];
-  d.innerHTML=`<button class="x" onclick="this.parentElement.classList.add('hidden')">✕</button><h2>${esc(name)}</h2><div class="drawer-sub">${esc(leagueName||'')} · viimeiset ${vals.length} ottelua</div><div class="player-tabs"><button class="player-tab active" data-player-view="summary">📊 Yhteenveto</button><button class="player-tab" data-player-view="raw">📋 Raaka data</button><button class="player-tab" data-player-view="matches">🧾 Ottelut</button><button class="player-tab" data-player-view="season">📅 Kausi</button></div><div data-player-pane="summary"><div class="grid">${cards.map(x=>`<div class="stat"><b>${esc(String(x[1]))}</b>${esc(x[0])}</div>`).join('')}</div><div class="mini">Viimeiset ${vals.length} ottelua · OTB-keskiarvo <b>${avg}</b>/peli · OTB kohti <b>${acc}%</b> · OTB vähintään kerran ${active}/${vals.length}</div><div class="shotmap-wrap"><div>${shotMapSvg(data.shots)}<div class="drawer-note">Pisteen koko kuvaa xG:tä. Pisteen päällä näet minuutin, xG:n ja laukaisutyypin.</div></div><div><div class="raw-title">🎯 Laukaisuyhteenveto</div><div class="shot-summary"><div class="stat"><b>${metrics.shots}</b>Laukaukset</div><div class="stat"><b>${metrics.on}</b>Kohti</div><div class="stat"><b>${metrics.goals}</b>Maalit</div><div class="stat"><b>${metrics.xg.toFixed(2)}</b>xG</div><div class="stat"><b>${metrics.inside}</b>Boksista</div><div class="stat"><b>${metrics.outside}</b>Ulkopuolelta</div></div></div></div></div><div data-player-pane="raw" style="display:none"><div class="drawer-note">Raaka data perustuu pelaajan ottelukohtaisiin tilastoihin. Jos jokin kenttä ei ole saatavilla, näytetään viiva eikä keksitä nollaa.</div>${rawGroupHtml('⚽ Hyökkäys ja syöttäminen',raw1)}${rawGroupHtml('🛡️ Puolustus ja kaksinkamppailut',raw2)}${rawGroupHtml('🟨 Kurinalaisuus',[["Keltaiset",metrics.yellow],["Punaiset",metrics.red],["Rikkeet",a.fouls===null?'—':fmtMetric(a.fouls)],["Rikkeet vastaan",a.foulsWon===null?'—':fmtMetric(a.foulsWon)]])}</div><div data-player-pane="matches" style="display:none"><table class="drawer-table"><thead><tr><th>Ottelu</th><th>Kohti</th><th>OTB</th><th>OTB kohti</th><th>Lauk.</th><th>Kortit</th><th>Pääpallot</th><th>Rikkeet</th></tr></thead><tbody>${vals.map(v=>`<tr><td>${esc(v.opp)}</td><td>${v.shotOn||0}</td><td>${v.otb}</td><td>${v.on}</td><td>${v.all}</td><td>${v.cards||0}</td><td>${v.headers||0}</td><td>${v.fouls||0}</td></tr>`).join('')}</tbody></table></div><div data-player-pane="season" style="display:none"><div class="status" data-season-status>Paina Kausi-välilehteä lataamaan koko tämän kauden pelaajadata ja laukaisukartta.</div><div data-season-content></div></div>`;
+  d.innerHTML=`<button class="x" onclick="this.parentElement.classList.add('hidden')">✕</button><h2>${esc(name)}</h2><div class="drawer-sub">${esc(leagueName||'')} · viimeiset ${vals.length} ottelua</div><div class="player-tabs"><button class="player-tab active" data-player-view="summary">📊 Yhteenveto</button><button class="player-tab" data-player-view="raw">📋 Raaka data</button><button class="player-tab" data-player-view="matches">🧾 Ottelut</button><button class="player-tab" data-player-view="season">🎯 Laukauskartta</button></div><div data-player-pane="summary"><div class="grid">${cards.map(x=>`<div class="stat"><b>${esc(String(x[1]))}</b>${esc(x[0])}</div>`).join('')}</div><div class="mini">Viimeiset ${vals.length} ottelua · OTB-keskiarvo <b>${avg}</b>/peli · OTB kohti <b>${acc}%</b> · OTB vähintään kerran ${active}/${vals.length}</div><div class="shotmap-wrap"><div>${shotMapSvg(data.shots)}<div class="drawer-note">Pisteen koko kuvaa xG:tä. Pisteen päällä näet minuutin, xG:n ja laukaisutyypin.</div></div><div><div class="raw-title">🎯 Laukaisuyhteenveto</div><div class="shot-summary"><div class="stat"><b>${metrics.shots}</b>Laukaukset</div><div class="stat"><b>${metrics.on}</b>Kohti</div><div class="stat"><b>${metrics.goals}</b>Maalit</div><div class="stat"><b>${metrics.xg.toFixed(2)}</b>xG</div><div class="stat"><b>${metrics.inside}</b>Boksista</div><div class="stat"><b>${metrics.outside}</b>Ulkopuolelta</div></div></div></div></div><div data-player-pane="raw" style="display:none"><div class="drawer-note">Raaka data perustuu pelaajan ottelukohtaisiin tilastoihin. Jos jokin kenttä ei ole saatavilla, näytetään viiva eikä keksitä nollaa.</div>${rawGroupHtml('⚽ Hyökkäys ja syöttäminen',raw1)}${rawGroupHtml('🛡️ Puolustus ja kaksinkamppailut',raw2)}${rawGroupHtml('🟨 Kurinalaisuus',[["Keltaiset",metrics.yellow],["Punaiset",metrics.red],["Rikkeet",a.fouls===null?'—':fmtMetric(a.fouls)],["Rikkeet vastaan",a.foulsWon===null?'—':fmtMetric(a.foulsWon)]])}</div><div data-player-pane="matches" style="display:none"><table class="drawer-table"><thead><tr><th>Ottelu</th><th>Kohti</th><th>OTB</th><th>OTB kohti</th><th>Lauk.</th><th>Kortit</th><th>Pääpallot</th><th>Rikkeet</th></tr></thead><tbody>${vals.map(v=>`<tr><td>${esc(v.opp)}</td><td>${v.shotOn||0}</td><td>${v.otb}</td><td>${v.on}</td><td>${v.all}</td><td>${v.cards||0}</td><td>${v.headers||0}</td><td>${v.fouls||0}</td></tr>`).join('')}</tbody></table></div><div data-player-pane="season" style="display:none"><div class="status" data-season-status>Paina Kausi-välilehteä lataamaan koko tämän kauden pelaajadata ja laukaisukartta.</div><div data-season-content></div></div>`;
   const tabs=[...d.querySelectorAll('[data-player-view]')],panes=[...d.querySelectorAll('[data-player-pane]')];tabs.forEach(tab=>tab.onclick=async()=>{tabs.forEach(x=>x.classList.remove('active'));tab.classList.add('active');const v=tab.dataset.playerView;panes.forEach(p=>p.style.display=p.dataset.playerPane===v?'block':'none');if(v==='season'&&!d.dataset.seasonLoaded){d.dataset.seasonLoaded='loading';await loadPlayerSeason(d,teamId,leagueName,cutoffTime,ref)}});
  }catch(e){d.innerHTML=`<button class="x" onclick="this.parentElement.classList.add('hidden')">✕</button><h2>${esc(name)}</h2><div class="err">Tilastoja ei saatu: ${esc(e.message)}</div>`}
 }
