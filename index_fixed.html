@@ -225,6 +225,17 @@ html,body{overflow-x:hidden}
 .p .nums,.p .player-stat-values{font-size:13px!important;line-height:1.15!important;font-weight:900!important;letter-spacing:-.2px!important;min-height:15px!important;margin-top:4px!important;overflow:visible!important}
 .p .player-stat-values{display:none!important}
 @media(max-width:600px){.p{width:110px!important}.p .face{width:54px!important;height:54px!important}.p .name{font-size:11px!important;max-width:106px!important}.p .nums,.p .player-stat-values{font-size:10px!important}}
+/* v29: lineup field spacing + stat mode visibility */
+.pitch{min-height:1040px!important}
+.pitch .players{height:1040px!important}
+.p{width:112px!important}
+.p .face{width:62px!important;height:62px!important}
+.p .name{font-size:13px!important;max-width:110px!important;padding:4px 6px!important;line-height:1.12!important}
+.p .nums,.p .player-stat-values{font-size:11px!important;line-height:1.12!important;font-weight:900!important;letter-spacing:-.35px!important;white-space:nowrap!important;overflow:visible!important;margin-top:4px!important;min-height:14px!important}
+.p .player-stat-values{display:none!important}
+.p.stat-mode-alt .nums{display:none!important}
+.p.stat-mode-alt .player-stat-values{display:block!important}
+@media(max-width:600px){.pitch{min-height:920px!important}.pitch .players{height:920px!important}.p{width:98px!important}.p .face{width:52px!important;height:52px!important}.p .name{font-size:10px!important;max-width:96px!important}.p .nums,.p .player-stat-values{font-size:9px!important;letter-spacing:-.25px!important}}
 </style></head><body>
 
 <div style="margin:8px 0;padding:8px 10px;border-radius:9px;background:rgba(16,43,44,.75);font-size:12px;opacity:.85">
@@ -435,20 +446,34 @@ function positionGroup(p){
   return 'mid';
 }
 function place(starters,home){
-  /* PitchAPI gives confirmed starters their real formation coordinates.
-     Use those first so the vertical pitch keeps our existing direction while
-     the players land in the positions actually published for the XI. */
+  /* PitchAPI:n pitch_x/pitch_y ovat formationin 0–1-koordinaatteja.
+     Home käyttää omaa hyökkäyssuuntaansa ja away käännetään vastakkaiseen
+     suuntaan. Lisäksi lähellä toisiaan olevia kortteja levitetään vaakasuunnassa,
+     jotta nimet ja valittu tilasto eivät mene päällekkäin. */
   const hasCoords=starters.filter(p=>Number.isFinite(Number(p?.pitch_x))&&Number.isFinite(Number(p?.pitch_y))&&(Number(p.pitch_x)!==0||Number(p.pitch_y)!==0)).length>=7;
   if(hasCoords){
     const coordVals=starters.flatMap(p=>[Number(p?.pitch_x),Number(p?.pitch_y)]).filter(Number.isFinite);
     const scale=coordVals.some(v=>Math.abs(v)>1.5)?1:100;
-     return starters.map(p=>{
-      let x=Number(p.pitch_x)*scale,rawY=Number(p.pitch_y)*scale;
-      let y=home?100-rawY:rawY;
-      x=Math.max(7,Math.min(93,x));
-      y=Math.max(7,Math.min(93,y));
-      return {p,x,y};
+    const pts=starters.map(p=>({p,x:Number(p.pitch_x)*scale,y:(home?Number(p.pitch_y)*scale:100-Number(p.pitch_y)*scale)}));
+    pts.forEach(q=>{q.x=Math.max(7,Math.min(93,q.x));q.y=Math.max(7,Math.min(93,q.y));});
+    const sorted=[...pts].sort((a,b)=>a.y-b.y||a.x-b.x);
+    const rows=[];
+    sorted.forEach(q=>{
+      let row=rows[rows.length-1];
+      if(!row||Math.abs(row[0].y-q.y)>6)rows.push(row=[q]);else row.push(q);
     });
+    rows.forEach(row=>{
+      if(row.length<2)return;
+      row.sort((a,b)=>a.x-b.x);
+      const minGap=11.5;
+      let needs=row.some((q,i)=>i&&q.x-row[i-1].x<minGap);
+      if(!needs)return;
+      const center=row.reduce((s,q)=>s+q.x,0)/row.length;
+      const gap=Math.min(minGap,84/Math.max(1,row.length-1));
+      const start=center-gap*(row.length-1)/2;
+      row.forEach((q,i)=>q.x=Math.max(7,Math.min(93,start+i*gap)));
+    });
+    return pts;
   }
   const groups={gk:[],def:[],mid:[],att:[]};
   starters.forEach(p=>groups[positionGroup(p)].push(p));
@@ -568,7 +593,9 @@ function renderPlayerStat(el,mode){
   const box=el.querySelector('[data-player-stat-values]');
   const legacy=el.querySelector('[data-otb]');
   if(!box)return;
+  el.classList.toggle('stat-mode-alt',mode!=='otb');
   if(mode==='otb'){
+    el.classList.remove('stat-mode-alt');
     if(legacy){legacy.style.display='block';legacy.innerHTML=hist.map((v,i)=>`<span class="${statHighClass(hist.map(x=>Number(x.otb)||0),i)}">${Number(v.otb)||0}/${Number(v.on)||0}</span>`).join(' ');}
     box.style.display='none';
     return;
@@ -671,7 +698,8 @@ async function loadHistory(m,teamId,starters){
       const el=document.querySelector(`${pitchId} .p[data-id="${CSS.escape(key)}"]`);
       if(!el)return;
       el._history=vals;
-      renderPlayerStat(el,'otb');
+      const mode=document.querySelector(`[data-stat-bar="${CSS.escape(String(m.id))}"]`)?.dataset.mode||'otb';
+      renderPlayerStat(el,mode);
       window.dispatchEvent(new CustomEvent('otb-history-ready',{detail:{matchId:m.id,playerId:String(pid(p)||key)}}));
     }));
   }catch(e){console.warn('history',e)}
