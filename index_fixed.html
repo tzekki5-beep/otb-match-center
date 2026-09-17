@@ -647,7 +647,7 @@ function place(starters,home,formation=''){
     groups.gk=[xi[0]];
     let i=1;groups.def=xi.slice(i,i+dc);i+=dc;groups.mid=xi.slice(i,i+mc);i+=mc;groups.att=xi.slice(i,i+ac);
   }
-  const rows=[[groups.gk.slice(0,1),home?8:92],[groups.def,home?28:72],[groups.mid,home?50:50],[groups.att,home?72:28]].filter(([r])=>r.length);
+  const rows=[[groups.gk.slice(0,1),home?7:93],[groups.def,home?23:77],[groups.mid,home?36:64],[groups.att,home?46:54]].filter(([r])=>r.length);
   const out=[];rows.forEach(([row,y])=>{const xs=spreadX(row.length);row.forEach((p,i)=>out.push({p,x:xs[i],y}))});return out;
 }
 
@@ -1407,5 +1407,5 @@ $('#date').value=today();if(isPublicWorker())$('#setup').style.display='none';$(
   setTimeout(refresh,2500);
 })();
 </script>
-
+<style id="v40-long-pitch">.pitch{min-height:1700px!important;height:1700px!important;overflow:visible!important}.pitch .players{height:1700px!important;min-height:1700px!important}@media(max-width:600px){.pitch{min-height:1350px!important;height:1350px!important}.pitch .players{height:1350px!important;min-height:1350px!important}}</style>
 </body></html>
