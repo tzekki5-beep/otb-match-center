@@ -217,7 +217,7 @@ html,body{overflow-x:hidden}
 .shot-summary{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:7px}.shot-summary .stat{padding:8px}.shot-summary .stat b{font-size:18px}.player-metric-grid{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:7px;margin:10px 0}.player-metric{background:#0b2832;border:1px solid #294b55;border-radius:9px;padding:8px}.player-metric b{display:block;font-size:16px}.player-metric span{font-size:10px;color:#9fb5bd}.raw-group{margin:10px 0}.raw-title{font-weight:900;font-size:13px;margin-bottom:6px}.raw-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:6px}.raw-item{background:#0b2832;border-radius:8px;padding:7px;font-size:11px}.raw-item b{float:right}.drawer-table{font-size:11px}.drawer-table td,.drawer-table th{padding:6px 5px}.drawer-note{font-size:10px;color:#8fa7ae;margin-top:7px}
 @media(max-width:650px){.shotmap-wrap{grid-template-columns:1fr}.player-metric-grid{grid-template-columns:repeat(2,minmax(0,1fr))}}
 </style>
-</head><body>
+<style id="lineup-status-ui">.lineup-status{position:absolute;left:50%;top:8px;transform:translateX(-50%);z-index:3;background:#071b22dd;border:1px solid #527273;border-radius:9px;padding:6px 10px;font-size:11px;font-weight:800;white-space:nowrap;max-width:92%;overflow:hidden;text-overflow:ellipsis;text-align:center}.lineup-status.predicted{color:#ffd84a;border-color:#806d24}.lineup-status.official{color:#39c98b;border-color:#2b7859}@media(max-width:600px){.lineup-status{font-size:9px;padding:5px 7px;top:5px}}</style></head><body>
 
 <div style="margin:8px 0;padding:8px 10px;border-radius:9px;background:rgba(16,43,44,.75);font-size:12px;opacity:.85">
   OTB Match Center · julkinen web-versio
@@ -304,7 +304,7 @@ const MAIN_PATTERNS={
 };
 const MAIN_SET=new Set(MAIN_LEAGUES);
 const ALLOWED=MAIN_LEAGUES;
-let filter='ALL',games=[],leagueMap={},lineupCache=new Map(),matchPlayersCache=new Map(),shotsCache=new Map(),playerStatsCache=new Map(),historyCache=new Map(),otherAnalysisCache=new Map();
+let filter='ALL',games=[],leagueMap={},lineupCache=new Map(),matchPlayersCache=new Map(),shotsCache=new Map(),playerStatsCache=new Map(),historyCache=new Map(),otherAnalysisCache=new Map(),lineupRefreshTimer=null;
 const $=s=>document.querySelector(s),$$=s=>[...document.querySelectorAll(s)];
 function today(){let d=new Date();return new Date(d-d.getTimezoneOffset()*60000).toISOString().slice(0,10)}
 function esc(s){return String(s??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]))}
@@ -389,7 +389,9 @@ function render(){
   if(!list.length){$('#out').innerHTML='<div class="status">Ei otteluita tällä päivällä tässä sarjassa.</div>';return}
   if(MAIN_SET.has(filter)){
     $('#out').innerHTML=list.map(m=>`<section class="match"><div class="mh"><div><div class="teams">${esc(matchLabel(m))}</div><div class="lg">${esc(m.league?.name||'')}</div></div><div class="tm">${localTime(m.time_utc)}${m.status==='finished'?' · '+m.score_home+'–'+m.score_away:''}</div></div><div class="player-stat-bar" data-stat-bar="${esc(m.id)}"><div class="player-stat-caption">Pelaajien viimeiset 5 ottelua · valitse näytettävä tilasto</div><button class="player-stat-btn active" data-stat="otb">OTB / OTB kohti</button><button class="player-stat-btn" data-stat="shots">Laukaukset</button><button class="player-stat-btn" data-stat="cards">Kortit</button><button class="player-stat-btn" data-stat="fouls">Rikkeet</button><button class="player-stat-btn" data-stat="headers">Pääpallot</button><button class="player-stat-btn" data-stat="all">Kaikki laukaukset</button><span class="stat-mode-label">Viimeiset 5</span></div><div class="pitch" id="p${m.id.replace(/[^a-zA-Z0-9_-]/g,'')}"><div class="goal g1"></div><div class="goal g2"></div><span class="centerDot"></span><div class="players"><div class="status">Ladataan kokoonpanoa…</div></div></div><div class="note">OUT = boxin ulkopuolelta · pelaajaa painamalla näet tarkat tilastot.</div></section>`).join('');
-    list.forEach(loadGame);
+    list.forEach(m=>loadGame(m,false));
+    if(lineupRefreshTimer)clearInterval(lineupRefreshTimer);
+    lineupRefreshTimer=setInterval(()=>{if(document.visibilityState==='hidden')return;list.filter(m=>m.status!=='finished').forEach(m=>loadGame(m,true));},300000);
   }else{
     $('#out').innerHTML=list.map(m=>`<section class="other-match match-analysis-card" data-other-match="${esc(m.id)}"><div class="ma-head"><div class="ma-teams"><div class="ma-team">${m.home_team?.image_url?`<img class="ma-logo" src="${esc(m.home_team.image_url)}" alt="">`:''}<span>${esc(m.home_team?.name||'')}</span></div><div class="ma-vs">VS</div><div class="ma-team away"><span>${esc(m.away_team?.name||'')}</span>${m.away_team?.image_url?`<img class="ma-logo" src="${esc(m.away_team.image_url)}" alt="">`:''}</div></div><div class="ma-time">${localTime(m.time_utc)}${m.status==='finished'?' · '+m.score_home+'–'+m.score_away:''}</div></div><div class="ma-body"><div class="other-analysis"><div class="status">Lasketaan joukkueiden tilastofaktoja…</div></div></div><div class="ma-foot">📊 Perustuu PitchAPI:n viimeisiin otteluihin, joukkueiden tilastoihin ja H2H-kohtaamisiin. Ennuste on tilastollinen arvio, ei varma tulos.</div></section>`).join('');
     list.forEach(loadOtherGame);
@@ -454,7 +456,7 @@ function card(p,teamId,matchId,x,y){
   const id=pid(p),key=playerKey(p),u=img(p);
   return `<div class="p" data-id="${esc(key)}" data-player-id="${esc(id||'')}" data-player-name="${esc(pName(p))}" data-team="${esc(teamId)}" data-match="${esc(matchId)}" style="left:${x}%;top:${y}%"><img class="face" data-pid="${esc(id||'')}" src="${esc(u)}" onerror="imageFallback(this)"><div class="name">${esc(pName(p))}</div><div class="nums otb" data-otb>–/– · –/– · –/– · –/– · –/–</div><div class="player-stat-values" data-player-stat-values></div><span data-ont style="display:none"></span></div>`;
 }
-async function getLineups(id){if(lineupCache.has(id))return lineupCache.get(id);const d=await api(`matches/${id}/lineups`);lineupCache.set(id,d);return d}
+async function getLineups(id,force=false){if(!force&&lineupCache.has(id))return lineupCache.get(id);if(force)lineupCache.delete(id);const d=await api(`matches/${id}/lineups`);lineupCache.set(id,d);return d}
 async function getMatchPlayers(id){
   if(matchPlayersCache.has(id))return matchPlayersCache.get(id);
   const d=await api(`matches/${id}/players`),map=new Map();
@@ -494,13 +496,23 @@ function renderAnalysis(m,home,away){
   const rankHtml=top.map((x,i)=>{const acc=x.totalOtb?Math.round(100*x.totalOn/x.totalOtb):0;const star=x.score>=10?'★★★★★':x.score>=7?'★★★★☆':x.score>=5?'★★★☆☆':x.score>=3?'★★☆☆☆':'★☆☆☆☆';return `<div class="rankrow ${i<2?'hot':''}"><div class="ranknum">${i+1}</div><div><div class="rankname">${esc(x.name)}</div><div class="rankmeta">${star} · ${x.totalOtb} OTB · ${x.totalOn} kohti · ${x.totalAll} kaikki · 🟨 ${x.totalFouls} rikkeet · 🏹 ${x.totalHeaders} puskut · ${acc}% OTB-kohti</div></div><div class="rankscore">${x.score.toFixed(1)}</div></div>`;}).join('');
   panel.innerHTML=`<h3>📊 Ottelun OTB-yhteenveto</h3><div class="mini">TOP 5 perustuu viimeiseen 5 otteluun: OTB-määrä + OTB kohti + tasaisuus. Mitä suurempi pistemäärä, sitä kiinnostavampi tilastollisesti.</div><div class="teamtotals"><div class="teamtotal">${esc(m.home_team?.name||'Kotijoukkue')}: <b>${teamTotal(h,'totalOtb')}</b> OTB · <b>${teamTotal(h,'totalOn')}</b> kohti</div><div class="teamtotal">${esc(m.away_team?.name||'Vierasjoukkue')}: <b>${teamTotal(a,'totalOtb')}</b> OTB · <b>${teamTotal(a,'totalOn')}</b> kohti</div></div><div class="rankgrid">${rankHtml}</div>`;
 }
-async function loadGame(m){
+function lineupStarters(d,sideName,side){
+  const s=side||{}, candidates=[s.starters,s.predicted_starters,s.expected_starters,s.probable_starters,s.estimated_starters,s.predicted_lineup,s.expected_lineup,s.predicted,s.expected,s.predicted_lineup?.starters,s.expected_lineup?.starters,s.predicted?.starters,s.expected?.starters,s.lineup?.starters,d?.[sideName+'_predicted']?.starters,d?.[sideName+'_expected']?.starters,d?.predicted?.[sideName]?.starters,d?.expected?.[sideName]?.starters];
+  for(const arr of candidates)if(Array.isArray(arr)&&arr.length>=7)return arr;
+  return [];
+}
+function lineupOfficial(side,starters){return side?.confirmed===true&&Array.isArray(starters)&&starters.length>=7}
+async function loadGame(m,force=false){
   const box=$('#p'+m.id.replace(/[^a-zA-Z0-9_-]/g,'')+' .players');if(!box)return;
-  try{const d=await getLineups(m.id),home=d.home||{},away=d.away||{},hs0=home.starters||[],as0=away.starters||[];
-    if(home.confirmed===false||away.confirmed===false){box.innerHTML='<div class="status">⏳ Virallisia avauskokoonpanoja ei ole vielä julkaistu. Ennakoituja kokoonpanoja ei näytetä pelaajakohteina.</div>';return}
+  try{
+    const d=await getLineups(m.id,force),home=d.home||{},away=d.away||{};
+    const hsOfficial=home.starters||[],asOfficial=away.starters||[],hsPred=lineupStarters(d,'home',home),asPred=lineupStarters(d,'away',away);
+    const hs0=lineupOfficial(home,hsOfficial)?hsOfficial:hsPred,as0=lineupOfficial(away,asOfficial)?asOfficial:asPred;
+    const official=lineupOfficial(home,hsOfficial)&&lineupOfficial(away,asOfficial);
+    if(hs0.length<7||as0.length<7){box.innerHTML='<div class="lineup-status">⏳ Kokoonpanoja ei ole vielä saatavilla. Yritetään automaattisesti uudelleen.</div>';return}
     const pm=await getMatchPlayers(m.id).catch(()=>new Map()),hs=await mergeImages(hs0,pm),as=await mergeImages(as0,pm);
-    if(hs.length<7||as.length<7){box.innerHTML='<div class="status">Avauskokoonpano ei ole vielä saatavilla.</div>';return}
-    let html='';for(const q of place(hs,true))html+=card(q.p,home.team_id||d.home_team?.id,m.id,q.x,q.y);for(const q of place(as,false))html+=card(q.p,away.team_id||d.away_team?.id,m.id,q.x,q.y);box.innerHTML=html;
+    let html=`<div class="lineup-status ${official?'official':'predicted'}">${official?'🟢 Virallinen avauskokoonpano':'🟡 Ennakoitu kokoonpano · päivittyy automaattisesti kun virallinen julkaistaan'}</div>`;
+    for(const q of place(hs,true))html+=card(q.p,home.team_id||d.home_team?.id,m.id,q.x,q.y);for(const q of place(as,false))html+=card(q.p,away.team_id||d.away_team?.id,m.id,q.x,q.y);box.innerHTML=html;
     const hTeam=home.team_id||d.home_team?.id,aTeam=away.team_id||d.away_team?.id;await Promise.all([loadHistory(m,hTeam,hs),loadHistory(m,aTeam,as)]);renderAnalysis(m,hs,as);
     box.querySelectorAll('.p').forEach(el=>el.onclick=()=>openPlayer(el.dataset.playerId||'',el.dataset.playerName||el.querySelector('.name')?.textContent||'?',el.dataset.team,m.league?.name,m.time_utc));
   }catch(e){box.innerHTML=`<div class="err">Kokoonpanoa ei saatu: ${esc(e.message)}</div>`}
