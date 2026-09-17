@@ -316,6 +316,21 @@ html,body{overflow-x:hidden}
 .absence-marker{position:absolute;right:calc(50% - 34px);top:-8px;width:22px;height:22px;border-radius:50%;align-items:center;justify-content:center;background:#d92f45;color:#fff;border:2px solid #fff;font-size:14px;font-weight:1000;line-height:1;z-index:6;box-shadow:0 2px 6px #0009}
 .p.injury-player .name{box-shadow:0 0 0 1px #d92f45}
 </style>
+<style id="v33-real-pitch-lineup">
+/* v33: actual PitchAPI XI coordinates; never render duplicate starters */
+.pitch{min-height:900px!important;height:900px!important;overflow:hidden!important}
+.pitch .players{height:900px!important;min-height:900px!important}
+.p{width:110px!important;z-index:4!important}
+.p .face{width:58px!important;height:58px!important}
+.p .name{font-size:12px!important;max-width:108px!important}
+.p .nums,.p .player-stat-values{font-size:10px!important}
+@media(max-width:600px){
+  .pitch{min-height:760px!important;height:760px!important}
+  .pitch .players{height:760px!important;min-height:760px!important}
+  .p{width:92px!important}.p .face{width:50px!important;height:50px!important}
+  .p .name{font-size:10px!important;max-width:90px!important}
+}
+</style>
 </head><body>
 
 <div style="margin:8px 0;padding:8px 10px;border-radius:9px;background:rgba(16,43,44,.75);font-size:12px;opacity:.85">
@@ -526,6 +541,20 @@ function positionGroup(p){
   if(/^(cm|dm|am|lm|rm|wm|mc|md|me|mi|m|6|7|8|11)$/.test(compact)||/midfielder|midfield|defensive mid|central mid|attacking mid/.test(raw)) return 'mid';
   return 'mid';
 }
+
+/* PitchAPI lineups should contain exactly one starting XI.  Some predicted
+   payloads can contain repeated player objects, so remove duplicates before
+   drawing anything. */
+function cleanStartingXI(arr){
+  const out=[], seen=new Set();
+  for(const p of (Array.isArray(arr)?arr:[])){
+    const key=playerKey(p);
+    if(!key || seen.has(key)) continue;
+    seen.add(key); out.push(p);
+    if(out.length===11) break;
+  }
+  return out;
+}
 function inferFormation(starters){
   const counts={gk:0,def:0,mid:0,att:0}; starters.forEach(p=>counts[positionGroup(p)]++);
   const g=counts.gk?counts.gk:1,d=Math.max(3,Math.min(5,counts.def)),a=Math.max(1,Math.min(3,counts.att)),m=Math.max(2,11-g-d-a);
@@ -537,48 +566,42 @@ function spreadX(n){
   return Array.from({length:n},(_,i)=>margin+(100-2*margin)*i/(n-1));
 }
 function place(starters,home,formation=''){
-  /* Tactical layout: do NOT trust raw pitch_x/pitch_y for team-side placement.
-     The API coordinates can describe a different reference frame. We build the
-     visible formation from playing roles so every team stays on its own half. */
-  const groups={gk:[],def:[],mid:[],att:[]};
-  starters.forEach(p=>groups[positionGroup(p)].push(p));
-  if(!groups.gk.length){
-    const gi=starters.findIndex(p=>/goalkeeper|keeper|goalie|gk|portero/i.test(posText(p)));
-    if(gi>=0)groups.gk.push(starters[gi]);
+  /*
+    PitchAPI gives starters with pitch_x / pitch_y normalised to 0..1.
+    pitch_x is the length direction (own goal -> opponent goal) and
+    pitch_y is the width direction.  Draw both teams on one pitch:
+      home: own goal at bottom, attacking upward
+      away: own goal at top, attacking downward
+    This is much more reliable than trying to reconstruct the formation
+    from position labels.
+  */
+  const xi=cleanStartingXI(starters);
+  const hasCoords=xi.length && xi.filter(p=>Number.isFinite(Number(p.pitch_x))&&Number.isFinite(Number(p.pitch_y))).length>=8;
+  if(hasCoords){
+    return xi.map((p,i)=>{
+      const px=Number(p.pitch_x), py=Number(p.pitch_y);
+      const x=Math.max(6,Math.min(94,py*100));
+      const y=home
+        ? Math.max(6,Math.min(94,(1-px)*100))
+        : Math.max(6,Math.min(94,px*100));
+      return {p,x,y};
+    });
   }
-  const rest=starters.filter(p=>!groups.gk.includes(p));
-  if(!groups.def.length){rest.slice(0,4).forEach(p=>groups.def.push(p));}
-  if(!groups.mid.length){rest.slice(groups.def.length,groups.def.length+4).forEach(p=>groups.mid.push(p));}
-  if(!groups.att.length){rest.slice(groups.def.length+groups.mid.length).forEach(p=>groups.att.push(p));}
-  const formationStr=String(formation||inferFormation(starters));
-  const parts=formationStr.split('-').map(Number).filter(Number.isFinite);
-  const desired=parts.length?parts:[4,2,3,1];
-  const lines=[];
-  if(groups.gk.length)lines.push(groups.gk.slice(0,1));
-  /* Build defensive line from actual defenders. */
-  if(groups.def.length)lines.push(groups.def);
-  /* For 4+ midfielders, split into two rows using the player's role label. */
-  if(groups.mid.length>=4){
-    const dm=groups.mid.filter(p=>/defensive|dm|holding|anchor/i.test(posText(p)));
-    const am=groups.mid.filter(p=>/attacking|am|wing|wide|lm|rm/i.test(posText(p)));
-    if(dm.length && am.length && dm.length+am.length===groups.mid.length){lines.push(dm,am)}
-    else if(desired.length>=3 && desired[1]===2){
-      const sorted=[...groups.mid].sort((a,b)=>Number(a.pitch_x||0)-Number(b.pitch_x||0));
-      const cut=Math.max(2,Math.min(groups.mid.length-2,desired[1]));
-      lines.push(sorted.slice(0,cut),sorted.slice(cut));
-    }else lines.push(groups.mid);
-  }else if(groups.mid.length)lines.push(groups.mid);
-  if(groups.att.length)lines.push(groups.att);
-  /* Ensure every starter is represented exactly once. */
-  const used=new Set(lines.flat());
-  const missing=starters.filter(p=>!used.has(p));
-  if(missing.length)lines.push(missing);
-  const baseHome=[91,76,61,46,31,18],baseAway=[9,24,39,54,69,82];
-  const ys=home?baseHome:baseAway, out=[];
+
+  /* Fallback for older records without coordinates. */
+  const groups={gk:[],def:[],mid:[],att:[]};
+  xi.forEach(p=>groups[positionGroup(p)].push(p));
+  const rest=xi.filter(p=>!groups.gk.includes(p));
+  if(!groups.gk.length && rest.length) groups.gk.push(rest.shift());
+  if(!groups.def.length) rest.slice(0,4).forEach(p=>groups.def.push(p));
+  if(!groups.mid.length) rest.slice(groups.def.length,groups.def.length+3).forEach(p=>groups.mid.push(p));
+  if(!groups.att.length) rest.slice(groups.def.length+groups.mid.length).forEach(p=>groups.att.push(p));
+
+  const lines=[groups.gk.slice(0,1),groups.def,groups.mid,groups.att].filter(r=>r.length);
+  const ys=home?[91,72,50,27]:[9,28,50,73],out=[];
   lines.forEach((row,ri)=>{
-    const y=ys[Math.min(ri,ys.length-1)];
     const xs=spreadX(row.length);
-    row.forEach((p,i)=>out.push({p,x:xs[i],y}));
+    row.forEach((p,i)=>out.push({p,x:xs[i],y:ys[Math.min(ri,ys.length-1)]}));
   });
   return out;
 }
@@ -656,7 +679,8 @@ async function loadGame(m,force=false){
   try{
     const d=await getLineups(m.id,force),home=d.home||{},away=d.away||{};
     const hsOfficial=home.starters||[],asOfficial=away.starters||[],hsPred=lineupStarters(d,'home',home),asPred=lineupStarters(d,'away',away);
-    const hs0=lineupOfficial(home,hsOfficial)?hsOfficial:hsPred,as0=lineupOfficial(away,asOfficial)?asOfficial:asPred;
+    const hsRaw=lineupOfficial(home,hsOfficial)?hsOfficial:hsPred,asRaw=lineupOfficial(away,asOfficial)?asOfficial:asPred;
+    const hs0=cleanStartingXI(hsRaw),as0=cleanStartingXI(asRaw);
     const official=lineupOfficial(home,hsOfficial)&&lineupOfficial(away,asOfficial);
     if(hs0.length<7||as0.length<7){box.innerHTML='<div class="lineup-status">⏳ Kokoonpanoja ei ole vielä saatavilla. Yritetään automaattisesti uudelleen.</div>';return}
     const pm=await getMatchPlayers(m.id).catch(()=>new Map()),hs=await mergeImages(hs0,pm),as=await mergeImages(as0,pm);
