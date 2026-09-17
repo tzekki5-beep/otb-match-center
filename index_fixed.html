@@ -770,6 +770,28 @@ async function loadGame(m,force=false){
     for(const q of place(hs,true,home.formation||d.home?.formation))html+=card(q.p,homeTeamId,m.id,q.x,q.y);
     for(const q of place(as,false,away.formation||d.away?.formation))html+=card(q.p,awayTeamId,m.id,q.x,q.y);
     box.innerHTML=html;
+    /* v38 hard visual guard: the pitch must never collapse the 10 field
+       players onto the halfway line.  Layout the already-rendered cards
+       directly from the XI order, using the formation when it is valid. */
+    const forceVisualLayout=(cards,homeSide,formation)=>{
+      const n=cards.length;if(!n)return;
+      const nums=String(formation||'').match(/\d+/g)?.map(Number)||[];
+      let def=4,mid=3,att=2;
+      if(nums.length>=3){def=nums[0];att=nums[nums.length-1];mid=nums.slice(1,-1).reduce((a,b)=>a+b,0);}
+      if(def+mid+att!==n-1){def=4;mid=3;att=Math.max(1,n-1-def-mid);}
+      const rows=[
+        [cards.slice(0,1),homeSide?8:92],
+        [cards.slice(1,1+def),homeSide?28:72],
+        [cards.slice(1+def,1+def+mid),homeSide?50:50],
+        [cards.slice(1+def+mid,1+def+mid+att),homeSide?72:28]
+      ];
+      rows.forEach(([row,y])=>{
+        const xs=spreadX(row.length);
+        row.forEach((el,i)=>{el.style.left=xs[i]+'%';el.style.top=y+'%';});
+      });
+    };
+    forceVisualLayout([...box.querySelectorAll('.p')].filter(el=>el.dataset.team===String(homeTeamId)),true,home.formation||d.home?.formation);
+    forceVisualLayout([...box.querySelectorAll('.p')].filter(el=>el.dataset.team===String(awayTeamId)),false,away.formation||d.away?.formation);
     /* Hard guard: one DOM card per player, max 11 per team. This also
        protects against stale/duplicated API payloads and double renders. */
     const seen=new Set(), teamCounts=new Map();
