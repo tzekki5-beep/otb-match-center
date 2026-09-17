@@ -780,10 +780,10 @@ async function loadGame(m,force=false){
       if(nums.length>=3){def=nums[0];att=nums[nums.length-1];mid=nums.slice(1,-1).reduce((a,b)=>a+b,0);}
       if(def+mid+att!==n-1){def=4;mid=3;att=Math.max(1,n-1-def-mid);}
       const rows=[
-        [cards.slice(0,1),homeSide?8:92],
-        [cards.slice(1,1+def),homeSide?28:72],
-        [cards.slice(1+def,1+def+mid),homeSide?50:50],
-        [cards.slice(1+def+mid,1+def+mid+att),homeSide?72:28]
+        [cards.slice(0,1),homeSide?10:90],
+        [cards.slice(1,1+def),homeSide?23:77],
+        [cards.slice(1+def,1+def+mid),homeSide?36:64],
+        [cards.slice(1+def+mid,1+def+mid+att),homeSide?46:54]
       ];
       rows.forEach(([row,y])=>{
         const xs=spreadX(row.length);
@@ -798,16 +798,23 @@ async function loadGame(m,force=false){
     const renderedCards=[...box.querySelectorAll('.p')];
     forceVisualLayout(renderedCards.slice(0,11),true,home.formation||d.home?.formation);
     forceVisualLayout(renderedCards.slice(11,22),false,away.formation||d.away?.formation);
-    /* Hard guard: one DOM card per player, max 11 per team. This also
-       protects against stale/duplicated API payloads and double renders. */
-    const seen=new Set(), teamCounts=new Map();
-    [...box.querySelectorAll('.p')].forEach(el=>{
-      const team=el.dataset.team||'', id=el.dataset.playerId||el.dataset.id||el.dataset.playerName||'';
-      const key=team+'|'+id;
-      const n=teamCounts.get(team)||0;
-      if(seen.has(key)||n>=11){el.remove();return;}
-      seen.add(key);teamCounts.set(team,n+1);
+    /* v40: team ids in some lineup payloads are inconsistent.  Never use
+       team id for the final visual guard: it could make one side look as if
+       it contained more than 11 players and remove valid cards.  Render
+       order is authoritative: cards 1-11 are home, cards 12-22 are away.
+       Keep one card per actual player and never more than 22 cards total. */
+    const seenPlayers=new Set(),allCards=[...box.querySelectorAll('.p')];
+    allCards.forEach((el,index)=>{
+      const id=el.dataset.playerId||el.dataset.id||el.dataset.playerName||('card-'+index);
+      const key=String(id);
+      if(index>=22||seenPlayers.has(key)){el.remove();return;}
+      seenPlayers.add(key);
     });
+    /* v40: keep the two XIs physically on their own half.  No outfield row
+       is placed on the halfway line; home attacks downward, away upward. */
+    const finalCards=[...box.querySelectorAll('.p')];
+    forceVisualLayout(finalCards.slice(0,11),true,home.formation||d.home?.formation);
+    forceVisualLayout(finalCards.slice(11,22),false,away.formation||d.away?.formation);
     const hTeam=homeTeamId,aTeam=awayTeamId;await Promise.all([loadHistory(m,hTeam,hs),loadHistory(m,aTeam,as)]);renderAnalysis(m,hs,as);
     box.querySelectorAll('.p').forEach(el=>el.onclick=()=>openPlayer(el.dataset.playerId||'',el.dataset.playerName||el.querySelector('.name')?.textContent||'?',el.dataset.team,m.league?.name,m.time_utc));
   }catch(e){box.innerHTML=`<div class="err">Kokoonpanoa ei saatu: ${esc(e.message)}</div>`}
