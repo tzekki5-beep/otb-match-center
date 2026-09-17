@@ -790,8 +790,14 @@ async function loadGame(m,force=false){
         row.forEach((el,i)=>{el.style.left=xs[i]+'%';el.style.top=y+'%';});
       });
     };
-    forceVisualLayout([...box.querySelectorAll('.p')].filter(el=>el.dataset.team===String(homeTeamId)),true,home.formation||d.home?.formation);
-    forceVisualLayout([...box.querySelectorAll('.p')].filter(el=>el.dataset.team===String(awayTeamId)),false,away.formation||d.away?.formation);
+    /* v39: never determine visual side from team-id matching after render.
+       Some PitchAPI lineup/player payloads expose missing or inconsistent
+       team ids, which caused cards from both XIs to be laid out on the same
+       side.  The render order is authoritative here: we append exactly the
+       11 home cards first and the 11 away cards second. */
+    const renderedCards=[...box.querySelectorAll('.p')];
+    forceVisualLayout(renderedCards.slice(0,11),true,home.formation||d.home?.formation);
+    forceVisualLayout(renderedCards.slice(11,22),false,away.formation||d.away?.formation);
     /* Hard guard: one DOM card per player, max 11 per team. This also
        protects against stale/duplicated API payloads and double renders. */
     const seen=new Set(), teamCounts=new Map();
