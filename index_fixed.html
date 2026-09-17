@@ -375,6 +375,13 @@ html,body{overflow-x:hidden}
 .pitch-team-logo{display:block!important;visibility:visible!important;opacity:1!important;position:absolute!important;width:58px!important;height:58px!important;object-fit:contain!important;background:#fff!important;border-radius:50%!important;padding:5px!important;border:2px solid rgba(255,255,255,.65)!important;z-index:50!important;pointer-events:none!important}
 .pitch-team-logo.home{left:14px!important;top:14px!important;right:auto!important;bottom:auto!important}
 .pitch-team-logo.away{right:14px!important;bottom:14px!important;left:auto!important;top:auto!important}
+<style id="v43-penalty-arc-and-readable-stats">
+.pitch .goal:before{content:"";position:absolute;left:calc(50% - 45px);width:90px;height:45px;box-sizing:border-box;pointer-events:none;border:2px solid #d9e1e47a;z-index:0}
+.pitch .g1:before{bottom:-45px;border-top:0;border-radius:0 0 90px 90px}
+.pitch .g2:before{top:-45px;border-bottom:0;border-radius:90px 90px 0 0}
+.p .nums{font-size:11px!important;line-height:1.12!important;letter-spacing:-.15px!important;min-height:12px!important}
+@media(max-width:430px){.p .nums{font-size:10px!important;min-height:11px!important}}
+</style>
 </style>
 </head><body>
 
