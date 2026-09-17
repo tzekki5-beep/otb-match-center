@@ -383,7 +383,18 @@ html,body{overflow-x:hidden}
 @media(max-width:430px){.p .nums{font-size:10px!important;min-height:11px!important}}
 </style>
 </style>
-</head><body>
+<style id="v43-arc-and-stat-size">
+/* v43: penalty-area D arc + more readable player OTB stats */
+.goal:before{content:"";position:absolute;left:35%;width:30%;height:52px;border:2px solid #d9e1e47a;z-index:0;pointer-events:none}
+.g1:before{top:100%;border-top:0;border-radius:0 0 52px 52px}
+.g2:before{bottom:100%;border-bottom:0;border-radius:52px 52px 0 0}
+.p .nums{font-size:12px!important;line-height:1.12!important;min-height:30px!important;margin-top:4px!important}
+.p .nums .statline{height:14px!important;gap:4px!important}
+.p .nums .statlabel{font-size:9px!important;min-width:35px!important;letter-spacing:0!important}
+.p .nums .statvals{font-size:12px!important;letter-spacing:-.2px!important}
+.p .nums .high{font-size:13px!important;padding:0 3px!important;font-weight:950!important;border-radius:4px!important}
+@media(max-width:600px){.p .nums{font-size:11px!important}.p .nums .statlabel{font-size:8px!important}.p .nums .statvals{font-size:11px!important}.p .nums .high{font-size:12px!important}}
+</style></head><body>
 
 <div style="margin:8px 0;padding:8px 10px;border-radius:9px;background:rgba(16,43,44,.75);font-size:12px;opacity:.85">
   OTB Match Center · julkinen web-versio
