@@ -236,7 +236,29 @@ html,body{overflow-x:hidden}
 .p.stat-mode-alt .nums{display:none!important}
 .p.stat-mode-alt .player-stat-values{display:block!important}
 @media(max-width:600px){.pitch{min-height:920px!important}.pitch .players{height:920px!important}.p{width:98px!important}.p .face{width:52px!important;height:52px!important}.p .name{font-size:10px!important;max-width:96px!important}.p .nums,.p .player-stat-values{font-size:9px!important;letter-spacing:-.25px!important}}
-</style></head><body>
+</style>
+<style id="v21-final-layout">
+.pitch{min-height:1200px!important;overflow:visible!important}
+.players{height:1200px!important}
+.p{z-index:2!important}
+.p .player-stat-values{display:none!important;font-size:13px!important;line-height:1.15!important;white-space:nowrap!important;overflow:visible!important;min-height:15px!important;margin-top:4px!important}
+@media(max-width:600px){.pitch{min-height:1000px!important}.players{height:1000px!important}.p .player-stat-values{font-size:10px!important}}
+</style>
+<style id="otb-final-lineup-fix">
+/* Final lineup fix: correct PitchAPI axes, extra vertical space, no stat overlap. */
+.pitch{min-height:1280px!important;height:1280px!important;overflow:visible!important}
+.pitch .players{height:1280px!important;min-height:1280px!important}
+.p{z-index:2!important;width:104px!important}
+.p .face{width:58px!important;height:58px!important}
+.p .name{font-size:12px!important;line-height:1.1!important;max-width:104px!important;padding:4px 5px!important}
+.p .nums,.p .player-stat-values{font-size:10px!important;line-height:1.1!important;font-weight:900!important;letter-spacing:-.25px!important;white-space:nowrap!important;overflow:visible!important;min-height:13px!important;margin-top:4px!important;text-shadow:0 1px 2px #000!important}
+.p .player-stat-values{display:none!important}
+.p.stat-mode-alt .nums{display:none!important}
+.p.stat-mode-alt .player-stat-values{display:block!important}
+.card-yellow,.card-red{display:inline-block!important;font-size:10px!important}
+@media(max-width:600px){.pitch{min-height:1080px!important;height:1080px!important}.pitch .players{height:1080px!important;min-height:1080px!important}.p{width:92px!important}.p .face{width:52px!important;height:52px!important}.p .name{font-size:10px!important;max-width:92px!important}.p .nums,.p .player-stat-values{font-size:9px!important}}
+</style>
+</head><body>
 
 <div style="margin:8px 0;padding:8px 10px;border-radius:9px;background:rgba(16,43,44,.75);font-size:12px;opacity:.85">
   OTB Match Center · julkinen web-versio
@@ -445,48 +467,43 @@ function positionGroup(p){
   if(/mid|wing|defensive mid|central mid|attacking mid|^m$/.test(s)) return 'mid';
   return 'mid';
 }
-function place(starters,home){
-  /* PitchAPI:n pitch_x/pitch_y ovat formationin 0–1-koordinaatteja.
-     Home käyttää omaa hyökkäyssuuntaansa ja away käännetään vastakkaiseen
-     suuntaan. Lisäksi lähellä toisiaan olevia kortteja levitetään vaakasuunnassa,
-     jotta nimet ja valittu tilasto eivät mene päällekkäin. */
-  const hasCoords=starters.filter(p=>Number.isFinite(Number(p?.pitch_x))&&Number.isFinite(Number(p?.pitch_y))&&(Number(p.pitch_x)!==0||Number(p.pitch_y)!==0)).length>=7;
-  if(hasCoords){
-    const coordVals=starters.flatMap(p=>[Number(p?.pitch_x),Number(p?.pitch_y)]).filter(Number.isFinite);
-    const scale=coordVals.some(v=>Math.abs(v)>1.5)?1:100;
-    const pts=starters.map(p=>({p,x:Number(p.pitch_x)*scale,y:(home?Number(p.pitch_y)*scale:100-Number(p.pitch_y)*scale)}));
-    pts.forEach(q=>{q.x=Math.max(7,Math.min(93,q.x));q.y=Math.max(7,Math.min(93,q.y));});
-    const sorted=[...pts].sort((a,b)=>a.y-b.y||a.x-b.x);
-    const rows=[];
-    sorted.forEach(q=>{
-      let row=rows[rows.length-1];
-      if(!row||Math.abs(row[0].y-q.y)>6)rows.push(row=[q]);else row.push(q);
-    });
+function place(starters,home,formation=''){
+  /* PitchAPI:n lineupissa pitch_x on pituussuunta (0 = oma maali, 1 = vastustajan maali)
+     ja pitch_y on leveyssuunta (0 = vasen, 1 = oikea). Tämä on tärkeä ero:
+     vanha toteutus käytti akseleita väärin, jolloin esim. maalivahti päätyi keskelle kenttää. */
+  const valid=starters.filter(p=>Number.isFinite(Number(p?.pitch_x))&&Number.isFinite(Number(p?.pitch_y)));
+  if(valid.length>=7){
+    const nums=String(formation||'').split('-').map(Number).filter(n=>Number.isFinite(n)&&n>0);
+    const counts=nums.length?[1,...nums]:[1,4,4,2];
+    const sorted=[...starters].filter(p=>Number.isFinite(Number(p?.pitch_x))&&Number.isFinite(Number(p?.pitch_y)))
+      .sort((a,b)=>Number(a.pitch_x)-Number(b.pitch_x)||Number(a.pitch_y)-Number(b.pitch_y));
+    const rows=[];let cursor=0;
+    counts.forEach(count=>{const row=sorted.slice(cursor,cursor+count);cursor+=count;if(row.length)rows.push(row);});
+    if(cursor<sorted.length)rows.push(sorted.slice(cursor));
+    const out=[];
     rows.forEach(row=>{
-      if(row.length<2)return;
-      row.sort((a,b)=>a.x-b.x);
+      const depth=row.reduce((sum,p)=>sum+Number(p.pitch_x),0)/row.length;
+      const y=Math.max(6,Math.min(94,home?(100-depth*100):(depth*100)));
+      const xs=row.map(p=>Math.max(0,Math.min(1,Number(p.pitch_y)))).sort((a,b)=>a-b);
       const minGap=11.5;
-      let needs=row.some((q,i)=>i&&q.x-row[i-1].x<minGap);
-      if(!needs)return;
-      const center=row.reduce((s,q)=>s+q.x,0)/row.length;
-      const gap=Math.min(minGap,84/Math.max(1,row.length-1));
-      const start=center-gap*(row.length-1)/2;
-      row.forEach((q,i)=>q.x=Math.max(7,Math.min(93,start+i*gap)));
+      let positions=xs.map(v=>v*100);
+      if(positions.length>1){
+        const gap=Math.min(minGap,84/(positions.length-1));
+        const center=positions.reduce((a,b)=>a+b,0)/positions.length;
+        const begin=center-gap*(positions.length-1)/2;
+        positions=positions.map((_,i)=>Math.max(7,Math.min(93,begin+i*gap)));
+      }else if(positions.length===1){positions=[Math.max(7,Math.min(93,positions[0]))]}
+      row.slice().sort((a,b)=>Number(a.pitch_y)-Number(b.pitch_y)).forEach((p,i)=>out.push({p,x:positions[i],y}));
     });
-    return pts;
+    return out;
   }
+  /* Fallback: only used when PitchAPI has no usable formation coordinates. */
   const groups={gk:[],def:[],mid:[],att:[]};
   starters.forEach(p=>groups[positionGroup(p)].push(p));
-  const total=starters.length;
-  if(!groups.gk.length&&total)groups.gk.push(starters[0]);
-  const lines=[];
-  if(groups.gk.length)lines.push(['gk',groups.gk]);
-  if(groups.def.length)lines.push(['def',groups.def]);
-  if(groups.mid.length)lines.push(['mid',groups.mid]);
-  if(groups.att.length)lines.push(['att',groups.att]);
-  if(lines.length<3){const arr=starters.slice();lines.length=0;lines.push(['gk',arr.slice(0,1)],['def',arr.slice(1,5)],['mid',arr.slice(5,9)],['att',arr.slice(9)]);}
-  const homeY=[8,20,32,43],awayY=[92,80,68,57],pts=[];
-  lines.forEach(([kind,arr],lineIndex)=>{const n=arr.length,y=home?(homeY[Math.min(lineIndex,3)]):(awayY[Math.min(lineIndex,3)]);arr.forEach((p,i)=>{let x=(i+1)*100/(n+1);x=Math.max(7,Math.min(93,x));pts.push({p,x,y});});});
+  const lines=[];if(groups.gk.length)lines.push(groups.gk);if(groups.def.length)lines.push(groups.def);if(groups.mid.length)lines.push(groups.mid);if(groups.att.length)lines.push(groups.att);
+  if(lines.length<3){lines.length=0;lines.push(starters.slice(0,1),starters.slice(1,5),starters.slice(5,9),starters.slice(9));}
+  const homeY=[94,76,55,34],awayY=[6,24,45,66],pts=[];
+  lines.forEach((arr,ri)=>{const y=(home?homeY:awayY)[Math.min(ri,3)];arr.forEach((p,i)=>pts.push({p,x:(i+1)*100/(arr.length+1),y}));});
   return pts;
 }
 function card(p,teamId,matchId,x,y){
@@ -549,7 +566,7 @@ async function loadGame(m,force=false){
     if(hs0.length<7||as0.length<7){box.innerHTML='<div class="lineup-status">⏳ Kokoonpanoja ei ole vielä saatavilla. Yritetään automaattisesti uudelleen.</div>';return}
     const pm=await getMatchPlayers(m.id).catch(()=>new Map()),hs=await mergeImages(hs0,pm),as=await mergeImages(as0,pm);
     let html=`<div class="lineup-status ${official?'official':'predicted'}">${official?'🟢 Virallinen avauskokoonpano':'🟡 Ennakoitu kokoonpano · päivittyy automaattisesti kun virallinen julkaistaan'}</div>`;
-    for(const q of place(hs,true))html+=card(q.p,home.team_id||d.home_team?.id,m.id,q.x,q.y);for(const q of place(as,false))html+=card(q.p,away.team_id||d.away_team?.id,m.id,q.x,q.y);box.innerHTML=html;
+    for(const q of place(hs,true,home.formation||d.home?.formation))html+=card(q.p,home.team_id||d.home_team?.id,m.id,q.x,q.y);for(const q of place(as,false,away.formation||d.away?.formation))html+=card(q.p,away.team_id||d.away_team?.id,m.id,q.x,q.y);box.innerHTML=html;
     const hTeam=home.team_id||d.home_team?.id,aTeam=away.team_id||d.away_team?.id;await Promise.all([loadHistory(m,hTeam,hs),loadHistory(m,aTeam,as)]);renderAnalysis(m,hs,as);
     box.querySelectorAll('.p').forEach(el=>el.onclick=()=>openPlayer(el.dataset.playerId||'',el.dataset.playerName||el.querySelector('.name')?.textContent||'?',el.dataset.team,m.league?.name,m.time_utc));
   }catch(e){box.innerHTML=`<div class="err">Kokoonpanoa ei saatu: ${esc(e.message)}</div>`}
@@ -587,7 +604,15 @@ function playerMetric(row,patterns){
 }
 function playerFouls(row){return playerMetric(row,[/foul.*committ/i,/committ.*foul/i,/fouls?$/i])}
 function statHighClass(values,i){const nums=values.map(v=>Number(v)||0),max=Math.max(...nums,0),v=Number(nums[i])||0,avg=nums.length?nums.reduce((a,b)=>a+b,0)/nums.length:0;if(max>0&&v===max&&v>=Math.max(3,Math.ceil(avg*1.7)))return'high';return''}
-function formatPlayerStat(v,mode,i,values){const high=statHighClass(values,i);if(mode==='cards'){const y=Number(v?.yellow)||0,r=Number(v?.red)||0;if(r)return `<span class="${high}"><span class="card-red">🟥${r}</span></span>`;if(y)return `<span class="${high}"><span class="card-yellow">🟨${y}</span></span>`;return `<span class="${high}">0</span>`;}return `<span class="${high}">${esc(String(Number(v)||0))}</span>`}
+function formatPlayerStat(v,mode,i,values){
+  const high=statHighClass(values,i);
+  if(mode==='cards'){
+    const y=Number(v?.yellow)||0,r=Number(v?.red)||0;
+    const marks=[y?`🟨${y}`:'',r?`🟥${r}`:''].filter(Boolean).join(' ');
+    return `<span class="${high}">${marks||'0'}</span>`;
+  }
+  return `<span class="${high}">${esc(String(Number(v)||0))}</span>`;
+}
 function renderPlayerStat(el,mode){
   const hist=Array.isArray(el._history)?el._history:[];
   const box=el.querySelector('[data-player-stat-values]');
@@ -595,15 +620,14 @@ function renderPlayerStat(el,mode){
   if(!box)return;
   el.classList.toggle('stat-mode-alt',mode!=='otb');
   if(mode==='otb'){
-    el.classList.remove('stat-mode-alt');
     if(legacy){legacy.style.display='block';legacy.innerHTML=hist.map((v,i)=>`<span class="${statHighClass(hist.map(x=>Number(x.otb)||0),i)}">${Number(v.otb)||0}/${Number(v.on)||0}</span>`).join(' ');}
-    box.style.display='none';
+    box.style.setProperty('display','none','important');
     return;
   }
   if(legacy)legacy.style.display='none';
-  box.style.display='block';
-  const vals=hist.map(v=>mode==='shots'?(Number(v.all)||0):mode==='all'?(Number(v.all)||0):mode==='fouls'?(Number(v.fouls)||0):mode==='headers'?(Number(v.headers)||0):v.cardsObj||{yellow:0,red:0});
-  const nums=vals.map(v=>typeof v==='number'?v:0);
+  box.style.setProperty('display','block','important');
+  const vals=hist.map(v=>mode==='shots'?(Number(v.shotOn)||0):mode==='all'?(Number(v.all)||0):mode==='fouls'?(Number(v.fouls)||0):mode==='headers'?(Number(v.headers)||0):v.cardsObj||{yellow:0,red:0});
+  const nums=vals.map(v=>typeof v==='number'?v:(Number(v?.yellow)||0)+(Number(v?.red)||0));
   box.innerHTML=vals.map((v,i)=>formatPlayerStat(v,mode,i,nums)).join(' ');
 }
 function setPlayerStatMode(matchId,mode){const bar=document.querySelector(`[data-stat-bar="${CSS.escape(String(matchId))}"]`);if(!bar)return;bar.querySelectorAll('.player-stat-btn').forEach(b=>b.classList.toggle('active',b.dataset.stat===mode));const pitch=document.querySelector(`#p${String(matchId).replace(/[^a-zA-Z0-9_-]/g,'')}`);if(!pitch)return;pitch.querySelectorAll('.p').forEach(el=>renderPlayerStat(el,mode));bar.dataset.mode=mode}
@@ -664,6 +688,12 @@ async function buildTeamHistoryRows(hist){
     return {g,shots:shotsData,players:bulkPlayers,events:Array.isArray(eventData?.events)?eventData.events:[]};
   }));
 }
+function cardType(e){
+  const parts=[e?.event_type,e?.type,e?.card_type,e?.cardType,e?.incident_type,e?.incidentType,e?.card?.type,e?.card?.name,e?.card?.label].filter(v=>v!=null).map(v=>String(v).toLowerCase()).join(' ');
+  if(e?.is_red===true||e?.isRed===true||parts.includes('red'))return'red';
+  if(e?.is_yellow===true||e?.isYellow===true||parts.includes('yellow'))return'yellow';
+  return'';
+}
 async function buildHistoryRows(rows,playerRef){
   const refId=typeof playerRef==='object'?pid(playerRef):playerRef,refName=typeof playerRef==='object'?pName(playerRef):'';
   return Promise.all(rows.map(async r=>{
@@ -675,10 +705,10 @@ async function buildHistoryRows(rows,playerRef){
       const en=e?.player?.name??e?.player_name;
       const byId=refId!=null&&eid!=null&&String(eid)===String(refId);
       const byName=refName&&en&&normName(en)===normName(refName);
-      return (byId||byName)&&/card/i.test(String(e?.event_type||e?.type||''));
+      return (byId||byName)&&!!cardType(e);
     });
-    const yellow=ce.filter(e=>/yellow/i.test(String(e?.event_type||e?.type||''))).length;
-    const red=ce.filter(e=>/red/i.test(String(e?.event_type||e?.type||''))).length;
+    const yellow=ce.filter(e=>cardType(e)==='yellow').length;
+    const red=ce.filter(e=>cardType(e)==='red').length;
     return {...z,fouls:playerMetric(prow,[/foul.*committ/i,/committ.*foul/i,/fouls?$/i]),cards:yellow+red,cardsObj:{yellow,red},opp:matchLabel(r.g),matchId:r.g.id,played:!!prow};
   }));
 }
