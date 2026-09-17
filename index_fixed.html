@@ -616,6 +616,41 @@ function place(starters,home,formation=''){
   });
   return out;
 }
+function explicitPositionGroup(p){
+  const raw=posText(p).toLowerCase().replace(/[._-]+/g,' ').replace(/\s+/g,' ').trim(),compact=raw.replace(/\s/g,'');
+  if(!raw)return null;
+  if(/^(gk|g|goalkeeper|goalie|keeper|portero|mv)$/.test(compact)||/goalkeeper|goalie|keeper|portero/.test(raw))return'gk';
+  if(/^(cb|rcb|lcb|rb|lb|rwb|lwb|wb|df|d|def)$/.test(compact)||/centre\s*back|center\s*back|full\s*back|wing\s*back|defender|defence|defense|sweeper|libero/.test(raw))return'def';
+  if(/^(st|cf|ss|lw|rw|lf|rf|fw|fwd|f|9|10)$/.test(compact)||/forward|striker|attacker|winger|inside forward|second striker|centre forward|center forward/.test(raw))return'att';
+  if(/^(cm|dm|am|lm|rm|wm|mc|md|me|mi|m|6|7|8|11)$/.test(compact)||/midfielder|midfield|defensive mid|central mid|attacking mid/.test(raw))return'mid';
+  return null;
+}
+
+/* v37: definitive positional fallback. When PitchAPI omits usable position
+   labels, assign the XI from the stated formation instead of dumping every
+   unknown player into midfield. */
+function place(starters,home,formation=''){
+  const xi=cleanStartingXI(starters); if(!xi.length)return[];
+  const groups={gk:[],def:[],mid:[],att:[]};
+  const labeled=xi.map(p=>({p,g:explicitPositionGroup(p)}));
+  const known=labeled.filter(x=>x.g).length;
+  if(known>=7){
+    labeled.forEach(x=>groups[x.g||'mid'].push(x.p));
+    if(!groups.gk.length){const g=xi[0];groups.mid=groups.mid.filter(p=>p!==g);groups.gk=[g];}
+  }else{
+    const nums=String(formation||'').match(/\d+/g)?.map(Number)||[];
+    let dc=4,mc=3,ac=2;
+    if(nums.length>=3){
+      dc=nums[0]; ac=nums[nums.length-1]; mc=nums.slice(1,-1).reduce((a,b)=>a+b,0);
+      if(dc+mc+ac!==xi.length-1){dc=4;mc=3;ac=2;}
+    }
+    groups.gk=[xi[0]];
+    let i=1;groups.def=xi.slice(i,i+dc);i+=dc;groups.mid=xi.slice(i,i+mc);i+=mc;groups.att=xi.slice(i,i+ac);
+  }
+  const rows=[[groups.gk.slice(0,1),home?8:92],[groups.def,home?28:72],[groups.mid,home?50:50],[groups.att,home?72:28]].filter(([r])=>r.length);
+  const out=[];rows.forEach(([row,y])=>{const xs=spreadX(row.length);row.forEach((p,i)=>out.push({p,x:xs[i],y}))});return out;
+}
+
 function injuryInfo(p){
   const src=[p,p?.player,p?.availability,p?.status_info,p?.player?.availability].filter(Boolean),vals=[];
   for(const o of src){
@@ -634,8 +669,8 @@ function card(p,teamId,matchId,x,y){
 async function getLineups(id,force=false){if(!force&&lineupCache.has(id))return lineupCache.get(id);if(force)lineupCache.delete(id);const d=await api(`matches/${id}/lineups`);lineupCache.set(id,d);return d}
 async function getMatchPlayers(id){
   if(matchPlayersCache.has(id))return matchPlayersCache.get(id);
-  const d=await api(`matches/${id}/players`),map=new Map();
-  for(const row of (Array.isArray(d)?d:[])){
+  const d=await api(`matches/${id}/players`),map=new Map(),rows=Array.isArray(d)?d:(Array.isArray(d?.players)?d.players:Array.isArray(d?.items)?d.items:Array.isArray(d?.data)?d.data:[]);
+  for(const row of rows){
     const pl=row?.player||{},rid=pl.id||pl.player_id||row?.player_id||row?.playerId||row?.id||row?.athlete_id;
     const name=pl.name||row?.name||row?.player_name;
     const teamId=playerTeamId(row)??playerTeamId(pl);
@@ -757,7 +792,7 @@ function statsFor(arr,playerRef){
   let otb=0,otbOn=0,shotOn=0,headers=0;for(const s of ss){const insideVal=s?.is_inside_box;const onVal=s?.is_on_target;const outside=insideVal===false||insideVal===0||String(insideVal).toLowerCase()==='false';const on=onVal===true||onVal===1||String(onVal).toLowerCase()==='true';if(outside)otb++;if(outside&&on)otbOn++;if(on)shotOn++;if(/header|head/i.test(String(s?.shot_type||'')))headers++;}
   return{otb,on:otbOn,shotOn,all:ss.length,headers,shots:ss};
 }
-async function getPlayerStats(matchId){if(playerStatsCache.has(matchId))return playerStatsCache.get(matchId);const d=await api(`matches/${matchId}/players`),map=new Map();for(const row of (Array.isArray(d)?d:[])){const pl=row?.player||{},id=pl.id||pl.player_id||row?.player_id||row?.playerId||row?.id,name=pl.name||row?.name||row?.player_name;if(id)map.set(String(id),row);if(name)map.set('name:'+normName(name),row);}playerStatsCache.set(matchId,map);return map}
+async function getPlayerStats(matchId){if(playerStatsCache.has(matchId))return playerStatsCache.get(matchId);const d=await api(`matches/${matchId}/players`),map=new Map(),rows=Array.isArray(d)?d:(Array.isArray(d?.players)?d.players:Array.isArray(d?.items)?d.items:Array.isArray(d?.data)?d.data:[]);for(const row of rows){const pl=row?.player||{},id=pl.id||pl.player_id||row?.player_id||row?.playerId||row?.id,name=pl.name||row?.name||row?.player_name;if(id)map.set(String(id),row);if(name)map.set('name:'+normName(name),row);}playerStatsCache.set(matchId,map);return map}
 function statNumber(stat){if(!stat)return 0;if(typeof stat.value==='number')return stat.value;if(typeof stat.total==='number')return stat.total;if(typeof stat.value==='string'&&Number.isFinite(Number(stat.value)))return Number(stat.value);return 0}
 function playerMetric(row,patterns){
   let found=null;
@@ -816,7 +851,7 @@ function renderPlayerStat(el,mode){
 }
 function setPlayerStatMode(matchId,mode){const bar=document.querySelector(`[data-stat-bar="${CSS.escape(String(matchId))}"]`);if(!bar)return;bar.querySelectorAll('.player-stat-btn').forEach(b=>b.classList.toggle('active',b.dataset.stat===mode));const pitch=document.querySelector(`#p${String(matchId).replace(/[^a-zA-Z0-9_-]/g,'')}`);if(!pitch)return;pitch.querySelectorAll('.p').forEach(el=>renderPlayerStat(el,mode));bar.dataset.mode=mode}
 const playerMatchStatsFallbackCache=new Map();
-async function getPlayerMatchStats(matchId,playerId){if(!playerId)return null;const ck=String(matchId)+':'+String(playerId);if(playerMatchStatsFallbackCache.has(ck))return playerMatchStatsFallbackCache.get(ck);try{const d=await api(`matches/${encodeURIComponent(matchId)}/players/${encodeURIComponent(playerId)}`);playerMatchStatsFallbackCache.set(ck,d||null);return d||null}catch(e){playerMatchStatsFallbackCache.set(ck,null);return null}}
+async function getPlayerMatchStats(matchId,playerId){if(!playerId)return null;const ck=String(matchId)+':'+String(playerId);if(playerMatchStatsFallbackCache.has(ck))return playerMatchStatsFallbackCache.get(ck);try{const d=await api(`matches/${encodeURIComponent(matchId)}/players/${encodeURIComponent(playerId)}`),r=d?.player||d?.data?.player||d?.data||d;playerMatchStatsFallbackCache.set(ck,r||null);return r||null}catch(e){playerMatchStatsFallbackCache.set(ck,null);return null}}
 const playerShotsCache=new Map();
 async function getPlayerShots(matchId,playerId){
   if(!playerId)return[];
