@@ -38,11 +38,23 @@
 }
 
 
-/* V18: larger OTB numbers */
-.stat, .stats, .shotline, .shots, .numbers, .otb, .otbline{
-  font-size:15px !important;
-  line-height:1.25 !important;
-  font-weight:700 !important;
+/* V19: clearer player quick-stat text */
+.player-stat-btn{
+  font-size:12px !important;
+  padding:8px 10px !important;
+}
+.player-stat-caption{font-size:11px !important}
+.p .player-stat-values,
+.p .nums{
+  font-size:10.5px !important;
+  line-height:1.12 !important;
+  font-weight:900 !important;
+  min-height:12px !important;
+}
+.p .statline,
+.p .statlabel,
+.p .statvals{
+  font-size:10.5px !important;
 }
 
 
@@ -892,16 +904,56 @@ async function loadGame(m,force=false){
   }catch(e){box.innerHTML=`<div class="err">Kokoonpanoa ei saatu: ${esc(e.message)}</div>`}
 }
 const leagueMatchesCache=new Map();
-async function fetchLeaguePlayed(league){if(!league?.id)return[];const ck=String(league.id);if(leagueMatchesCache.has(ck))return leagueMatchesCache.get(ck);const d=await api(`leagues/${encodeURIComponent(league.id)}/matches?status=played`).catch(()=>({matches:[]}));const arr=Array.isArray(d?.matches)?d.matches:[];leagueMatchesCache.set(ck,arr);return arr}
+async function fetchLeaguePlayed(league,season){
+  if(!league?.id)return[];
+  const seasonKey=season||'current';
+  const ck=String(league.id)+':'+seasonKey;
+  if(leagueMatchesCache.has(ck))return leagueMatchesCache.get(ck);
+  const qs=season?`&season=${encodeURIComponent(season)}`:'';
+  const d=await api(`leagues/${encodeURIComponent(league.id)}/matches?status=played${qs}`).catch(()=>({matches:[]}));
+  const arr=Array.isArray(d?.matches)?d.matches:[];
+  leagueMatchesCache.set(ck,arr);
+  return arr;
+}
+function previousSeason(league){
+  const seasons=Array.isArray(league?.seasons)?league.seasons.filter(Boolean):[];
+  return seasons.length>1?seasons[1]:null;
+}
 async function teamMatches(teamId,leagueName,cutoffTime){
-  const ck=teamId+':'+leagueName+':'+cutoffTime;if(historyCache.has(ck))return historyCache.get(ck);
-  const lm=leagueMap[leagueName];if(!lm)throw Error('Sarjaa ei löytynyt');
+  const ck=teamId+':'+leagueName+':'+cutoffTime;
+  if(historyCache.has(ck))return historyCache.get(ck);
+  const lm=leagueMap[leagueName];
+  if(!lm)throw Error('Sarjaa ei löytynyt');
   const cutoff=Date.parse(cutoffTime||'9999-12-31T23:59:59Z');
-  const same=(await fetchLeaguePlayed(lm)).filter(m=>(String(m.home_team?.id)===String(teamId)||String(m.away_team?.id)===String(teamId))&&m.status==='finished'&&Date.parse(m.time_utc)<cutoff).sort((a,b)=>new Date(b.time_utc)-new Date(a.time_utc));
+  const isUefa=/Europa League|Conference League|Champions League/i.test(leagueName||'');
+  const same=(await fetchLeaguePlayed(lm)).filter(m=>
+    (String(m.home_team?.id)===String(teamId)||String(m.away_team?.id)===String(teamId)) &&
+    m.status==='finished' && Date.parse(m.time_utc)<cutoff
+  ).sort((a,b)=>new Date(b.time_utc)-new Date(a.time_utc));
+
   let arr=same.slice(0,5);
+
+  // UEFA competitions are seasonal. At the start of a new campaign there may
+  // be no current-season European matches yet, while the previous campaign
+  // still contains the exact UEL/UCL/UECL player history we need.
+  if(isUefa && arr.length<5){
+    const prev=previousSeason(lm);
+    if(prev){
+      const old=(await fetchLeaguePlayed(lm,prev)).filter(m=>
+        (String(m.home_team?.id)===String(teamId)||String(m.away_team?.id)===String(teamId)) &&
+        m.status==='finished' && Date.parse(m.time_utc)<cutoff
+      );
+      const merged=new Map(arr.map(m=>[String(m.id),m]));
+      for(const m of old)merged.set(String(m.id),m);
+      arr=[...merged.values()].sort((a,b)=>new Date(b.time_utc)-new Date(a.time_utc)).slice(0,5);
+    }
+  }
+
+  // If there still aren't five European matches, fill the remainder with
+  // the team's latest domestic matches so the normal five-game panel remains populated.
   if(arr.length<5){
     const lists=await Promise.all(MAIN_LEAGUES.map(n=>leagueMap[n]).filter(Boolean).map(fetchLeaguePlayed));
-    const merged=new Map();
+    const merged=new Map(arr.map(m=>[String(m.id),m]));
     for(const list of lists)for(const m of list){
       if(m.status!=='finished'||Date.parse(m.time_utc)>=cutoff)continue;
       if(String(m.home_team?.id)!==String(teamId)&&String(m.away_team?.id)!==String(teamId))continue;
@@ -909,7 +961,8 @@ async function teamMatches(teamId,leagueName,cutoffTime){
     }
     arr=[...merged.values()].sort((a,b)=>new Date(b.time_utc)-new Date(a.time_utc)).slice(0,5);
   }
-  historyCache.set(ck,arr);return arr;
+  historyCache.set(ck,arr);
+  return arr;
 }
 async function shots(matchId){if(shotsCache.has(matchId))return shotsCache.get(matchId);const d=await api(`matches/${matchId}/shots`);const arr=[];for(const per of (d?.periods||[]))arr.push(...(per?.shots||[]));shotsCache.set(matchId,arr);return arr}
 function statsFor(arr,playerRef){
