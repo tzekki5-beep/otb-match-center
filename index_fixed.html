@@ -259,15 +259,19 @@ html,body{overflow-x:hidden}
 @media(max-width:600px){.pitch{min-height:1080px!important;height:1080px!important}.pitch .players{height:1080px!important;min-height:1080px!important}.p{width:92px!important}.p .face{width:52px!important;height:52px!important}.p .name{font-size:10px!important;max-width:92px!important}.p .nums,.p .player-stat-values{font-size:9px!important}}
 </style>
 
-<style id="v30-final-lineup-and-stats">
+<style id="v31-final-readable-lineup">
 .pitch{min-height:1280px!important;height:1280px!important;overflow:visible!important}
 .pitch .players{height:1280px!important;min-height:1280px!important}
-.p{width:108px!important;z-index:3!important}
-.p .face{width:58px!important;height:58px!important}
-.p .name{font-size:12px!important;max-width:108px!important;padding:4px 5px!important;line-height:1.12!important}
-.p .nums,.p .player-stat-values{font-size:10px!important;line-height:1.15!important;font-weight:900!important;white-space:nowrap!important;overflow:visible!important;min-height:13px!important;margin-top:3px!important}
-.p.stat-mode-alt .nums{display:none!important}.p.stat-mode-alt .player-stat-values{display:block!important}
-@media(max-width:600px){.pitch{min-height:1080px!important;height:1080px!important}.pitch .players{height:1080px!important;min-height:1080px!important}.p{width:92px!important}.p .face{width:52px!important;height:52px!important}.p .name{font-size:10px!important;max-width:92px!important}.p .nums,.p .player-stat-values{font-size:9px!important}}
+.p{width:124px!important;z-index:3!important}
+.p .face{width:62px!important;height:62px!important;margin-bottom:4px!important}
+.p .name{font-size:14px!important;line-height:1.15!important;max-width:124px!important;padding:4px 7px!important;border-radius:6px!important;font-weight:900!important}
+.p .nums,.p .player-stat-values{font-size:14px!important;line-height:1.15!important;font-weight:950!important;letter-spacing:.15px!important;white-space:nowrap!important;overflow:visible!important;min-height:16px!important;margin-top:4px!important;text-shadow:0 1px 2px #000!important}
+.p .player-stat-values{display:none!important}
+.p.stat-mode-alt .nums{display:none!important}
+.p.stat-mode-alt .player-stat-values{display:block!important}
+.player-stat-values .high{padding:1px 4px!important;border-radius:5px!important;font-weight:950!important}
+.player-stat-values .card-yellow{font-size:14px!important}.player-stat-values .card-red{font-size:14px!important}
+@media(max-width:600px){.pitch{min-height:1100px!important;height:1100px!important}.pitch .players{height:1100px!important;min-height:1100px!important}.p{width:98px!important}.p .face{width:54px!important;height:54px!important}.p .name{font-size:11px!important;max-width:98px!important}.p .nums,.p .player-stat-values{font-size:11px!important;min-height:14px!important}.player-stat-values .card-yellow,.player-stat-values .card-red{font-size:11px!important}}
 </style>
 </head><body>
 
@@ -479,30 +483,45 @@ function positionGroup(p){
   return 'mid';
 }
 function place(starters,home,formation=''){
-  /* Vertical pitch: build real formation rows first. PitchAPI coordinates are
-     used only to order players inside each row, never to decide the visual depth. */
+  /* Vertical 2D lineup: role determines the line, pitch_y determines the
+     left/right spot. Formation text is used when available; otherwise the
+     player's actual position is the fallback instead of blindly slicing the
+     list into 1-4-4-2. */
   const nums=String(formation||'').match(/\d+/g)?.map(Number).filter(n=>n>0)||[];
-  const counts=nums.length>=3?[1,...nums]:[1,4,4,2];
-  const players=[...starters];
   const depth=p=>Number.isFinite(Number(p?.pitch_x))?Number(p.pitch_x):0.5;
   const width=p=>Number.isFinite(Number(p?.pitch_y))?Number(p.pitch_y):0.5;
-  players.sort((a,b)=>depth(a)-depth(b)||width(a)-width(b));
-  const gkIndex=players.findIndex(p=>positionGroup(p)==='gk');
-  if(gkIndex>=0){const [gk]=players.splice(gkIndex,1);players.unshift(gk)}
-  const rows=[];let cursor=0;
-  counts.forEach(n=>{if(cursor<players.length){rows.push(players.slice(cursor,cursor+n));cursor+=n;}});
-  if(cursor<players.length)rows.push(players.slice(cursor));
-  const rowDepthHome=rows.length===5?[92,73,55,37,19]:rows.length===4?[91,68,45,22]:rows.length===6?[93,78,63,48,33,18]:[92,72,52,32,12];
-  const rowDepthAway=rowDepthHome.map(v=>100-v);
+  const gk=starters.filter(p=>positionGroup(p)==='gk');
+  const outfield=starters.filter(p=>positionGroup(p)!=='gk');
+  const rows=[];
+  if(nums.length>=3){
+    const sorted=[...outfield].sort((a,b)=>depth(a)-depth(b)||width(a)-width(b));
+    let cursor=0;
+    nums.forEach(n=>{const row=sorted.slice(cursor,cursor+n);if(row.length)rows.push(row);cursor+=n;});
+    if(cursor<sorted.length)rows.push(sorted.slice(cursor));
+  }else{
+    const defs=outfield.filter(p=>positionGroup(p)==='def');
+    const mids=outfield.filter(p=>positionGroup(p)==='mid');
+    const atts=outfield.filter(p=>positionGroup(p)==='att');
+    if(defs.length)rows.push(defs);
+    if(mids.length)rows.push(mids);
+    if(atts.length)rows.push(atts);
+    const used=new Set([...defs,...mids,...atts]);
+    const extra=outfield.filter(p=>!used.has(p)); if(extra.length)rows.push(extra);
+  }
+  if(!rows.length)rows.push(outfield);
+  const allRows=gk.length?[gk.slice(0,1),...rows]:rows;
+  const nRows=allRows.length;
+  const homeY=nRows===5?[93,73,53,33,15]:nRows===4?[93,69,45,21]:[93,71,49,27,11];
+  const awayY=homeY.map(v=>100-v);
   const out=[];
-  rows.forEach((row,ri)=>{
+  allRows.forEach((row,ri)=>{
     const ordered=row.slice().sort((a,b)=>width(a)-width(b));
     const n=ordered.length;
-    const edge=n>=6?8:n===5?10:n===4?13:n===3?18:n===2?30:50;
+    const edge=n>=6?7:n===5?9:n===4?13:n===3?19:n===2?31:50;
     const span=100-edge*2;
     ordered.forEach((player,i)=>{
       const x=n===1?50:edge+(span*i/(n-1));
-      const y=(home?rowDepthHome:rowDepthAway)[Math.min(ri,rowDepthHome.length-1)];
+      const y=(home?homeY:awayY)[Math.min(ri,(homeY.length-1))];
       out.push({p:player,x,y});
     });
   });
@@ -605,7 +624,7 @@ function playerMetric(row,patterns){
   return found===null?0:found;
 }
 function playerFouls(row){return playerMetric(row,[/fouls?\s*committed/i,/committed\s*fouls?/i,/foul.*committ/i,/committ.*foul/i,/fouls?$/i,/\bfouls?\b/i])}
-function statHighClass(values,i){const nums=values.map(v=>Number(v)||0),max=Math.max(...nums,0),v=Number(nums[i])||0,avg=nums.length?nums.reduce((a,b)=>a+b,0)/nums.length:0;if(max>0&&v===max&&v>=Math.max(3,Math.ceil(avg*1.7)))return'high';return''}
+function statHighClass(values,i){const nums=values.map(v=>Number(v)||0),max=Math.max(...nums,0),v=Number(nums[i])||0,avg=nums.length?nums.reduce((a,b)=>a+b,0)/nums.length:0;if(max>0&&v===max&&(v>=Math.max(3,Math.ceil(avg*1.45))||v>=avg+2))return'high';return''}
 function formatPlayerStat(v,mode,i,values){
   const high=statHighClass(values,i);
   if(mode==='cards'){
@@ -622,7 +641,7 @@ function renderPlayerStat(el,mode){
   if(!box)return;
   el.classList.toggle('stat-mode-alt',mode!=='otb');
   if(mode==='otb'){
-    if(legacy){legacy.style.display='block';legacy.innerHTML=hist.map((v,i)=>`<span class="${statHighClass(hist.map(x=>Number(x.otb)||0),i)}">${Number(v.otb)||0}/${Number(v.on)||0}</span>`).join(' ');}
+    if(legacy){legacy.style.display='block';legacy.innerHTML=hist.map((v,i)=>`<span class="${statHighClass(hist.map(x=>Number(x.otb)||0),i)}">${Number(v.otb)||0}/${Number(v.on)||0}</span>`).join('–');}
     box.style.setProperty('display','none','important');
     return;
   }
@@ -630,7 +649,7 @@ function renderPlayerStat(el,mode){
   box.style.setProperty('display','block','important');
   const vals=hist.map(v=>mode==='shots'?(Number(v.shotOn)||0):mode==='all'?(Number(v.all)||0):mode==='fouls'?(Number(v.fouls)||0):mode==='headers'?(Number(v.headers)||0):v.cardsObj||{yellow:0,red:0});
   const nums=vals.map(v=>typeof v==='number'?v:(Number(v?.yellow)||0)+(Number(v?.red)||0));
-  box.innerHTML=vals.map((v,i)=>formatPlayerStat(v,mode,i,nums)).join(' ');
+  box.innerHTML=vals.map((v,i)=>formatPlayerStat(v,mode,i,nums)).join('–');
 }
 function setPlayerStatMode(matchId,mode){const bar=document.querySelector(`[data-stat-bar="${CSS.escape(String(matchId))}"]`);if(!bar)return;bar.querySelectorAll('.player-stat-btn').forEach(b=>b.classList.toggle('active',b.dataset.stat===mode));const pitch=document.querySelector(`#p${String(matchId).replace(/[^a-zA-Z0-9_-]/g,'')}`);if(!pitch)return;pitch.querySelectorAll('.p').forEach(el=>renderPlayerStat(el,mode));bar.dataset.mode=mode}
 const playerMatchStatsFallbackCache=new Map();
