@@ -424,6 +424,14 @@ html,body{overflow-x:hidden}
 .p .player-stat-values{font-size:17px!important;line-height:1.2!important;min-height:20px!important;overflow:visible!important;font-weight:1000!important}
 @media(max-width:600px){.p .nums{font-size:14px!important;min-height:34px!important}.p .nums .statline{height:17px!important;gap:5px!important}.p .nums .statlabel{font-size:10px!important;min-width:44px!important}.p .nums .statvals{font-size:14px!important}.p .nums .high{font-size:15px!important}.p .player-stat-values{font-size:14px!important}}
 </style>
+<style id="uel-final-stat-size">
+.p .nums,.p .player-stat-values{font-size:17px!important;line-height:1.15!important;font-weight:1000!important;letter-spacing:0!important;min-height:38px!important;margin-top:6px!important;overflow:visible!important;text-shadow:0 2px 3px #000,0 0 2px #000!important}
+.p .nums .statline{height:19px!important;gap:6px!important}
+.p .nums .statlabel{font-size:12px!important;min-width:44px!important;font-weight:1000!important}
+.p .nums .statvals{font-size:17px!important;font-weight:1000!important}
+.p .nums .high{font-size:18px!important;padding:0 4px!important}
+@media(max-width:600px){.p .nums,.p .player-stat-values{font-size:14px!important;min-height:32px!important}.p .nums .statlabel{font-size:10px!important}.p .nums .statvals{font-size:14px!important}.p .nums .high{font-size:15px!important}}
+</style>
 </head><body>
 
 <div style="margin:8px 0;padding:8px 10px;border-radius:9px;background:rgba(16,43,44,.75);font-size:12px;opacity:.85">
@@ -934,37 +942,27 @@ async function fetchLeaguePlayed(league,season){
   return arr;
 }
 async function teamMatches(teamId,leagueName,cutoffTime){
-  const ck=String(teamId)+':TEAM_ALL_CATALOG:'+String(cutoffTime||'');
+  const ck=String(teamId)+':DATE_SCAN:'+String(cutoffTime||'');
   if(historyCache.has(ck))return historyCache.get(ck);
   const cutoff=Date.parse(cutoffTime||'9999-12-31T23:59:59Z');
-  const isUefa=/Europa League|Conference League|Champions League/i.test(leagueName||'');
-  let leagues=[];
-  if(isUefa){
-    // UEFA-ottelussa historia EI saa tulla UEFA-otteluista. PitchAPI:n
-    // nykyinen REST-rajapinta ei tarjoa team/{id}/matches-endpointia,
-    // joten haetaan kaikki katalogin sarjat ja poimitaan tästä joukkueesta
-    // viisi uusinta ennen nykyistä ottelua. Näin myös Salzburgin,
-    // Benfican, Ajaxin, Galatasarayn jne. kotisarjat löytyvät.
-    leagues=Object.values(leagueMap||{}).filter(l=>l?.id);
-  }else{
-    const lm=leagueMap[leagueName];
-    if(lm?.id)leagues=[lm];
-  }
-  const unique=[];const seen=new Set();
-  for(const l of leagues){const id=String(l.id);if(!seen.has(id)){seen.add(id);unique.push(l)}}
   const found=new Map();
-  const add=(items)=>{
-    for(const m of (Array.isArray(items)?items:[])){
-      const belongs=String(m.home_team?.id)===String(teamId)||String(m.away_team?.id)===String(teamId);
-      if(belongs&&m.status==='finished'&&Date.parse(m.time_utc)<cutoff)found.set(String(m.id),m);
-    }
-  };
-  // Pienet erät estävät liian suuren rinnakkaispyyntöpiikin. Kaikki
-  // katalogin sarjat käydään läpi, jotta oikea kotisarja ei jää väliin.
-  for(let i=0;i<unique.length;i+=8){
-    const batch=unique.slice(i,i+8);
-    const results=await Promise.all(batch.map(async l=>{
-      try{const d=await api(`leagues/${encodeURIComponent(l.id)}/matches?status=played`);return Array.isArray(d?.matches)?d.matches:[]}catch(e){return[]}
+  const isoDay=t=>new Date(t).toISOString().slice(0,10);
+  const start=new Date(cutoff);
+  start.setUTCHours(0,0,0,0);
+  start.setUTCDate(start.getUTCDate()-1);
+  const days=[];
+  for(let i=0;i<90;i++){const d=new Date(start);d.setUTCDate(start.getUTCDate()-i);days.push(isoDay(d));}
+  const add=(items)=>{for(const m of(Array.isArray(items)?items:[])){
+    const home=String(m.home_team?.id)===String(teamId),away=String(m.away_team?.id)===String(teamId);
+    if((home||away)&&m.status==='finished'&&Date.parse(m.time_utc)<cutoff)found.set(String(m.id),m);
+  }};
+  // /date/{date} is the catalogue-wide fixture index, so it also works for
+  // UEFA teams whose domestic league is not one of the Big 5. We deliberately
+  // do not use the selected UEFA competition as the history source.
+  for(let i=0;i<days.length&&found.size<5;i+=7){
+    const batch=days.slice(i,i+7);
+    const results=await Promise.all(batch.map(async day=>{
+      try{const d=await api(`date/${day}?status=played`);return Array.isArray(d?.matches)?d.matches:[]}catch(e){return[]}
     }));
     results.forEach(add);
   }
