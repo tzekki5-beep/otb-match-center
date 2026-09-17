@@ -6,8 +6,8 @@
 <style>
 :root{--bg:#071120;--card:#0d1a2e;--line:#29405f;--txt:#edf4ff;--muted:#93a8c5;--accent:#4389c8;--good:#39c98b;--bad:#ff7385}
 *{box-sizing:border-box}body{margin:0;background:var(--bg);color:var(--txt);font-family:system-ui,-apple-system,Segoe UI,Roboto,sans-serif}header{padding:18px 15px 13px;background:#081323;position:sticky;top:0;z-index:5;border-bottom:1px solid var(--line)}h1{font-size:27px;margin:0}.sub{color:var(--muted);margin-top:4px;line-height:1.35}.controls{display:flex;gap:8px;flex-wrap:wrap;margin-top:14px}button,input[type=date],input[type=password]{font:inherit;background:#102039;color:var(--txt);border:1px solid #2b4565;border-radius:12px;padding:10px 13px}button.active{background:var(--accent)}main{max-width:1150px;margin:auto;padding:15px}.status{color:var(--muted);margin-bottom:12px}.err{background:#391722;color:#ffbcc6;border:1px solid #713544;padding:12px;border-radius:12px}.setup{background:#0d1a2e;border:1px solid #29405f;border-radius:16px;padding:15px;margin-bottom:14px}.setup input{width:100%;margin:8px 0}.setup .row{display:flex;gap:8px}.setup .row button{flex:1}.ok{color:var(--good)}
-.match{background:#061c24;border:1px solid #173b45;border-radius:15px;margin:14px 0;overflow:hidden}.mh{padding:13px 14px;border-bottom:1px solid #21434d;display:flex;justify-content:space-between;gap:10px;background:#061a22}.teams{font-weight:800;font-size:16px}.lg{font-size:12px;color:#8fa7ae;margin-top:3px}.tm{white-space:nowrap;color:#d5e1e5;font-weight:700}.pitch{margin:0;background:#06252c;border:0;border-radius:0;min-height:900px;padding:0;position:relative;overflow:hidden}.pitch:before{content:"";position:absolute;left:50%;top:0;bottom:0;border-left:3px solid #d9e1e455}.pitch:after{content:"";position:absolute;width:112px;height:112px;border:3px solid #d9e1e455;border-radius:50%;left:calc(50% - 56px);top:calc(50% - 56px)}.pitch .centerDot{display:block;position:absolute;width:10px;height:10px;border-radius:50%;background:#dfe6e7;left:calc(50% - 5px);top:calc(50% - 5px);z-index:0}.goal{position:absolute;left:15%;right:15%;height:20%;border:3px solid #d9e1e455;background:transparent}.g1{top:0}.g2{bottom:0}.pitch .goal:after{content:"";position:absolute;left:24%;right:24%;height:48%;border:3px solid #d9e1e455}.g1:after{bottom:-3px}.g2:after{top:-3px}.pitch-team-logo{position:absolute;z-index:2;width:58px;height:58px;border-radius:12px;background:rgba(6,20,27,.82);border:2px solid rgba(255,255,255,.55);display:flex;align-items:center;justify-content:center;padding:6px;box-shadow:0 3px 10px #0008;pointer-events:none}.pitch-team-logo img{width:100%;height:100%;object-fit:contain}.pitch-home-logo{left:12px;top:12px}.pitch-away-logo{left:12px;bottom:12px}.players{position:relative;z-index:3;height:900px;width:100%}.p{text-align:center;width:92px;cursor:pointer;position:absolute;transform:translate(-50%,-50%);filter:drop-shadow(0 2px 2px #0009)}.face{width:52px;height:52px;border-radius:50%;object-fit:cover;background:#dbe5e8;border:3px solid #f2f4f4;display:block;margin:0 auto 2px}.name{display:inline-block;background:#06141b;color:#f2f5f6;border-radius:5px;padding:2px 4px;font-size:9px;font-weight:800;line-height:1.05;max-width:82px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}.otb{color:#eef4f5}.ont{color:#b9d6df}.note{padding:9px 14px 12px;color:#8fa7ae;font-size:12px;background:#061a22}.drawer{position:fixed;left:0;right:0;bottom:0;z-index:20;background:#061a22;border-top:1px solid #3a5962;border-radius:20px 20px 0 0;max-height:82vh;overflow:auto;padding:18px;box-shadow:0 -20px 60px #000b}.x{float:right}.grid{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin:14px 0}.stat{background:#0b2832;border:1px solid #2a4d57;border-radius:12px;padding:9px;text-align:center}.stat b{font-size:20px;display:block}table{width:100%;border-collapse:collapse;font-size:12px}td,th{padding:7px;border-bottom:1px solid #263f48;text-align:center}td:first-child,th:first-child{text-align:left}.hidden{display:none}
-@media(max-width:430px){.pitch{min-height:820px;padding:0}.players{height:820px}.p{width:84px}.face{width:44px;height:44px}.name{font-size:8px;max-width:76px}.player-stat-values{font-size:6.5px}.pitch-team-logo{width:48px;height:48px;padding:5px}.pitch-home-logo{left:8px;top:8px}.pitch-away-logo{left:8px;bottom:8px}}
+.match{background:#061c24;border:1px solid #173b45;border-radius:15px;margin:14px 0;overflow:hidden}.mh{padding:13px 14px;border-bottom:1px solid #21434d;display:flex;justify-content:space-between;gap:10px;background:#061a22}.teams{font-weight:800;font-size:16px}.lg{font-size:12px;color:#8fa7ae;margin-top:3px}.tm{white-space:nowrap;color:#d5e1e5;font-weight:700}.pitch{margin:0;background:#06252c;border:0;border-radius:0;min-height:900px;padding:0;position:relative;overflow:hidden}.pitch:before{content:"";position:absolute;left:50%;top:0;bottom:0;border-left:3px solid #d9e1e455}.pitch:after{content:"";position:absolute;width:112px;height:112px;border:3px solid #d9e1e455;border-radius:50%;left:calc(50% - 56px);top:calc(50% - 56px)}.pitch .centerDot{display:block;position:absolute;width:10px;height:10px;border-radius:50%;background:#dfe6e7;left:calc(50% - 5px);top:calc(50% - 5px);z-index:0}.goal{position:absolute;left:15%;right:15%;height:20%;border:3px solid #d9e1e455;background:transparent}.g1{top:0}.g2{bottom:0}.pitch .goal:after{content:"";position:absolute;left:24%;right:24%;height:48%;border:3px solid #d9e1e455}.g1:after{bottom:-3px}.g2:after{top:-3px}.players{position:relative;z-index:1;height:900px;width:100%}.p{text-align:center;width:92px;cursor:pointer;position:absolute;transform:translate(-50%,-50%);filter:drop-shadow(0 2px 2px #0009)}.face{width:52px;height:52px;border-radius:50%;object-fit:cover;background:#dbe5e8;border:3px solid #f2f4f4;display:block;margin:0 auto 2px}.name{display:inline-block;background:#06141b;color:#f2f5f6;border-radius:5px;padding:2px 4px;font-size:9px;font-weight:800;line-height:1.05;max-width:82px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}.nums{display:block!important;font-size:7px!important;line-height:1!important;font-weight:800!important;white-space:nowrap!important;margin-top:1px!important;min-height:9px!important}.otb{color:#eef4f5}.ont{color:#b9d6df}.note{padding:9px 14px 12px;color:#8fa7ae;font-size:12px;background:#061a22}.drawer{position:fixed;left:0;right:0;bottom:0;z-index:20;background:#061a22;border-top:1px solid #3a5962;border-radius:20px 20px 0 0;max-height:82vh;overflow:auto;padding:18px;box-shadow:0 -20px 60px #000b}.x{float:right}.grid{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin:14px 0}.stat{background:#0b2832;border:1px solid #2a4d57;border-radius:12px;padding:9px;text-align:center}.stat b{font-size:20px;display:block}table{width:100%;border-collapse:collapse;font-size:12px}td,th{padding:7px;border-bottom:1px solid #263f48;text-align:center}td:first-child,th:first-child{text-align:left}.hidden{display:none}
+@media(max-width:430px){.pitch{min-height:820px;padding:0}.players{height:820px}.p{width:84px}.face{width:44px;height:44px}.name{font-size:8px;max-width:76px}.player-stat-values{font-size:6.5px}}
 @media(min-width:780px){.match{display:inline-block;vertical-align:top;width:calc(50% - 8px);margin-right:8px}}
 
 /* V18: clear halfway line */
@@ -186,7 +186,7 @@ html,body{overflow-x:hidden}
 
 /* v7: pääsarjojen pelaajatilastojen pikavalinta */
 .player-stat-bar{display:flex;gap:6px;flex-wrap:wrap;padding:9px 12px;background:#071d25;border-top:1px solid #21434d;border-bottom:1px solid #21434d}
-.player-stat-btn{background:#173b3c;color:#dce9eb;border:1px solid #527273;border-radius:10px;padding:10px 14px;font-size:13px;font-weight:900;cursor:pointer}
+.player-stat-btn{background:#173b3c;color:#dce9eb;border:1px solid #527273;border-radius:9px;padding:7px 9px;font-size:11px;font-weight:900;cursor:pointer}
 .player-stat-btn.active{background:#4389c8;border-color:#75aee0;color:#fff}
 .player-stat-caption{width:100%;font-size:10px;color:#8fa7ae;margin-bottom:1px}
 .player-stat-values{font-size:7px;line-height:1.05;font-weight:900;white-space:nowrap;margin-top:1px;min-height:9px;width:100%;overflow:hidden;text-overflow:clip}
@@ -195,29 +195,27 @@ html,body{overflow-x:hidden}
 .stat-mode-label{font-size:10px;color:#b7c9ce;margin-left:auto;align-self:center;font-weight:800}
 @media(max-width:600px){.player-stat-btn{padding:7px 8px;font-size:10px}.stat-mode-label{width:100%;margin-left:0}}
 
+<style id="compact-player-stats-final">
+.p .player-stat-values{font-size:7px!important;line-height:1!important;white-space:nowrap!important;display:block!important;overflow:hidden!important;width:100%!important;margin-top:1px!important}
+.p .nums{display:block!important;font-size:7px!important;line-height:1!important;font-weight:800!important;white-space:nowrap!important;margin-top:1px!important;min-height:9px!important}
+.p{width:92px}
+@media(max-width:430px){.p{width:84px}.p .player-stat-values{font-size:6.5px!important}}
+.p .nums{display:block!important;font-size:7px!important;line-height:1!important;font-weight:800!important;white-space:nowrap!important;margin-top:1px!important;min-height:9px!important}.p .player-stat-values{display:none;font-size:7px!important;line-height:1!important;white-space:nowrap!important;margin-top:1px!important;min-height:9px!important;overflow:hidden!important;width:100%!important}.p{width:92px}@media(max-width:430px){.p{width:84px}.p .nums,.p .player-stat-values{font-size:6.5px!important}}
 </style>
-
-<style id="final-player-stat-ui">
-.player-stat-bar{padding:11px 13px!important;gap:8px!important}
-.player-stat-caption{font-size:11px!important}
-.stat-mode-label{font-size:11px!important}
-.player-stat-btn{padding:11px 16px!important;font-size:14px!important;border-radius:11px!important}
-.p{width:124px!important}
-.p .name{font-size:14px!important;max-width:122px!important;padding:4px 6px!important;line-height:1.05!important}
-.p .face{width:54px!important;height:54px!important}
-.p .player-stat-values{display:block!important;font-size:13px!important;line-height:1.18!important;font-weight:900!important;white-space:nowrap!important;margin-top:4px!important;min-height:30px!important;overflow:visible!important;width:100%!important}
-.p .stat-line{display:flex!important;align-items:baseline!important;justify-content:center!important;gap:5px!important;min-height:15px!important}
-.p .stat-label{font-size:10px!important;opacity:.72!important;min-width:38px!important;text-align:right!important;font-weight:900!important}
-.p .stat-values{font-size:13px!important;letter-spacing:1px!important}
-.p .player-stat-values .high{padding:1px 3px!important;border-radius:4px!important}
-.player-stat-values .card-yellow,.player-stat-values .card-red{font-size:15px!important}
-@media(max-width:430px){
-  .p{width:108px!important}
-  .p .face{width:48px!important;height:48px!important}
-  .p .name{font-size:11.5px!important;max-width:106px!important}
-  .p .player-stat-values,.p .stat-values{font-size:11.5px!important}
-  .p .stat-label{font-size:8.5px!important;min-width:30px!important}
-}
+<style id="compact-player-stats-readable">
+.p{width:96px!important}
+.p .nums{display:block!important;font-size:10px!important;line-height:1.05!important;font-weight:900!important;white-space:nowrap!important;letter-spacing:-.25px!important;margin-top:2px!important;min-height:11px!important;overflow:hidden!important}
+.p .player-stat-values{display:none!important;font-size:10px!important;line-height:1.05!important;font-weight:900!important;white-space:nowrap!important;letter-spacing:-.25px!important;margin-top:2px!important;min-height:11px!important;overflow:hidden!important}
+.p .player-stat-values .high{padding:0 2px!important}
+@media(max-width:430px){.p{width:88px!important}.p .nums,.p .player-stat-values{font-size:9px!important}}
+</style>
+<style id="player-drawer-v27">
+.drawer h2{margin:0 0 4px;font-size:20px}.drawer-sub{color:#9fb5bd;font-size:12px;margin-bottom:10px}
+.player-tabs{display:flex;gap:6px;flex-wrap:wrap;margin:10px 0}.player-tab{background:#173b3c;color:#fff;border:1px solid #527273;border-radius:9px;padding:8px 10px;font-weight:800;cursor:pointer}.player-tab.active{background:#4389c8;border-color:#75aee0}
+.shotmap-wrap{display:grid;grid-template-columns:minmax(180px,260px) 1fr;gap:12px;align-items:start;margin:10px 0}.shotmap{background:#0a2228;border:1px solid #294b55;border-radius:12px;padding:8px}.shotmap svg{display:block;width:100%;height:auto}.shot-dot{cursor:pointer;stroke:#071120;stroke-width:.8}.shot-dot.goal{fill:#39c98b}.shot-dot.on{fill:#4389c8}.shot-dot.off{fill:#d9e1e4}.shot-dot.block{fill:#ffd84a}
+.shot-legend{display:flex;gap:8px;flex-wrap:wrap;font-size:10px;color:#a9c0c7;margin-top:6px}.shot-legend span{display:inline-flex;align-items:center;gap:3px}.shot-legend i{width:8px;height:8px;border-radius:50%;display:inline-block}
+.shot-summary{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:7px}.shot-summary .stat{padding:8px}.shot-summary .stat b{font-size:18px}.player-metric-grid{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:7px;margin:10px 0}.player-metric{background:#0b2832;border:1px solid #294b55;border-radius:9px;padding:8px}.player-metric b{display:block;font-size:16px}.player-metric span{font-size:10px;color:#9fb5bd}.raw-group{margin:10px 0}.raw-title{font-weight:900;font-size:13px;margin-bottom:6px}.raw-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:6px}.raw-item{background:#0b2832;border-radius:8px;padding:7px;font-size:11px}.raw-item b{float:right}.drawer-table{font-size:11px}.drawer-table td,.drawer-table th{padding:6px 5px}.drawer-note{font-size:10px;color:#8fa7ae;margin-top:7px}
+@media(max-width:650px){.shotmap-wrap{grid-template-columns:1fr}.player-metric-grid{grid-template-columns:repeat(2,minmax(0,1fr))}}
 </style>
 </head><body>
 
@@ -252,7 +250,7 @@ html,body{overflow-x:hidden}
     <input id="v20Search" placeholder="🔎 Hae pelaajaa..." />
   </div>
   <div class="v20-section v20-days">
-    <div class="v20-title">📅 Tulevat ottelupäivät</div>
+    <div class="v20-title">📅 Ottelupäivät</div>
     <div id="v20Days" class="v20-days-row"></div>
   </div>
   <div class="v20-section" style="display:none">
@@ -355,14 +353,7 @@ async function loadLeagueDateIndex(leagueName){
   box.innerHTML='<div class="status">Ladataan sarjan ottelupäiviä…</div>';
   try{
     const d=await api(`leagues/${encodeURIComponent(lm.id)}/matches?status=all`);
-    // Näytä vain tästä päivästä eteenpäin kaikki sarjan saatavilla olevat ottelupäivät.
-    // Ei vanhoja päiviä, eikä keinotekoista 7 päivän rajaa.
-    const todayIso=today();
-    // Only today and future fixtures; PitchAPI returns the current season fixtures when status=all.
-    const dates=[...new Set((d.matches||[])
-      .map(m=>m.date||String(m.time_utc||'').slice(0,10))
-      .filter(Boolean)
-      .filter(iso=>iso>=todayIso))].sort();
+    const dates=[...new Set((d.matches||[]).map(m=>m.date||String(m.time_utc||'').slice(0,10)).filter(Boolean))].sort();
     window.__leagueDates=dates;
     renderLeagueDates(document.querySelector('#date')?.value||today());
   }catch(e){box.innerHTML='<div class="status">Ottelupäiviä ei saatu ladattua.</div>';console.warn(e)}
@@ -397,7 +388,7 @@ function render(){
   const list=games.filter(m=>m.league?.name===filter);
   if(!list.length){$('#out').innerHTML='<div class="status">Ei otteluita tällä päivällä tässä sarjassa.</div>';return}
   if(MAIN_SET.has(filter)){
-    $('#out').innerHTML=list.map(m=>`<section class="match"><div class="mh"><div><div class="teams">${esc(matchLabel(m))}</div><div class="lg">${esc(m.league?.name||'')}</div></div><div class="tm">${localTime(m.time_utc)}${m.status==='finished'?' · '+m.score_home+'–'+m.score_away:''}</div></div><div class="player-stat-bar" data-stat-bar="${esc(m.id)}"><div class="player-stat-caption">Pelaajien viimeiset 5 ottelua · valitse näytettävä tilasto</div><button class="player-stat-btn active" data-stat="otb">OTB / OTB kohti</button><button class="player-stat-btn" data-stat="shots">Laukaukset</button><button class="player-stat-btn" data-stat="cards">Kortit</button><button class="player-stat-btn" data-stat="fouls">Rikkeet</button><button class="player-stat-btn" data-stat="headers">Puskut</button><button class="player-stat-btn" data-stat="all">Kaikki laukaukset</button><span class="stat-mode-label">Viimeiset 5</span></div><div class="pitch" id="p${m.id.replace(/[^a-zA-Z0-9_-]/g,'')}"><div class="pitch-team-logo pitch-home-logo" data-pitch-home-logo></div><div class="pitch-team-logo pitch-away-logo" data-pitch-away-logo></div><div class="goal g1"></div><div class="goal g2"></div><span class="centerDot"></span><div class="players"><div class="status">Ladataan kokoonpanoa…</div></div></div><div class="note">OUT = boxin ulkopuolelta · pelaajaa painamalla näet tarkat tilastot.</div></section>`).join('');
+    $('#out').innerHTML=list.map(m=>`<section class="match"><div class="mh"><div><div class="teams">${esc(matchLabel(m))}</div><div class="lg">${esc(m.league?.name||'')}</div></div><div class="tm">${localTime(m.time_utc)}${m.status==='finished'?' · '+m.score_home+'–'+m.score_away:''}</div></div><div class="player-stat-bar" data-stat-bar="${esc(m.id)}"><div class="player-stat-caption">Pelaajien viimeiset 5 ottelua · valitse näytettävä tilasto</div><button class="player-stat-btn active" data-stat="otb">OTB / OTB kohti</button><button class="player-stat-btn" data-stat="shots">Laukaukset</button><button class="player-stat-btn" data-stat="cards">Kortit</button><button class="player-stat-btn" data-stat="fouls">Rikkeet</button><button class="player-stat-btn" data-stat="headers">Pääpallot</button><button class="player-stat-btn" data-stat="all">Kaikki laukaukset</button><span class="stat-mode-label">Viimeiset 5</span></div><div class="pitch" id="p${m.id.replace(/[^a-zA-Z0-9_-]/g,'')}"><div class="goal g1"></div><div class="goal g2"></div><span class="centerDot"></span><div class="players"><div class="status">Ladataan kokoonpanoa…</div></div></div><div class="note">OUT = boxin ulkopuolelta · pelaajaa painamalla näet tarkat tilastot.</div></section>`).join('');
     list.forEach(loadGame);
   }else{
     $('#out').innerHTML=list.map(m=>`<section class="other-match match-analysis-card" data-other-match="${esc(m.id)}"><div class="ma-head"><div class="ma-teams"><div class="ma-team">${m.home_team?.image_url?`<img class="ma-logo" src="${esc(m.home_team.image_url)}" alt="">`:''}<span>${esc(m.home_team?.name||'')}</span></div><div class="ma-vs">VS</div><div class="ma-team away"><span>${esc(m.away_team?.name||'')}</span>${m.away_team?.image_url?`<img class="ma-logo" src="${esc(m.away_team.image_url)}" alt="">`:''}</div></div><div class="ma-time">${localTime(m.time_utc)}${m.status==='finished'?' · '+m.score_home+'–'+m.score_away:''}</div></div><div class="ma-body"><div class="other-analysis"><div class="status">Lasketaan joukkueiden tilastofaktoja…</div></div></div><div class="ma-foot">📊 Perustuu PitchAPI:n viimeisiin otteluihin, joukkueiden tilastoihin ja H2H-kohtaamisiin. Ennuste on tilastollinen arvio, ei varma tulos.</div></section>`).join('');
@@ -434,6 +425,17 @@ function positionGroup(p){
   return 'mid';
 }
 function place(starters,home){
+  /* PitchAPI gives confirmed starters their real formation coordinates.
+     Use those first so the vertical pitch keeps our existing direction while
+     the players land in the positions actually published for the XI. */
+  const hasCoords=starters.filter(p=>Number.isFinite(Number(p?.pitch_x))&&Number.isFinite(Number(p?.pitch_y))&&(Number(p.pitch_x)!==0||Number(p.pitch_y)!==0)).length>=7;
+  if(hasCoords){
+    return starters.map(p=>{
+      let x=Number(p.pitch_x)*100,y=Number(p.pitch_y)*100;
+      if(x>100)x=Math.min(100,x); if(y>100)y=Math.min(100,y);
+      return {p,x:Math.max(7,Math.min(93,x)),y:Math.max(5,Math.min(95,y))};
+    });
+  }
   const groups={gk:[],def:[],mid:[],att:[]};
   starters.forEach(p=>groups[positionGroup(p)].push(p));
   const total=starters.length;
@@ -445,12 +447,12 @@ function place(starters,home){
   if(groups.att.length)lines.push(['att',groups.att]);
   if(lines.length<3){const arr=starters.slice();lines.length=0;lines.push(['gk',arr.slice(0,1)],['def',arr.slice(1,5)],['mid',arr.slice(5,9)],['att',arr.slice(9)]);}
   const homeY=[8,20,32,43],awayY=[92,80,68,57],pts=[];
-  lines.forEach(([kind,arr],lineIndex)=>{const n=arr.length,y=home?(homeY[Math.min(lineIndex,3)]):(awayY[Math.min(lineIndex,3)]);arr.forEach((p,i)=>{let x=n===1?50:12+i*(76/(n-1));x=Math.max(9,Math.min(91,x));pts.push({p,x,y});});});
+  lines.forEach(([kind,arr],lineIndex)=>{const n=arr.length,y=home?(homeY[Math.min(lineIndex,3)]):(awayY[Math.min(lineIndex,3)]);arr.forEach((p,i)=>{let x=(i+1)*100/(n+1);x=Math.max(7,Math.min(93,x));pts.push({p,x,y});});});
   return pts;
 }
 function card(p,teamId,matchId,x,y){
   const id=pid(p),key=playerKey(p),u=img(p);
-  return `<div class="p" data-id="${esc(key)}" data-player-id="${esc(id||'')}" data-player-name="${esc(pName(p))}" data-team="${esc(teamId)}" data-match="${esc(matchId)}" style="left:${x}%;top:${y}%"><img class="face" data-pid="${esc(id||'')}" src="${esc(u)}" onerror="imageFallback(this)"><div class="name">${esc(pName(p))}</div><div class="player-stat-values" data-player-stat-values><div class="stat-line"><span class="stat-label">OTB</span><span class="stat-values">– – – – –</span></div><div class="stat-line"><span class="stat-label">KOHTI</span><span class="stat-values">– – – – –</span></div></div></div>`;
+  return `<div class="p" data-id="${esc(key)}" data-player-id="${esc(id||'')}" data-player-name="${esc(pName(p))}" data-team="${esc(teamId)}" data-match="${esc(matchId)}" style="left:${x}%;top:${y}%"><img class="face" data-pid="${esc(id||'')}" src="${esc(u)}" onerror="imageFallback(this)"><div class="name">${esc(pName(p))}</div><div class="nums otb" data-otb>–/– · –/– · –/– · –/– · –/–</div><div class="player-stat-values" data-player-stat-values></div><span data-ont style="display:none"></span></div>`;
 }
 async function getLineups(id){if(lineupCache.has(id))return lineupCache.get(id);const d=await api(`matches/${id}/lineups`);lineupCache.set(id,d);return d}
 async function getMatchPlayers(id){
@@ -483,23 +485,20 @@ function imageFallback(el){
   if(!el.dataset.retry&&id){el.dataset.retry='1';api(`players/${encodeURIComponent(id)}`).then(d=>{const u=(d?.player||d)?.image_url;if(u)el.src=u;else el.style.visibility='hidden';}).catch(()=>{el.style.visibility='hidden'});}else el.style.visibility='hidden';
 }
 function analysisScore(v){const avg=v.totalOtb/Math.max(5,v.games||5),acc=v.totalOtb?v.totalOn/v.totalOtb:0,consistency=v.gamesWithOtb/Math.max(5,v.games||5);return avg*5+acc*3+consistency*2}
-function playerAnalysis(el){const vals=el._history||[],totalOtb=vals.reduce((a,v)=>a+(v.otb||0),0),totalOn=vals.reduce((a,v)=>a+(v.on||0),0),totalAll=vals.reduce((a,v)=>a+(v.all||0),0),totalFouls=vals.reduce((a,v)=>a+(v.fouls||0),0),totalHeaders=vals.reduce((a,v)=>a+(v.headers||0),0),totalHeadersOn=vals.reduce((a,v)=>a+(v.headersOn||0),0),gamesWithOtb=vals.filter(v=>(v.otb||0)>0).length,score=analysisScore({totalOtb,totalOn,gamesWithOtb,games:vals.length});return{name:el.querySelector('.name')?.textContent||'?',totalOtb,totalOn,totalAll,totalFouls,totalHeaders,totalHeadersOn,gamesWithOtb,score,values:vals}}
+function playerAnalysis(el){const vals=el._history||[],totalOtb=vals.reduce((a,v)=>a+(v.otb||0),0),totalOn=vals.reduce((a,v)=>a+(v.on||0),0),totalAll=vals.reduce((a,v)=>a+(v.all||0),0),totalFouls=vals.reduce((a,v)=>a+(v.fouls||0),0),totalHeaders=vals.reduce((a,v)=>a+(v.headers||0),0),gamesWithOtb=vals.filter(v=>(v.otb||0)>0).length,score=analysisScore({totalOtb,totalOn,gamesWithOtb,games:vals.length});return{name:el.querySelector('.name')?.textContent||'?',totalOtb,totalOn,totalAll,totalFouls,totalHeaders,gamesWithOtb,score,values:vals}}
 function renderAnalysis(m,home,away){
   const pitch=document.querySelector(`#p${m.id.replace(/[^a-zA-Z0-9_-]/g,'')}`);if(!pitch)return;
   const panel=pitch.parentElement.querySelector('[data-analysis]');if(!panel)return;
   const players=[...pitch.querySelectorAll('.p')].map(playerAnalysis).filter(x=>x.totalAll>=0);if(!players.length){panel.querySelector('.mini').textContent='Historiatietoja ei saatavilla.';return}
   players.sort((a,b)=>b.score-a.score||b.totalOtb-a.totalOtb||b.totalOn-a.totalOn);const top=players.slice(0,5),hNames=new Set(home.map(p=>pName(p))),h=players.filter(x=>hNames.has(x.name)),a=players.filter(x=>!hNames.has(x.name)),teamTotal=(arr,key)=>arr.reduce((s,x)=>s+x[key],0);
-  const rankHtml=top.map((x,i)=>{const acc=x.totalOtb?Math.round(100*x.totalOn/x.totalOtb):0;const star=x.score>=10?'★★★★★':x.score>=7?'★★★★☆':x.score>=5?'★★★☆☆':x.score>=3?'★★☆☆☆':'★☆☆☆☆';return `<div class="rankrow ${i<2?'hot':''}"><div class="ranknum">${i+1}</div><div><div class="rankname">${esc(x.name)}</div><div class="rankmeta">${star} · ${x.totalOtb} OTB · ${x.totalOn} kohti · ${x.totalAll} kaikki · 🟨 ${x.totalFouls} rikkeet · 🏹 ${x.totalHeaders} puskut · ${x.totalHeadersOn} kohti · ${acc}% OTB-kohti</div></div><div class="rankscore">${x.score.toFixed(1)}</div></div>`;}).join('');
+  const rankHtml=top.map((x,i)=>{const acc=x.totalOtb?Math.round(100*x.totalOn/x.totalOtb):0;const star=x.score>=10?'★★★★★':x.score>=7?'★★★★☆':x.score>=5?'★★★☆☆':x.score>=3?'★★☆☆☆':'★☆☆☆☆';return `<div class="rankrow ${i<2?'hot':''}"><div class="ranknum">${i+1}</div><div><div class="rankname">${esc(x.name)}</div><div class="rankmeta">${star} · ${x.totalOtb} OTB · ${x.totalOn} kohti · ${x.totalAll} kaikki · 🟨 ${x.totalFouls} rikkeet · 🏹 ${x.totalHeaders} puskut · ${acc}% OTB-kohti</div></div><div class="rankscore">${x.score.toFixed(1)}</div></div>`;}).join('');
   panel.innerHTML=`<h3>📊 Ottelun OTB-yhteenveto</h3><div class="mini">TOP 5 perustuu viimeiseen 5 otteluun: OTB-määrä + OTB kohti + tasaisuus. Mitä suurempi pistemäärä, sitä kiinnostavampi tilastollisesti.</div><div class="teamtotals"><div class="teamtotal">${esc(m.home_team?.name||'Kotijoukkue')}: <b>${teamTotal(h,'totalOtb')}</b> OTB · <b>${teamTotal(h,'totalOn')}</b> kohti</div><div class="teamtotal">${esc(m.away_team?.name||'Vierasjoukkue')}: <b>${teamTotal(a,'totalOtb')}</b> OTB · <b>${teamTotal(a,'totalOn')}</b> kohti</div></div><div class="rankgrid">${rankHtml}</div>`;
 }
 async function loadGame(m){
   const box=$('#p'+m.id.replace(/[^a-zA-Z0-9_-]/g,'')+' .players');if(!box)return;
-  try{const d=await getLineups(m.id),home=d.home||{},away=d.away||{},hs0=home.starters||[],as0=away.starters||[],pm=await getMatchPlayers(m.id).catch(()=>new Map()),hs=await mergeImages(hs0,pm),as=await mergeImages(as0,pm);
-    const pitch=box.closest(".pitch");
-    const homeLogo=pitch?.querySelector("[data-pitch-home-logo]"),awayLogo=pitch?.querySelector("[data-pitch-away-logo]");
-    const homeTeam=m.home_team||d.home_team||{}; const awayTeam=m.away_team||d.away_team||{};
-    if(homeLogo) homeLogo.innerHTML=homeTeam.image_url?`<img src="${esc(homeTeam.image_url)}" alt="${esc(homeTeam.name||'')}">`:'';
-    if(awayLogo) awayLogo.innerHTML=awayTeam.image_url?`<img src="${esc(awayTeam.image_url)}" alt="${esc(awayTeam.name||'')}">`:'';
+  try{const d=await getLineups(m.id),home=d.home||{},away=d.away||{},hs0=home.starters||[],as0=away.starters||[];
+    if(home.confirmed===false||away.confirmed===false){box.innerHTML='<div class="status">⏳ Virallisia avauskokoonpanoja ei ole vielä julkaistu. Ennakoituja kokoonpanoja ei näytetä pelaajakohteina.</div>';return}
+    const pm=await getMatchPlayers(m.id).catch(()=>new Map()),hs=await mergeImages(hs0,pm),as=await mergeImages(as0,pm);
     if(hs.length<7||as.length<7){box.innerHTML='<div class="status">Avauskokoonpano ei ole vielä saatavilla.</div>';return}
     let html='';for(const q of place(hs,true))html+=card(q.p,home.team_id||d.home_team?.id,m.id,q.x,q.y);for(const q of place(as,false))html+=card(q.p,away.team_id||d.away_team?.id,m.id,q.x,q.y);box.innerHTML=html;
     const hTeam=home.team_id||d.home_team?.id,aTeam=away.team_id||d.away_team?.id;await Promise.all([loadHistory(m,hTeam,hs),loadHistory(m,aTeam,as)]);renderAnalysis(m,hs,as);
@@ -511,74 +510,126 @@ async function shots(matchId){if(shotsCache.has(matchId))return shotsCache.get(m
 function statsFor(arr,playerRef){
   const refId=typeof playerRef==='object'?pid(playerRef):playerRef,refName=typeof playerRef==='object'?pName(playerRef):'';
   const ss=(Array.isArray(arr)?arr:[]).filter(s=>{const sid=s?.player?.id??s?.player_id??s?.playerId??s?.athlete_id;const sn=s?.player?.name??s?.player_name??s?.playerName;return (refId!=null&&sid!=null&&String(sid)===String(refId))||(refName&&sn&&normName(sn)===normName(refName));});
-  let otb=0,otbOn=0,shotOn=0,headers=0,headersOn=0;for(const s of ss){const outside=s?.is_inside_box===false;const isHeader=/^(header|head)$/i.test(String(s?.shot_type||''));if(outside)otb++;if(outside&&s?.is_on_target===true)otbOn++;if(s?.is_on_target===true)shotOn++;if(isHeader)headers++;if(isHeader&&s?.is_on_target===true)headersOn++;}
-  return{otb,on:otbOn,shotOn,all:ss.length,headers,headersOn,shots:ss};
+  let otb=0,otbOn=0,shotOn=0,headers=0;for(const s of ss){const outside=s?.is_inside_box===false;if(outside)otb++;if(outside&&s?.is_on_target===true)otbOn++;if(s?.is_on_target===true)shotOn++;if(String(s?.shot_type||'').toLowerCase()==='header')headers++;}
+  return{otb,on:otbOn,shotOn,all:ss.length,headers,shots:ss};
 }
 async function getPlayerStats(matchId){if(playerStatsCache.has(matchId))return playerStatsCache.get(matchId);const d=await api(`matches/${matchId}/players`),map=new Map();for(const row of (Array.isArray(d)?d:[])){const pl=row?.player||{},id=pl.id||pl.player_id||row?.player_id||row?.playerId||row?.id,name=pl.name||row?.name||row?.player_name;if(id)map.set(String(id),row);if(name)map.set('name:'+normName(name),row);}playerStatsCache.set(matchId,map);return map}
 function statNumber(stat){if(!stat)return 0;if(typeof stat.value==='number')return stat.value;if(typeof stat.total==='number')return stat.total;if(typeof stat.value==='string'&&Number.isFinite(Number(stat.value)))return Number(stat.value);return 0}
 function playerMetric(row,patterns){for(const group of (row?.stats||[])){for(const [label,obj] of Object.entries(group?.stats||{})){const s=obj?.stat||obj||{},key=String(s.key||obj?.key||''),hay=(label+' '+key+' '+String(group?.key||'')).toLowerCase();if(patterns.some(re=>re.test(hay)))return statNumber(s);}}return 0}
 function playerFouls(row){return playerMetric(row,[/foul.*committ/i,/committ.*foul/i,/fouls?$/i])}
-function statHighClass(values,i){const nums=values.map(v=>Number(v)||0),max=Math.max(...nums,0),v=Number(nums[i])||0,avg=nums.length?nums.reduce((a,b)=>a+b,0)/nums.length:0;return max>0&&v===max&&v>=Math.max(2,Math.ceil(avg*1.5))?'high':'';}
-function formatPlayerStat(v,mode,i,values){const high=statHighClass(values,i);if(mode==='cards'){const y=Number(v?.yellow)||0,r=Number(v?.red)||0;if(r)return `<span class="${high}"><span class="card-red">🟥</span></span>`;if(y)return `<span class="${high}"><span class="card-yellow">🟨</span></span>`;return `<span class="${high}">0</span>`;}return `<span class="${high}">${esc(String(Number(v)||0))}</span>`}
+function statHighClass(values,i){const nums=values.map(v=>Number(v)||0),max=Math.max(...nums,0),v=Number(nums[i])||0,avg=nums.length?nums.reduce((a,b)=>a+b,0)/nums.length:0;if(max>0&&v===max&&v>=Math.max(3,Math.ceil(avg*1.7)))return'high';return''}
+function formatPlayerStat(v,mode,i,values){const high=statHighClass(values,i);if(mode==='cards'){const y=Number(v?.yellow)||0,r=Number(v?.red)||0;if(r)return `<span class="${high}"><span class="card-red">🟥${r}</span></span>`;if(y)return `<span class="${high}"><span class="card-yellow">🟨${y}</span></span>`;return `<span class="${high}">0</span>`;}return `<span class="${high}">${esc(String(Number(v)||0))}</span>`}
 function renderPlayerStat(el,mode){
-  const hist=Array.isArray(el._history)?el._history:[],box=el.querySelector('[data-player-stat-values]');
+  const hist=Array.isArray(el._history)?el._history:[];
+  const box=el.querySelector('[data-player-stat-values]');
+  const legacy=el.querySelector('[data-otb]');
   if(!box)return;
-  const otb=hist.map(v=>Number(v.otb)||0),on=hist.map(v=>Number(v.on)||0);
-  const joinVals=vals=>vals.map((v,i)=>`<span class="${statHighClass(vals,i)}">${Number(v)||0}</span>`).join(' ');
   if(mode==='otb'){
-    box.innerHTML=`<div class="stat-line"><span class="stat-label">OTB</span><span class="stat-values">${joinVals(otb)}</span></div><div class="stat-line"><span class="stat-label">KOHTI</span><span class="stat-values">${joinVals(on)}</span></div>`;
+    if(legacy){legacy.style.display='block';legacy.innerHTML=hist.map((v,i)=>`<span class="${statHighClass(hist.map(x=>Number(x.otb)||0),i)}">${Number(v.otb)||0}/${Number(v.on)||0}</span>`).join(' ');}
+    box.style.display='none';
     return;
   }
-  let vals,label;
-  if(mode==='shots'){vals=hist.map(v=>Number(v.shotOn)||0);label='KOHTI';}
-  else if(mode==='all'){vals=hist.map(v=>Number(v.all)||0);label='LAUK';}
-  else if(mode==='fouls'){vals=hist.map(v=>Number(v.fouls)||0);label='RIKKEET';}
-  else if(mode==='headers'){vals=hist.map(v=>Number(v.headers)||0);const onHeaders=hist.map(v=>Number(v.headersOn)||0);box.innerHTML=`<div class="stat-line"><span class="stat-label">PUSKUT</span><span class="stat-values">${joinVals(vals)}</span></div><div class="stat-line"><span class="stat-label">KOHTI</span><span class="stat-values">${joinVals(onHeaders)}</span></div>`;return;}
-  else{vals=hist.map(v=>v.cardsObj||{yellow:0,red:0});label='KORTIT';}
-  const body=mode==='cards'?vals.map((v,i)=>formatPlayerStat(v,mode,i,[])).join(' '):vals.map((v,i)=>formatPlayerStat(v,mode,i,vals)).join(' ');
-  box.innerHTML=`<div class="stat-line"><span class="stat-label">${label}</span><span class="stat-values">${body}</span></div>`;
+  if(legacy)legacy.style.display='none';
+  box.style.display='block';
+  const vals=hist.map(v=>mode==='shots'?(Number(v.all)||0):mode==='all'?(Number(v.all)||0):mode==='fouls'?(Number(v.fouls)||0):mode==='headers'?(Number(v.headers)||0):v.cardsObj||{yellow:0,red:0});
+  const nums=vals.map(v=>typeof v==='number'?v:0);
+  box.innerHTML=vals.map((v,i)=>formatPlayerStat(v,mode,i,nums)).join(' ');
 }
 function setPlayerStatMode(matchId,mode){const bar=document.querySelector(`[data-stat-bar="${CSS.escape(String(matchId))}"]`);if(!bar)return;bar.querySelectorAll('.player-stat-btn').forEach(b=>b.classList.toggle('active',b.dataset.stat===mode));const pitch=document.querySelector(`#p${String(matchId).replace(/[^a-zA-Z0-9_-]/g,'')}`);if(!pitch)return;pitch.querySelectorAll('.p').forEach(el=>renderPlayerStat(el,mode));bar.dataset.mode=mode}
 const playerMatchStatsFallbackCache=new Map();
-const matchHistoryBundleCache=new Map();
 async function getPlayerMatchStats(matchId,playerId){if(!playerId)return null;const ck=String(matchId)+':'+String(playerId);if(playerMatchStatsFallbackCache.has(ck))return playerMatchStatsFallbackCache.get(ck);try{const d=await api(`matches/${encodeURIComponent(matchId)}/players/${encodeURIComponent(playerId)}`);playerMatchStatsFallbackCache.set(ck,d||null);return d||null}catch(e){playerMatchStatsFallbackCache.set(ck,null);return null}}
+const playerShotsCache=new Map();
+async function getPlayerShots(matchId,playerId){if(!playerId)return[];const ck=String(matchId)+':'+String(playerId);if(playerShotsCache.has(ck))return playerShotsCache.get(ck);try{const d=await api(`matches/${encodeURIComponent(matchId)}/players/${encodeURIComponent(playerId)}/shots`);const a=Array.isArray(d?.shots)?d.shots:[];playerShotsCache.set(ck,a);return a}catch(e){playerShotsCache.set(ck,[]);return[]}}
+function flattenPlayerStats(row){
+  const out=[]; for(const group of (row?.stats||[])){for(const [label,obj] of Object.entries(group?.stats||{})){const s=obj?.stat||obj||{};if(!s||s.type==='boolean')continue;const key=String(s.key||obj?.key||'');let value=s.value;let total=s.total;if(typeof value==='string'&&value!==''&&!Number.isFinite(Number(value)))continue;if(value!==undefined&&Number.isFinite(Number(value)))value=Number(value);if(total!==undefined&&Number.isFinite(Number(total)))total=Number(total);out.push({label,key,value,total,type:s.type,group:String(group?.key||'')});}}
+  return out;
+}
+function statFind(row,patterns){const a=flattenPlayerStats(row);return a.find(x=>patterns.some(re=>re.test((x.label+' '+x.key+' '+x.group).toLowerCase())))}
+function statVal(row,patterns){const x=statFind(row,patterns);return x&&Number.isFinite(Number(x.value))?Number(x.value):null}
+function fmtMetric(v){if(v===null||v===undefined||!Number.isFinite(Number(v)))return'—';const n=Number(v);return Number.isInteger(n)?String(n):n.toFixed(2).replace(/0+$/,'').replace(/\.$/,'')}
+function aggregateRows(rows){
+  const keys={goals:[/\bgoals?\b/],assists:[/\bassists?\b/],xg:[/^xg$/,/expected.?goals/],xa:[/^xa$/,/expected.?assists/],shots:[/total.?shots/,/^shots$/],shotsOn:[/shots.?on.?target/,/on.?target/],touches:[/^touches$/],passes:[/^passes$/,/pass attempts/],accuratePasses:[/accurate.?passes/],keyPasses:[/key.?passes/],crosses:[/^crosses$/],dribbles:[/dribbles/,/take.?ons/],tackles:[/^tackles$/],interceptions:[/interceptions/],clearances:[/clearances/],blocks:[/^blocks$/],recoveries:[/recoveries/],duelsWon:[/duels won/,/won duels/],aerialsWon:[/aerial.*won/],fouls:[/foul.*committ/,/committ.*foul/],foulsWon:[/foul.*won/,/won.*foul/],minutes:[/minutes/],rating:[/^rating$/]};
+  const out={}; for(const [name,patterns] of Object.entries(keys)){let sum=0,seen=0;for(const r of rows){const v=statVal(r,patterns);if(v!==null){sum+=v;seen++}}out[name]=seen?sum:null}
+  return out;
+}
+function shotOutcome(s){const e=String(s?.event_type||'').toLowerCase();if(e==='goal'||e.includes('goal'))return'goal';if(s?.is_blocked)return'block';if(s?.is_on_target===true)return'on';return'off'}
+function shotMapSvg(shots){
+  const arr=Array.isArray(shots)?shots:[];
+  const dots=arr.map((s,i)=>{const x=Number(s?.y),y=Number(s?.x);if(!Number.isFinite(x)||!Number.isFinite(y))return'';const cx=Math.max(2,Math.min(66,x)),cy=Math.max(2,Math.min(103,y));const r=Math.max(1.6,Math.min(3.4,1.5+Number(s?.expected_goals||0)*4));const cls=shotOutcome(s);const title=`${s?.minute??'?'}' · ${fmtMetric(s?.expected_goals)} xG · ${String(s?.shot_type||'').replace(/([a-z])([A-Z])/g,'$1 $2')}`;return `<circle class="shot-dot ${cls}" cx="${cx}" cy="${cy}" r="${r}"><title>${esc(title)}</title></circle>`}).join('');
+  return `<div class="shotmap"><svg viewBox="0 0 68 105" role="img" aria-label="Pelaajan laukaisukartta"><rect x="0" y="0" width="68" height="105" rx="2" fill="#0c3030"/><line x1="0" y1="52.5" x2="68" y2="52.5" stroke="#8aa4a8" stroke-opacity=".35"/><circle cx="34" cy="52.5" r="9.15" fill="none" stroke="#8aa4a8" stroke-opacity=".35"/><rect x="16.5" y="88.5" width="35" height="16.5" fill="none" stroke="#8aa4a8" stroke-opacity=".45"/><rect x="25" y="96" width="18" height="9" fill="none" stroke="#8aa4a8" stroke-opacity=".45"/><rect x="27.5" y="0" width="13" height="3" fill="none" stroke="#8aa4a8" stroke-opacity=".45"/>${dots}</svg><div class="shot-legend"><span><i style="background:#39c98b"></i>Maali</span><span><i style="background:#4389c8"></i>Kohti</span><span><i style="background:#ffd84a"></i>Blokattu</span><span><i style="background:#d9e1e4"></i>Ohi</span></div></div>`;
+}
+function renderPlayerMetrics(rows,shots,events){
+  const a=aggregateRows(rows), ss=shots||[]; const xg=ss.reduce((s,x)=>s+Number(x?.expected_goals||0),0), inside=ss.filter(x=>x?.is_inside_box===true).length,outside=ss.filter(x=>x?.is_inside_box===false).length,on=ss.filter(x=>x?.is_on_target===true).length,goals=ss.filter(x=>shotOutcome(x)==='goal').length;
+  const yellow=(events||[]).filter(e=>/yellow/i.test(String(e?.event_type||e?.type||''))).length,red=(events||[]).filter(e=>/red/i.test(String(e?.event_type||e?.type||''))).length;
+  return {a,xg,inside,outside,on,goals,yellow,red,shots:ss.length};
+}
+function rawGroupHtml(title,items){const good=items.filter(x=>x[1]!==null&&x[1]!==undefined);if(!good.length)return'';return `<div class="raw-group"><div class="raw-title">${title}</div><div class="raw-grid">${good.map(x=>`<div class="raw-item">${esc(x[0])}<b>${esc(String(x[1]))}</b></div>`).join('')}</div></div>`}
+async function buildPlayerPanelData(hist,playerRef){
+  const rows=await buildHistoryRows(await buildTeamHistoryRows(hist),playerRef);const shotLists=await Promise.all(hist.map(g=>getPlayerShots(g.id,typeof playerRef==='object'?pid(playerRef):playerRef)));const shots=shotLists.flat();
+  const events=[]; for(let i=0;i<hist.length;i++){try{const d=await api(`matches/${hist[i].id}/events`);for(const e of (d?.events||[])){const eid=e?.player?.id??e?.player_id;const en=e?.player?.name??e?.player_name;if((playerRef&&eid!=null&&String(eid)===String(typeof playerRef==='object'?pid(playerRef):playerRef))||(en&&normName(en)===normName(typeof playerRef==='object'?pName(playerRef):'')))events.push(e)}}catch(e){}}
+  return {rows,shots,events};
+}
 async function buildTeamHistoryRows(hist){
   return Promise.all(hist.map(async g=>{
-    const ck=String(g.id);
-    if(matchHistoryBundleCache.has(ck))return matchHistoryBundleCache.get(ck);
-    const promise=(async()=>{
-      const [shotsData,bulkPlayers,eventData]=await Promise.all([shots(g.id).catch(()=>[]),getPlayerStats(g.id).catch(()=>new Map()),api(`matches/${g.id}/events`).catch(()=>({events:[]}))]);
-      return {g,shots:shotsData,players:bulkPlayers,events:Array.isArray(eventData?.events)?eventData.events:[]};
-    })();
-    matchHistoryBundleCache.set(ck,promise);
-    return promise;
+    const [shotsData,bulkPlayers,eventData]=await Promise.all([
+      shots(g.id).catch(()=>[]),
+      getPlayerStats(g.id).catch(()=>new Map()),
+      api(`matches/${g.id}/events`).catch(()=>({events:[]}))
+    ]);
+    return {g,shots:shotsData,players:bulkPlayers,events:Array.isArray(eventData?.events)?eventData.events:[]};
   }));
 }
 async function buildHistoryRows(rows,playerRef){
   const refId=typeof playerRef==='object'?pid(playerRef):playerRef,refName=typeof playerRef==='object'?pName(playerRef):'';
-  return rows.map(r=>{
-    const prow=findPlayerRow(r.players,playerRef),z=statsFor(r.shots,playerRef),events=r.events||[];
+  return Promise.all(rows.map(async r=>{
+    let prow=findPlayerRow(r.players,playerRef);
+    if(!prow&&refId) prow=await getPlayerMatchStats(r.g.id,refId);
+    const z=statsFor(r.shots,playerRef),events=r.events||[];
     const ce=events.filter(e=>{
-      const eid=e?.player?.id??e?.player_id??e?.playerId,en=e?.player?.name??e?.player_name??e?.playerName;
-      const byId=refId!=null&&eid!=null&&String(eid)===String(refId),byName=refName&&en&&normName(en)===normName(refName);
-      return (byId||byName)&&/^(yellowcard|redcard|yellow card|red card|second yellow|second_yellow)$/i.test(String(e?.event_type||e?.type||''));
+      const eid=e?.player?.id??e?.player_id??e?.playerId;
+      const en=e?.player?.name??e?.player_name;
+      const byId=refId!=null&&eid!=null&&String(eid)===String(refId);
+      const byName=refName&&en&&normName(en)===normName(refName);
+      return (byId||byName)&&/card/i.test(String(e?.event_type||e?.type||''));
     });
-    const yellow=ce.filter(e=>/yellow/i.test(String(e?.event_type||e?.type||''))).length,red=ce.filter(e=>/red/i.test(String(e?.event_type||e?.type||''))).length;
-    return {...z,fouls:playerMetric(prow,[/fouls?_committed/i,/foul.*committ/i,/committ.*foul/i,/fouls?$/i]),cards:yellow+red,cardsObj:{yellow,red},opp:matchLabel(r.g),matchId:r.g.id,played:!!prow};
-  });
+    const yellow=ce.filter(e=>/yellow/i.test(String(e?.event_type||e?.type||''))).length;
+    const red=ce.filter(e=>/red/i.test(String(e?.event_type||e?.type||''))).length;
+    return {...z,fouls:playerMetric(prow,[/foul.*committ/i,/committ.*foul/i,/fouls?$/i]),cards:yellow+red,cardsObj:{yellow,red},opp:matchLabel(r.g),matchId:r.g.id,played:!!prow};
+  }));
 }
 async function loadHistory(m,teamId,starters){
   if(!teamId||!Array.isArray(starters)||!starters.length)return;
   try{
-    const hist=await teamMatches(teamId,m.league.name,m.time_utc),rows=await buildTeamHistoryRows(hist),pitchId=`#p${m.id.replace(/[^a-zA-Z0-9_-]/g,'')}`;
+    const hist=await teamMatches(teamId,m.league.name,m.time_utc);
+    const rows=await buildTeamHistoryRows(hist);
+    const pitchId=`#p${m.id.replace(/[^a-zA-Z0-9_-]/g,'')}`;
     await Promise.all(starters.map(async p=>{
-      const key=playerKey(p);let vals=[];
-      try{vals=await buildHistoryRows(rows,p);}catch(e){console.warn('player history',key,e);vals=hist.map(g=>({otb:0,on:0,shotOn:0,all:0,headers:0,headersOn:0,shots:[],fouls:0,cards:0,cardsObj:{yellow:0,red:0},opp:matchLabel(g),matchId:g.id,played:false}));}
-      const el=document.querySelector(`${pitchId} .p[data-id="${CSS.escape(key)}"]`);if(!el)return;el._history=vals;renderPlayerStat(el,'otb');window.dispatchEvent(new CustomEvent('otb-history-ready',{detail:{matchId:m.id,playerId:String(pid(p)||key)}}));
+      const key=playerKey(p);
+      let vals=[];
+      try{vals=await buildHistoryRows(rows,p)}catch(e){
+        console.warn('player history',key,e);
+        vals=hist.map(g=>({otb:0,on:0,shotOn:0,all:0,headers:0,shots:[],fouls:0,cards:0,cardsObj:{yellow:0,red:0},opp:matchLabel(g),matchId:g.id,played:false}));
+      }
+      const el=document.querySelector(`${pitchId} .p[data-id="${CSS.escape(key)}"]`);
+      if(!el)return;
+      el._history=vals;
+      renderPlayerStat(el,'otb');
+      window.dispatchEvent(new CustomEvent('otb-history-ready',{detail:{matchId:m.id,playerId:String(pid(p)||key)}}));
     }));
   }catch(e){console.warn('history',e)}
 }
-async function openPlayer(id,name,teamId,leagueName,cutoffTime){const d=$('#drawer');d.classList.remove('hidden');d.innerHTML=`<button class="x" onclick="this.parentElement.classList.add('hidden')">✕</button><h2>${esc(name)}</h2><div class="status">Haetaan viimeisiä 5 ottelua…</div>`;try{const hist=await teamMatches(teamId,leagueName,cutoffTime),ref={id:id||null,name},vals=await buildHistoryRows(hist,ref),t=vals.reduce((a,v)=>a+v.otb,0),o=vals.reduce((a,v)=>a+v.on,0),shotOn=vals.reduce((a,v)=>a+(v.shotOn||0),0),all=vals.reduce((a,v)=>a+v.all,0),c=vals.reduce((a,v)=>a+(v.cards||0),0),h=vals.reduce((a,v)=>a+(v.headers||0),0),ho=vals.reduce((a,v)=>a+(v.headersOn||0),0),f=vals.reduce((a,v)=>a+(v.fouls||0),0),active=vals.filter(v=>v.otb>0).length,avg=(t/Math.max(vals.length,1)).toFixed(1),acc=t?Math.round(100*o/t):0;d.innerHTML=`<button class="x" onclick="this.parentElement.classList.add('hidden')">✕</button><h2>${esc(name)}</h2><div class="grid"><div class="stat"><b>${shotOn}</b>Laukaukset kohti</div><div class="stat"><b>${o}</b>OTB kohti</div><div class="stat"><b>${t}</b>OUT / OTB</div><div class="stat"><b>${all}</b>Lauotut</div><div class="stat"><b>${c}</b>Kortit</div><div class="stat"><b>${h}</b>Puskut</div><div class="stat"><b>${ho}</b>Pusku kohti</div><div class="stat"><b>${f}</b>Rikkeet</div></div><div class="mini">Viimeiset ${vals.length} ottelua · OTB-keskiarvo <b>${avg}</b>/peli · OTB kohti ${acc}% · OTB vähintään kerran ${active}/${vals.length} pelissä</div><table><thead><tr><th>Ottelu</th><th>Kohti</th><th>OTB</th><th>OTB kohti</th><th>Lauotut</th><th>Kortit</th><th>Puskut</th><th>Pusku kohti</th><th>Rikkeet</th></tr></thead><tbody>${vals.map(v=>`<tr><td>${esc(v.opp)}</td><td>${v.shotOn||0}</td><td>${v.otb}</td><td>${v.on}</td><td>${v.all}</td><td>${v.cards||0}</td><td>${v.headers||0}</td><td>${v.headersOn||0}</td><td>${v.fouls||0}</td></tr>`).join('')}</tbody></table>`}catch(e){d.innerHTML=`<button class="x" onclick="this.parentElement.classList.add('hidden')">✕</button><h2>${esc(name)}</h2><div class="err">Tilastoja ei saatu: ${esc(e.message)}</div>`}}
+async function openPlayer(id,name,teamId,leagueName,cutoffTime){
+ const d=$('#drawer');d.classList.remove('hidden');d.innerHTML=`<button class="x" onclick="this.parentElement.classList.add('hidden')">✕</button><h2>${esc(name)}</h2><div class="drawer-sub">Pelaajan analyysi · laukaisukartta · raaka data · viimeiset 5</div><div class="status">Haetaan pelaajan viimeisiä 5 ottelua…</div>`;
+ try{
+  const hist=await teamMatches(teamId,leagueName,cutoffTime),ref={id:id||null,name},data=await buildPlayerPanelData(hist,ref),vals=data.rows,metrics=renderPlayerMetrics(vals,data.shots,data.events),t=vals.reduce((a,v)=>a+v.otb,0),o=vals.reduce((a,v)=>a+v.on,0),c=vals.reduce((a,v)=>a+(v.cards||0),0),h=vals.reduce((a,v)=>a+(v.headers||0),0),f=vals.reduce((a,v)=>a+(v.fouls||0),0),active=vals.filter(v=>v.otb>0).length,avg=(t/Math.max(vals.length,1)).toFixed(1),acc=t?Math.round(100*o/t):0,a=metrics.a;
+  const cards=[['Maalit',metrics.goals],['xG',metrics.xg.toFixed(2)],['Laukaukset',metrics.shots],['Kohti',metrics.on],['Boksista',metrics.inside],['Ulkopuolelta',metrics.outside],['🟨 Keltaiset',metrics.yellow],['🟥 Punaiset',metrics.red],['Rikkeet',a.fouls===null?'—':fmtMetric(a.fouls)]];
+  const raw1=[['Arvosana',fmtMetric(a.rating)],['Minuutit',fmtMetric(a.minutes)],['Maalit',fmtMetric(a.goals)],['Syötöt',fmtMetric(a.assists)],['xG',fmtMetric(a.xg)],['xA',fmtMetric(a.xa)],['Laukaukset',fmtMetric(a.shots)],['Kosketukset',fmtMetric(a.touches)],['Syötöt',fmtMetric(a.passes)],['Tarkat syötöt',fmtMetric(a.accuratePasses)],['Avainsyötöt',fmtMetric(a.keyPasses)],['Keskitykset',fmtMetric(a.crosses)]];
+  const raw2=[['Kuljetukset / haastot',fmtMetric(a.dribbles)],['Taklaukset',fmtMetric(a.tackles)],['Katkot',fmtMetric(a.interceptions)],['Purkaukset',fmtMetric(a.clearances)],['Blokit',fmtMetric(a.blocks)],['Riistot/palautukset',fmtMetric(a.recoveries)],['Voitetut kaksinkamppailut',fmtMetric(a.duelsWon)],['Voitetut ilmakaksinkamppailut',fmtMetric(a.aerialsWon)],['Rikkeet',fmtMetric(a.fouls)],['Rikkeet vastaan',fmtMetric(a.foulsWon)]];
+  d.innerHTML=`<button class="x" onclick="this.parentElement.classList.add('hidden')">✕</button><h2>${esc(name)}</h2><div class="drawer-sub">${esc(leagueName||'')} · viimeiset ${vals.length} ottelua</div><div class="player-tabs"><button class="player-tab active" data-player-view="summary">📊 Yhteenveto</button><button class="player-tab" data-player-view="raw">📋 Raaka data</button><button class="player-tab" data-player-view="matches">🧾 Ottelut</button><button class="player-tab" data-player-view="season">📅 Kausi</button></div><div data-player-pane="summary"><div class="grid">${cards.map(x=>`<div class="stat"><b>${esc(String(x[1]))}</b>${esc(x[0])}</div>`).join('')}</div><div class="mini">Viimeiset ${vals.length} ottelua · OTB-keskiarvo <b>${avg}</b>/peli · OTB kohti <b>${acc}%</b> · OTB vähintään kerran ${active}/${vals.length}</div><div class="shotmap-wrap"><div>${shotMapSvg(data.shots)}<div class="drawer-note">Pisteen koko kuvaa xG:tä. Pisteen päällä näet minuutin, xG:n ja laukaisutyypin.</div></div><div><div class="raw-title">🎯 Laukaisuyhteenveto</div><div class="shot-summary"><div class="stat"><b>${metrics.shots}</b>Laukaukset</div><div class="stat"><b>${metrics.on}</b>Kohti</div><div class="stat"><b>${metrics.goals}</b>Maalit</div><div class="stat"><b>${metrics.xg.toFixed(2)}</b>xG</div><div class="stat"><b>${metrics.inside}</b>Boksista</div><div class="stat"><b>${metrics.outside}</b>Ulkopuolelta</div></div></div></div></div><div data-player-pane="raw" style="display:none"><div class="drawer-note">Raaka data perustuu pelaajan ottelukohtaisiin tilastoihin. Jos jokin kenttä ei ole saatavilla, näytetään viiva eikä keksitä nollaa.</div>${rawGroupHtml('⚽ Hyökkäys ja syöttäminen',raw1)}${rawGroupHtml('🛡️ Puolustus ja kaksinkamppailut',raw2)}${rawGroupHtml('🟨 Kurinalaisuus',[["Keltaiset",metrics.yellow],["Punaiset",metrics.red],["Rikkeet",a.fouls===null?'—':fmtMetric(a.fouls)],["Rikkeet vastaan",a.foulsWon===null?'—':fmtMetric(a.foulsWon)]])}</div><div data-player-pane="matches" style="display:none"><table class="drawer-table"><thead><tr><th>Ottelu</th><th>Kohti</th><th>OTB</th><th>OTB kohti</th><th>Lauk.</th><th>Kortit</th><th>Pääpallot</th><th>Rikkeet</th></tr></thead><tbody>${vals.map(v=>`<tr><td>${esc(v.opp)}</td><td>${v.shotOn||0}</td><td>${v.otb}</td><td>${v.on}</td><td>${v.all}</td><td>${v.cards||0}</td><td>${v.headers||0}</td><td>${v.fouls||0}</td></tr>`).join('')}</tbody></table></div><div data-player-pane="season" style="display:none"><div class="status" data-season-status>Paina Kausi-välilehteä lataamaan koko tämän kauden pelaajadata ja laukaisukartta.</div><div data-season-content></div></div>`;
+  const tabs=[...d.querySelectorAll('[data-player-view]')],panes=[...d.querySelectorAll('[data-player-pane]')];tabs.forEach(tab=>tab.onclick=async()=>{tabs.forEach(x=>x.classList.remove('active'));tab.classList.add('active');const v=tab.dataset.playerView;panes.forEach(p=>p.style.display=p.dataset.playerPane===v?'block':'none');if(v==='season'&&!d.dataset.seasonLoaded){d.dataset.seasonLoaded='loading';await loadPlayerSeason(d,teamId,leagueName,cutoffTime,ref)}});
+ }catch(e){d.innerHTML=`<button class="x" onclick="this.parentElement.classList.add('hidden')">✕</button><h2>${esc(name)}</h2><div class="err">Tilastoja ei saatu: ${esc(e.message)}</div>`}
+}
+async function loadPlayerSeason(drawer,teamId,leagueName,cutoffTime,ref){const status=drawer.querySelector('[data-season-status]'),out=drawer.querySelector('[data-season-content]');if(!status||!out)return;status.textContent='Ladataan kauden laukauksia ja raakadataa…';try{const lm=leagueMap[leagueName];if(!lm)throw Error('Sarjaa ei löytynyt');const d=await api(`leagues/${encodeURIComponent(lm.id)}/matches?status=played`),cut=Date.parse(cutoffTime||'9999-12-31T23:59:59Z'),matches=(d.matches||[]).filter(g=>(String(g.home_team?.id)===String(teamId)||String(g.away_team?.id)===String(teamId))&&g.status==='finished'&&Date.parse(g.time_utc)<cut).sort((a,b)=>new Date(b.time_utc)-new Date(a.time_utc));const rows=await Promise.all(matches.map(async g=>{const [pr,ss,ev]=await Promise.all([getPlayerMatchStats(g.id,ref.id),getPlayerShots(g.id,ref.id),api(`matches/${g.id}/events`).catch(()=>({events:[]}))]);return{pr,shots:ss,events:Array.isArray(ev?.events)?ev.events:[]}}));const played=rows.filter(r=>r.pr||r.shots.length),shots=rows.flatMap(r=>r.shots),playerRows=played.map(r=>r.pr).filter(Boolean),agg=aggregateRows(playerRows),yellow=rows.reduce((n,r)=>n+r.events.filter(e=>String(e?.player?.id)===String(ref.id)&&/yellow/i.test(String(e?.event_type||''))).length,0),red=rows.reduce((n,r)=>n+r.events.filter(e=>String(e?.player?.id)===String(ref.id)&&/red/i.test(String(e?.event_type||''))).length,0),xg=shots.reduce((s,x)=>s+Number(x?.expected_goals||0),0),on=shots.filter(x=>x?.is_on_target).length,goals=shots.filter(x=>shotOutcome(x)==='goal').length,inside=shots.filter(x=>x?.is_inside_box===true).length,outside=shots.filter(x=>x?.is_inside_box===false).length;out.innerHTML=`<div class="grid"><div class="stat"><b>${shots.length}</b>Laukaukset</div><div class="stat"><b>${on}</b>Kohti</div><div class="stat"><b>${goals}</b>Maalit</div><div class="stat"><b>${xg.toFixed(2)}</b>xG</div><div class="stat"><b>${inside}</b>Boksista</div><div class="stat"><b>${outside}</b>Ulkopuolelta</div><div class="stat"><b>${yellow}</b>🟨</div><div class="stat"><b>${red}</b>🟥</div><div class="stat"><b>${fmtMetric(agg.fouls)}</b>Rikkeet</div></div>${shotMapSvg(shots)}${rawGroupHtml('📅 Kauden raaka data',[['Ottelut',played.length],['Minuutit',fmtMetric(agg.minutes)],['Maalit',fmtMetric(agg.goals)],['Syötöt',fmtMetric(agg.assists)],['xG',fmtMetric(agg.xg)],['xA',fmtMetric(agg.xa)],['Kosketukset',fmtMetric(agg.touches)],['Syötöt',fmtMetric(agg.passes)],['Tarkat syötöt',fmtMetric(agg.accuratePasses)],['Avainsyötöt',fmtMetric(agg.keyPasses)],['Keskitykset',fmtMetric(agg.crosses)],['Kuljetukset / haastot',fmtMetric(agg.dribbles)],['Taklaukset',fmtMetric(agg.tackles)],['Katkot',fmtMetric(agg.interceptions)],['Purkaukset',fmtMetric(agg.clearances)],['Voitetut kaksinkamppailut',fmtMetric(agg.duelsWon)],['Rikkeet',fmtMetric(agg.fouls)],['Rikkeet vastaan',fmtMetric(agg.foulsWon)]])}<div class="drawer-note">Kausi = valitun sarjan kuluvan kauden kaikki pelatut ottelut ennen tämän ottelun alkua. Data riippuu lähteen saatavuudesta ottelukohtaisesti.</div>`;status.remove();drawer.dataset.seasonLoaded='done'}catch(e){status.textContent='Kausidataa ei saatu: '+e.message;drawer.dataset.seasonLoaded='error'}}
 
 async function teamFormForOther(teamId,leagueName,cutoff){
   const hist=await teamMatches(teamId,leagueName,cutoff);
@@ -785,12 +836,15 @@ $('#date').value=today();if(isPublicWorker())$('#setup').style.display='none';$(
     cards.forEach(c=>{
       const img=c.querySelector("[data-pid]")||c.querySelector("img");
       const id=img?.dataset?.pid||"";
+      const txt=c.innerText||"";
+      const lines=txt.split(/\n+/).map(x=>x.trim()).filter(Boolean);
+      if(!id && !lines.length)return;
+      const name=lines.find(x=>x && !/^[0-9/]+$/.test(x))||"Pelaaja";
+      const nums=lines.filter(x=>/^[0-9/]+$/.test(x));
+      const vals=(nums[0]||"").split("/").map(Number).filter(Number.isFinite);
+      const hiddenOn=(c.querySelector('[data-ont]')?.textContent||""); const on=(hiddenOn||nums[1]||"").split("/").map(Number).filter(Number.isFinite);
       const hist=Array.isArray(c._history)?c._history:[];
-      if(!id && !hist.length)return;
-      const name=c.dataset.playerName||c.querySelector('.name')?.textContent||"Pelaaja";
-      const vals=hist.map(v=>Number(v.otb)||0);
-      const on=hist.map(v=>Number(v.on)||0);
-      const all=hist.map(v=>Number(v.all)||0);
+      const all=hist.length?hist.map(v=>Number(v.all)||0):[];
       out.push({id,name,values:vals,total:vals.reduce((a,b)=>a+b,0),onTotal:on.reduce((a,b)=>a+b,0),allTotal:all.reduce((a,b)=>a+b,0),games:vals.length,avg:mean(vals),onAvg:mean(on)});
     });
     return out;
@@ -806,6 +860,30 @@ $('#date').value=today();if(isPublicWorker())$('#setup').style.display='none';$(
   $("v20Search")?.addEventListener("input",refresh);
   window.addEventListener("otb-history-ready",()=>setTimeout(refresh,50));
 
+  // Seven-day date navigator: 3 days back + today + 3 days forward.
+  function isoLocal(d){
+    const x=new Date(d); x.setHours(12,0,0,0);
+    return new Date(x-x.getTimezoneOffset()*60000).toISOString().slice(0,10);
+  }
+  function setAppDate(iso){
+    const el=document.querySelector('input[type="date"]');
+    if(!el)return; el.value=iso;
+    el.dispatchEvent(new Event("change",{bubbles:true}));
+    el.dispatchEvent(new Event("input",{bubbles:true}));
+    renderDays(iso);
+  }
+  function renderDays(active){
+    const box=$("v20Days"); if(!box)return;
+    const base=new Date((active||document.querySelector('input[type="date"]')?.value||new Date().toISOString().slice(0,10))+"T12:00:00");
+    box.innerHTML='';
+    for(let i=-3;i<=3;i++){
+      const d=new Date(base); d.setDate(base.getDate()+i); const iso=isoLocal(d);
+      const label=i===0?'Tänään':d.toLocaleDateString('fi-FI',{weekday:'short'});
+      const date=d.toLocaleDateString('fi-FI',{day:'2-digit',month:'2-digit'});
+      const b=document.createElement('button'); b.className='v20-day'+(iso===active?' active':'');
+      b.innerHTML=`${label}<small>${date}</small>`; b.onclick=()=>setAppDate(iso); box.appendChild(b);
+    }
+  }
   // v4: date buttons are populated from the selected league's full season fixture list.
   document.querySelector('input[type="date"]')?.addEventListener('change',e=>{ if(window.__leagueDates) renderLeagueDates(e.target.value); });
   document.querySelectorAll('.f').forEach(btn=>btn.addEventListener('click',()=>{const sel=$("v20League"); if(sel)sel.value=btn.dataset.l==='ALL'?'':btn.dataset.l;}));
@@ -884,12 +962,13 @@ $('#date').value=today();if(isPublicWorker())$('#setup').style.display='none';$(
     cards.forEach((c,idx)=>{
       const img=c.querySelector("[data-pid]")||c.querySelector("img");
       const id=img?.dataset?.pid||"";
+      const lines=(c.innerText||"").split(/\n+/).map(x=>x.trim()).filter(Boolean);
+      const nums=lines.filter(x=>/^[0-9/]+$/.test(x));
+      const name=lines.find(x=>x&&!/^[0-9/]+$/.test(x))||"Pelaaja";
+      const vals=(nums[0]||"").split("/").map(Number).filter(Number.isFinite);
+      const hiddenOn=(c.querySelector('[data-ont]')?.textContent||""); const on=(hiddenOn||nums[1]||"").split("/").map(Number).filter(Number.isFinite);
       const hist=Array.isArray(c._history)?c._history:[];
-      if(!id && !hist.length)return;
-      const name=c.dataset.playerName||c.querySelector('.name')?.textContent||"Pelaaja";
-      const vals=hist.map(v=>Number(v.otb)||0);
-      const on=hist.map(v=>Number(v.on)||0);
-      const all=hist.map(v=>Number(v.all)||0);
+      const all=hist.length?hist.map(v=>Number(v.all)||0):[];
       // Infer side from vertical position relative to pitch center.
       const r=c.getBoundingClientRect(), pr=document.querySelector(".pitch")?.getBoundingClientRect();
       let side="";
@@ -910,4 +989,3 @@ $('#date').value=today();if(isPublicWorker())$('#setup').style.display='none';$(
 </script>
 
 </body></html>
-
