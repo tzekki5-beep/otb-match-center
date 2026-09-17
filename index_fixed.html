@@ -891,7 +891,26 @@ async function loadGame(m,force=false){
     box.querySelectorAll('.p').forEach(el=>el.onclick=()=>openPlayer(el.dataset.playerId||'',el.dataset.playerName||el.querySelector('.name')?.textContent||'?',el.dataset.team,m.league?.name,m.time_utc));
   }catch(e){box.innerHTML=`<div class="err">Kokoonpanoa ei saatu: ${esc(e.message)}</div>`}
 }
-async function teamMatches(teamId,leagueName,cutoffTime){const ck=teamId+':'+leagueName+':'+cutoffTime;if(historyCache.has(ck))return historyCache.get(ck);const lm=leagueMap[leagueName];if(!lm)throw Error('Sarjaa ei löytynyt');let d=await api(`leagues/${encodeURIComponent(lm.id)}/matches?status=all`).catch(()=>({matches:[]}));let all=Array.isArray(d?.matches)?d.matches:[];if(!all.length){d=await api(`leagues/${encodeURIComponent(lm.id)}/matches?status=played`).catch(()=>({matches:[]}));all=Array.isArray(d?.matches)?d.matches:[]}const cutoff=Date.parse(cutoffTime||'9999-12-31T23:59:59Z'),arr=all.filter(m=>(String(m.home_team?.id)===String(teamId)||String(m.away_team?.id)===String(teamId))&&m.status==='finished'&&Date.parse(m.time_utc)<cutoff).sort((a,b)=>new Date(b.time_utc)-new Date(a.time_utc)).slice(0,5);historyCache.set(ck,arr);return arr}
+const leagueMatchesCache=new Map();
+async function fetchLeaguePlayed(league){if(!league?.id)return[];const ck=String(league.id);if(leagueMatchesCache.has(ck))return leagueMatchesCache.get(ck);const d=await api(`leagues/${encodeURIComponent(league.id)}/matches?status=played`).catch(()=>({matches:[]}));const arr=Array.isArray(d?.matches)?d.matches:[];leagueMatchesCache.set(ck,arr);return arr}
+async function teamMatches(teamId,leagueName,cutoffTime){
+  const ck=teamId+':'+leagueName+':'+cutoffTime;if(historyCache.has(ck))return historyCache.get(ck);
+  const lm=leagueMap[leagueName];if(!lm)throw Error('Sarjaa ei löytynyt');
+  const cutoff=Date.parse(cutoffTime||'9999-12-31T23:59:59Z');
+  const same=(await fetchLeaguePlayed(lm)).filter(m=>(String(m.home_team?.id)===String(teamId)||String(m.away_team?.id)===String(teamId))&&m.status==='finished'&&Date.parse(m.time_utc)<cutoff).sort((a,b)=>new Date(b.time_utc)-new Date(a.time_utc));
+  let arr=same.slice(0,5);
+  if(arr.length<5){
+    const lists=await Promise.all(MAIN_LEAGUES.map(n=>leagueMap[n]).filter(Boolean).map(fetchLeaguePlayed));
+    const merged=new Map();
+    for(const list of lists)for(const m of list){
+      if(m.status!=='finished'||Date.parse(m.time_utc)>=cutoff)continue;
+      if(String(m.home_team?.id)!==String(teamId)&&String(m.away_team?.id)!==String(teamId))continue;
+      merged.set(String(m.id),m);
+    }
+    arr=[...merged.values()].sort((a,b)=>new Date(b.time_utc)-new Date(a.time_utc)).slice(0,5);
+  }
+  historyCache.set(ck,arr);return arr;
+}
 async function shots(matchId){if(shotsCache.has(matchId))return shotsCache.get(matchId);const d=await api(`matches/${matchId}/shots`);const arr=[];for(const per of (d?.periods||[]))arr.push(...(per?.shots||[]));shotsCache.set(matchId,arr);return arr}
 function statsFor(arr,playerRef){
   const refId=typeof playerRef==='object'?pid(playerRef):playerRef,refName=typeof playerRef==='object'?pName(playerRef):'';
