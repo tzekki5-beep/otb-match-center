@@ -406,7 +406,16 @@ html,body{overflow-x:hidden}
 .p .nums .statvals{font-size:12px!important;letter-spacing:-.2px!important}
 .p .nums .high{font-size:13px!important;padding:0 3px!important;font-weight:950!important;border-radius:4px!important}
 @media(max-width:600px){.p .nums{font-size:11px!important}.p .nums .statlabel{font-size:8px!important}.p .nums .statvals{font-size:11px!important}.p .nums .high{font-size:12px!important}}
-</style></head><body>
+</style><style id="v44-readable-player-stats">
+/* V44: larger player quick-stat text for clear desktop reading. */
+.p .nums{font-size:18px!important;line-height:1.18!important;min-height:40px!important;margin-top:6px!important;overflow:visible!important}
+.p .nums .statline{height:19px!important;gap:5px!important}
+.p .nums .statlabel{font-size:12px!important;min-width:43px!important;font-weight:900!important}
+.p .nums .statvals{font-size:18px!important;letter-spacing:0!important;font-weight:950!important}
+.p .nums .high{font-size:19px!important;padding:0 4px!important;border-radius:5px!important}
+@media(max-width:600px){.p .nums{font-size:14px!important;min-height:32px!important}.p .nums .statline{height:15px!important}.p .nums .statlabel{font-size:9px!important;min-width:34px!important}.p .nums .statvals{font-size:14px!important}.p .nums .high{font-size:15px!important}}
+</style>
+</head><body>
 
 <div style="margin:8px 0;padding:8px 10px;border-radius:9px;background:rgba(16,43,44,.75);font-size:12px;opacity:.85">
   OTB Match Center · julkinen web-versio
@@ -916,25 +925,19 @@ async function fetchLeaguePlayed(league,season){
   return arr;
 }
 async function teamMatches(teamId,leagueName,cutoffTime){
-  const ck=teamId+':'+leagueName+':'+cutoffTime;
+  const ck=teamId+':TEAM_ALL:'+cutoffTime;
   if(historyCache.has(ck))return historyCache.get(ck);
   const cutoff=Date.parse(cutoffTime||'9999-12-31T23:59:59Z');
-  const isUefa=/Europa League|Conference League|Champions League/i.test(leagueName||'');
-  let all=[];
-  if(isUefa){
-    // UEFA ottelun pelaajatiedot käyttävät aina joukkueen normaalia viimeistä
-    // viittä kotimaan ottelua — ei UEL/UCL/UECL-otteluhistoriaa.
-    const domesticNames=['Premier League','LaLiga','Serie A','Bundesliga','Ligue 1'];
-    const lists=await Promise.all(domesticNames.map(n=>leagueMap[n]).filter(Boolean).map(fetchLeaguePlayed));
-    all=lists.flat();
-  }else{
-    const lm=leagueMap[leagueName];
-    if(lm)all=await fetchLeaguePlayed(lm);
+  // Always use the team's five latest matches across the main competitions.
+  // The selected fixture's competition must not restrict the history.
+  const lists=await Promise.all(MAIN_LEAGUES.map(n=>leagueMap[n]).filter(Boolean).map(fetchLeaguePlayed));
+  const merged=new Map();
+  for(const list of lists)for(const mm of list){
+    if(mm.status!=='finished'||Date.parse(mm.time_utc)>=cutoff)continue;
+    if(String(mm.home_team?.id)!==String(teamId)&&String(mm.away_team?.id)!==String(teamId))continue;
+    merged.set(String(mm.id),mm);
   }
-  const arr=all.filter(m=>
-    (String(m.home_team?.id)===String(teamId)||String(m.away_team?.id)===String(teamId))&&
-    m.status==='finished'&&Date.parse(m.time_utc)<cutoff
-  ).sort((a,b)=>new Date(b.time_utc)-new Date(a.time_utc)).slice(0,5);
+  const arr=[...merged.values()].sort((a,b)=>new Date(b.time_utc)-new Date(a.time_utc)).slice(0,5);
   historyCache.set(ck,arr);
   return arr;
 }
