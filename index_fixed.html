@@ -316,8 +316,8 @@ html,body{overflow-x:hidden}
 .absence-marker{position:absolute;right:calc(50% - 34px);top:-8px;width:22px;height:22px;border-radius:50%;align-items:center;justify-content:center;background:#d92f45;color:#fff;border:2px solid #fff;font-size:14px;font-weight:1000;line-height:1;z-index:6;box-shadow:0 2px 6px #0009}
 .p.injury-player .name{box-shadow:0 0 0 1px #d92f45}
 </style>
-<style id="v33-real-pitch-lineup">
-/* v33: actual PitchAPI XI coordinates; never render duplicate starters */
+<style id="v34-real-pitch-lineup">
+/* v34: Sofascore-style home-top / away-bottom lineup */
 .pitch{min-height:900px!important;height:900px!important;overflow:hidden!important}
 .pitch .players{height:900px!important;min-height:900px!important}
 .p{width:110px!important;z-index:4!important}
@@ -331,7 +331,7 @@ html,body{overflow-x:hidden}
   .p .name{font-size:10px!important;max-width:90px!important}
 }
 </style>
-</head><body>
+<script>window.OTB_BUILD="v34";</script></head><body>
 
 <div style="margin:8px 0;padding:8px 10px;border-radius:9px;background:rgba(16,43,44,.75);font-size:12px;opacity:.85">
   OTB Match Center · julkinen web-versio
@@ -566,26 +566,17 @@ function spreadX(n){
   return Array.from({length:n},(_,i)=>margin+(100-2*margin)*i/(n-1));
 }
 function place(starters,home,formation=''){
-  /*
-    PitchAPI gives starters with pitch_x / pitch_y normalised to 0..1.
-    pitch_x is the length direction (own goal -> opponent goal) and
-    pitch_y is the width direction.  Draw both teams on one pitch:
-      home: own goal at bottom, attacking upward
-      away: own goal at top, attacking downward
-    This is much more reliable than trying to reconstruct the formation
-    from position labels.
-  */
+  /* v34: Sofascore-style orientation. Home team is always TOP, away team
+     always BOTTOM. PitchAPI x/y are treated as x=width, y=length. */
   const xi=cleanStartingXI(starters);
   const hasCoords=xi.length && xi.filter(p=>Number.isFinite(Number(p.pitch_x))&&Number.isFinite(Number(p.pitch_y))).length>=8;
   if(hasCoords){
-    return xi.map((p,i)=>{
-      const px=Number(p.pitch_x), py=Number(p.pitch_y);
-      const x=Math.max(6,Math.min(94,py*100));
-      const y=home
-        ? Math.max(6,Math.min(94,(1-px)*100))
-        : Math.max(6,Math.min(94,px*100));
-      return {p,x,y};
-    });
+    const rows=xi.map(p=>({p,x:Number(p.pitch_x)*100,y:Number(p.pitch_y)*100}));
+    /* Normalize if the API occasionally sends 0..100 instead of 0..1. */
+    for(const r of rows){ if(r.x>1.5) r.x=r.x; if(r.y>1.5) r.y=r.y; }
+    const maxv=Math.max(...rows.flatMap(r=>[r.x,r.y]));
+    if(maxv<=1.5) for(const r of rows){r.x*=100;r.y*=100;}
+    return rows.map(r=>({p:r.p,x:Math.max(6,Math.min(94,r.x)),y:home?Math.max(6,Math.min(94,r.y)):Math.max(6,Math.min(94,100-r.y))}));
   }
 
   /* Fallback for older records without coordinates. */
@@ -686,6 +677,16 @@ async function loadGame(m,force=false){
     const pm=await getMatchPlayers(m.id).catch(()=>new Map()),hs=await mergeImages(hs0,pm),as=await mergeImages(as0,pm);
     let html=`<div class="lineup-status ${official?'official':'predicted'}">${official?'🟢 Virallinen avauskokoonpano':'🟡 Ennakoitu kokoonpano · päivittyy automaattisesti kun virallinen julkaistaan'}</div>`;
     for(const q of place(hs,true,home.formation||d.home?.formation))html+=card(q.p,home.team_id||d.home_team?.id,m.id,q.x,q.y);for(const q of place(as,false,away.formation||d.away?.formation))html+=card(q.p,away.team_id||d.away_team?.id,m.id,q.x,q.y);box.innerHTML=html;
+    /* Hard guard: one DOM card per player, max 11 per team. This also
+       protects against stale/duplicated API payloads and double renders. */
+    const seen=new Set(), teamCounts=new Map();
+    [...box.querySelectorAll('.p')].forEach(el=>{
+      const team=el.dataset.team||'', id=el.dataset.playerId||el.dataset.id||el.dataset.playerName||'';
+      const key=team+'|'+id;
+      const n=teamCounts.get(team)||0;
+      if(seen.has(key)||n>=11){el.remove();return;}
+      seen.add(key);teamCounts.set(team,n+1);
+    });
     const hTeam=home.team_id||d.home_team?.id,aTeam=away.team_id||d.away_team?.id;await Promise.all([loadHistory(m,hTeam,hs),loadHistory(m,aTeam,as)]);renderAnalysis(m,hs,as);
     box.querySelectorAll('.p').forEach(el=>el.onclick=()=>openPlayer(el.dataset.playerId||'',el.dataset.playerName||el.querySelector('.name')?.textContent||'?',el.dataset.team,m.league?.name,m.time_utc));
   }catch(e){box.innerHTML=`<div class="err">Kokoonpanoa ei saatu: ${esc(e.message)}</div>`}
