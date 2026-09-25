@@ -447,6 +447,14 @@ html,body{overflow-x:hidden}
 .p .nums .high{font-size:18px!important;padding:0 4px!important}
 @media(max-width:600px){.p .nums,.p .player-stat-values{font-size:14px!important;min-height:32px!important}.p .nums .statlabel{font-size:10px!important}.p .nums .statvals{font-size:14px!important}.p .nums .high{font-size:15px!important}}
 </style>
+<style id="v28-no-empty-pitch">
+.predicted-static{cursor:pointer!important;pointer-events:auto!important}
+.predicted-static .pred-face{width:42px;height:42px;border-radius:50%;display:flex;align-items:center;justify-content:center;background:#183f42;border:1px solid #6b9698;font-size:20px;margin:0 auto 2px;overflow:hidden}
+.predicted-static .pred-face img{width:100%;height:100%;object-fit:cover;display:block}
+.predicted-static .name{font-size:11px!important;font-weight:900!important;white-space:nowrap;text-align:center;text-shadow:0 2px 3px #000;max-width:130px;overflow:hidden;text-overflow:ellipsis}
+.predicted-static .nums{font-size:10px!important;color:#ffd84a!important;text-align:center;font-weight:900;line-height:1.25;min-width:105px}
+.predicted-static .pred-mini{color:#d8e7ea;font-size:9px}
+</style>
 </head><body>
 
 <div style="margin:8px 0;padding:8px 10px;border-radius:9px;background:rgba(16,43,44,.75);font-size:12px;opacity:.85">
@@ -796,29 +804,91 @@ async function hydrateNLPlayerStats(teamName,cutoffTime,predNames){
   }
   return {team,byName};
 }
+
+async function latestRealXI(teamName, cutoffTime){
+  try{
+    const hist=await recentTeamMatchesByName(teamName,cutoffTime);
+    if(!hist.length)return [];
+    for(const g of hist){
+      const map=await getMatchPlayers(g.id).catch(()=>new Map());
+      const arr=[...map.values()].filter(Boolean);
+      const xi=cleanStartingXI(arr);
+      if(xi.length>=7)return xi.slice(0,11);
+    }
+  }catch(e){}
+  return [];
+}
+
 async function hydrateStaticNLPitch(m){
-  const p=m.__predictedNL;if(!p)return;
-  const home=await hydrateNLPlayerStats(m.home_team.name,m.time_utc,p.home||[]);
-  const away=await hydrateNLPlayerStats(m.away_team.name,m.time_utc,p.away||[]);
-  const root=document.querySelector(`#p${m.id.replace(/[^a-zA-Z0-9_-]/g,'')}`);if(!root)return;
+  const p=m.__predictedNL||null;
+  const cutoff=m.time_utc;
+  const homeName=m.home_team.name, awayName=m.away_team.name;
+  let homeNames=p?.home||[], awayNames=p?.away||[];
+
+  // If no researched prediction exists for this fixture, use the most recent
+  // real lineup from PitchAPI as a visible fallback instead of an empty pitch.
+  let fallbackHome=false, fallbackAway=false;
+  if(!homeNames.length){ const xi=await latestRealXI(homeName,cutoff); homeNames=xi; fallbackHome=!!xi.length; }
+  if(!awayNames.length){ const xi=await latestRealXI(awayName,cutoff); awayNames=xi; fallbackAway=!!xi.length; }
+
+  const root=document.querySelector(`#p${m.id.replace(/[^a-zA-Z0-9_-]/g,'')}`); if(!root)return;
+
+  // If the initial prediction was missing, rebuild the player layer now that
+  // the real historical XI has been found.
+  const players=root.querySelector('.players');
+  if(players && (fallbackHome||fallbackAway)){
+    const make=(arr,home,formation,sideName)=>{
+      let out='';
+      for(const q of place(predictedPlayerObjects(arr),home,formation||'')){
+        out += `<div class="p predicted-static" data-player-id="" data-player-name="${esc(q.p.name)}" data-team="" data-side="${home?'home':'away'}" data-match="${esc(m.id)}" style="left:${q.x}%;top:${q.y}%"><div class="pred-face">⚽</div><div class="name">${esc(q.p.name)}</div><div class="nums otb">Ladataan viimeisiä 5…</div></div>`;
+      }
+      return out;
+    };
+    players.innerHTML=make(homeNames,true,p?.homeFormation,'home')+make(awayNames,false,p?.awayFormation,'away');
+  }
+
+  const [home,away]=await Promise.all([
+    hydrateNLPlayerStats(homeName,cutoff,homeNames).catch(()=>({team:{teamId:'',players:new Map()},byName:new Map()})),
+    hydrateNLPlayerStats(awayName,cutoff,awayNames).catch(()=>({team:{teamId:'',players:new Map()},byName:new Map()}))
+  ]);
+
   const cards=[...root.querySelectorAll('.predicted-static')];
-  const teamData=[{name:m.home_team.name,data:home,side:'home'},{name:m.away_team.name,data:away,side:'away'}];
+  const teamData=[
+    {name:homeName,data:home,side:'home'},
+    {name:awayName,data:away,side:'away'}
+  ];
   for(const side of teamData){
     for(const c of cards.filter(x=>x.dataset.side===side.side)){
-      const name=c.dataset.playerName, row=side.data.team.players.get(normNL(name)), vals=side.data.byName.get(normNL(name))||[];
+      const name=c.dataset.playerName;
+      const row=side.data.team.players.get(normNL(name));
+      const vals=side.data.byName.get(normNL(name))||[];
       if(row){
-        const id=pid(row),u=img(row);c.dataset.playerId=id||'';c.dataset.team=String(side.data.team.teamId||'');
-        const im=c.querySelector('.pred-face');if(u)im.innerHTML=`<img src="${esc(u)}" alt="" onerror="imageFallback(this)">`;
-      }else{c.dataset.team=String(side.data.team.teamId||'');}
-      const last5=vals.slice(0,5), label=last5.length?last5.map(v=>`${v.otb||0}/${v.on||0}`).join(' · '):'ei dataa';
-      const total=last5.reduce((a,v)=>a+(v.otb||0),0), on=last5.reduce((a,v)=>a+(v.on||0),0), shotsN=last5.reduce((a,v)=>a+(v.all||0),0),cardsN=last5.reduce((a,v)=>a+(v.cards||0),0);
+        const id=pid(row),u=img(row);
+        c.dataset.playerId=id||''; c.dataset.team=String(side.data.team.teamId||'');
+        const im=c.querySelector('.pred-face');
+        if(u)im.innerHTML=`<img src="${esc(u)}" alt="" onerror="imageFallback(this)">`;
+      }else{
+        c.dataset.team=String(side.data.team.teamId||'');
+      }
+      const last5=vals.slice(0,5);
+      const label=last5.length?last5.map(v=>`${v.otb||0}/${v.on||0}`).join(' · '):'ei dataa';
+      const shotsN=last5.reduce((a,v)=>a+(v.all||0),0);
+      const on=last5.reduce((a,v)=>a+(v.on||0),0);
+      const cardsN=last5.reduce((a,v)=>a+(v.cards||0),0);
       c.querySelector('.nums').innerHTML=`OTB ${label}<br><span class="pred-mini">Lauk. ${shotsN} · OTB kohti ${on} · 🟨/🟥 ${cardsN}</span>`;
       c.onclick=()=>openPlayer(c.dataset.playerId||'',name,c.dataset.team||'',m.league?.name,m.time_utc);
       c.classList.add('hydrated');
     }
   }
-  const note=root.closest('.match')?.querySelector('.note');if(note)note.innerHTML='🟢 Pelaajakuvat + viimeiset 5 oikeaa ottelua ladattu. Tilastot ovat PitchAPI:n otteludataa; avauskokoonpano on edelleen ennuste kunnes virallinen XI saadaan.';
+
+  const note=root.closest('.match')?.querySelector('.note');
+  if(note){
+    const predText=p ? '🟡 Arvioitu XI' : '🔵 Viimeisin PitchAPI:n oikea XI';
+    const missing=(fallbackHome||fallbackAway)?' · ennustetta ei ollut saatavilla, joten näytetään viimeisin oikea kokoonpano':'';
+    note.innerHTML=`${predText}${missing} · pelaajakuvat ja viimeisten 5 ottelun tilastot haettu oikeasta otteludatasta.`;
+  }
 }
+
 function predictedPlayerObjects(names){
   return (names||[]).map((name,i)=>({name, position:i===0?'GK':''}));
 }
@@ -986,7 +1056,7 @@ function render(){
   if(MAIN_SET.has(filter)){
     if(list.some(m=>m.__nlStatic)){
       $('#out').innerHTML=list.map(m=>{
-        const p=m.__predictedNL, home=p?.home||[], away=p?.away||[];
+        const p=m.__predictedNL||null, home=p?.home||Array(11).fill('').map((_,i)=>`Haetaan… ${i+1}`), away=p?.away||Array(11).fill('').map((_,i)=>`Haetaan… ${i+1}`);
         const hKey=m.home_team?.name||'', aKey=m.away_team?.name||'';
         const safeId=m.id.replace(/[^a-zA-Z0-9_-]/g,'');
         const predCards=(arr,homeSide,formation,sideName)=>{
@@ -998,7 +1068,7 @@ function render(){
         };
         return `<section class="match">
           <div class="mh"><div class="mh-team"><div class="mh-team-text"><div class="teams">${esc(hKey)}</div><div class="lg">${esc(m.league?.name||filter)}</div></div></div><div class="tm">${localTime(m.time_utc)}</div><div class="mh-team away"><div class="mh-team-text"><div class="teams">${esc(aKey)}</div></div></div></div>
-          <div class="lineup-status predicted">🟡 Arvioitu avauskokoonpano · pelaajien kuvat ja viimeisten 5 ottelun data ladataan erikseen</div>
+          <div class="lineup-status predicted">${p?'🟡 Arvioitu avauskokoonpano':'🔵 Haetaan viimeisintä oikeaa kokoonpanoa'} · pelaajien kuvat ja viimeisten 5 ottelun data ladataan erikseen</div>
           <div class="pitch" id="p${safeId}"><div class="goal g1"></div><div class="goal g2"></div><span class="corner tl"></span><span class="corner tr"></span><span class="corner bl"></span><span class="corner br"></span><span class="centerDot"></span><div class="players">${predCards(home,true,p?.homeFormation,hKey)}${predCards(away,false,p?.awayFormation,aKey)}</div></div>
           <div class="note">⏳ Haetaan pelaajien oikeat viimeiset 5 ottelua, kuvat ja tilastot…</div>
         </section>`;
