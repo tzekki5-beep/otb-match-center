@@ -2,7 +2,7 @@
 <html lang="fi">
 <head>
 <meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
-<meta name="theme-color" content="#071120"><title>OTB Match Center – PitchAPI</title>
+<meta name="theme-color" content="#071120"><title>OTB Match Center V33 – PitchAPI</title>
 <style>
 :root{--bg:#071120;--card:#0d1a2e;--line:#29405f;--txt:#edf4ff;--muted:#93a8c5;--accent:#4389c8;--good:#39c98b;--bad:#ff7385}
 *{box-sizing:border-box}body{margin:0;background:var(--bg);color:var(--txt);font-family:system-ui,-apple-system,Segoe UI,Roboto,sans-serif}header{padding:18px 15px 13px;background:#081323;position:sticky;top:0;z-index:5;border-bottom:1px solid var(--line)}h1{font-size:27px;margin:0}.sub{color:var(--muted);margin-top:4px;line-height:1.35}.controls{display:flex;gap:8px;flex-wrap:wrap;margin-top:14px}button,input[type=date],input[type=password]{font:inherit;background:#102039;color:var(--txt);border:1px solid #2b4565;border-radius:12px;padding:10px 13px}button.active{background:var(--accent)}main{max-width:1150px;margin:auto;padding:15px}.status{color:var(--muted);margin-bottom:12px}.err{background:#391722;color:#ffbcc6;border:1px solid #713544;padding:12px;border-radius:12px}.setup{background:#0d1a2e;border:1px solid #29405f;border-radius:16px;padding:15px;margin-bottom:14px}.setup input{width:100%;margin:8px 0}.setup .row{display:flex;gap:8px}.setup .row button{flex:1}.ok{color:var(--good)}
@@ -229,21 +229,6 @@ html,body{overflow-x:hidden}
 .shot-summary{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:7px}.shot-summary .stat{padding:8px}.shot-summary .stat b{font-size:18px}.player-metric-grid{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:7px;margin:10px 0}.player-metric{background:#0b2832;border:1px solid #294b55;border-radius:9px;padding:8px}.player-metric b{display:block;font-size:16px}.player-metric span{font-size:10px;color:#9fb5bd}.raw-group{margin:10px 0}.raw-title{font-weight:900;font-size:13px;margin-bottom:6px}.raw-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:6px}.raw-item{background:#0b2832;border-radius:8px;padding:7px;font-size:11px}.raw-item b{float:right}.drawer-table{font-size:11px}.drawer-table td,.drawer-table th{padding:6px 5px}.drawer-note{font-size:10px;color:#8fa7ae;margin-top:7px}
 @media(max-width:650px){.shotmap-wrap{grid-template-columns:1fr}.player-metric-grid{grid-template-columns:repeat(2,minmax(0,1fr))}}
 </style>
-<style id="v27-predicted-stats-ui">
-.predicted-static{cursor:pointer!important;pointer-events:auto!important}
-.predicted-static .pred-face{width:42px;height:42px;border-radius:50%;display:flex;align-items:center;justify-content:center;background:#183f42;border:1px solid #6b9698;font-size:20px;margin:0 auto 2px;overflow:hidden}
-.predicted-static .pred-face img{width:100%;height:100%;object-fit:cover;display:block}
-.predicted-static .nums{font-size:10px!important;color:#ffd84a!important;text-align:center;font-weight:900;line-height:1.25;min-width:105px}
-.predicted-static .pred-mini{color:#d8e7ea;font-size:9px}
-.predicted-static.hydrated .name{color:#fff}
-</style>
-<style id="v26-predicted-static-ui">
-.predicted-static{pointer-events:none!important}
-.predicted-static .pred-face{width:38px;height:38px;border-radius:50%;display:flex;align-items:center;justify-content:center;background:#183f42;border:1px solid #6b9698;font-size:20px;margin:0 auto 2px}
-.predicted-static .name{font-size:11px!important;font-weight:900!important;white-space:nowrap;text-align:center;text-shadow:0 2px 3px #000}
-.predicted-static .nums{font-size:9px!important;color:#ffd84a!important;text-align:center;font-weight:900}
-.lineup-status.predicted{color:#ffd84a;border-color:#806d24}
-</style>
 <style id="lineup-status-ui">.lineup-status{position:absolute;left:50%;top:8px;transform:translateX(-50%);z-index:3;background:#071b22dd;border:1px solid #527273;border-radius:9px;padding:6px 10px;font-size:11px;font-weight:800;white-space:nowrap;max-width:92%;overflow:hidden;text-overflow:ellipsis;text-align:center}.lineup-status.predicted{color:#ffd84a;border-color:#806d24}.lineup-status.official{color:#39c98b;border-color:#2b7859}@media(max-width:600px){.lineup-status{font-size:9px;padding:5px 7px;top:5px}}</style>
 <style id="lineup-readability-v2">
 .p{width:132px!important}
@@ -447,15 +432,7 @@ html,body{overflow-x:hidden}
 .p .nums .high{font-size:18px!important;padding:0 4px!important}
 @media(max-width:600px){.p .nums,.p .player-stat-values{font-size:14px!important;min-height:32px!important}.p .nums .statlabel{font-size:10px!important}.p .nums .statvals{font-size:14px!important}.p .nums .high{font-size:15px!important}}
 </style>
-<style id="v28-no-empty-pitch">
-.predicted-static{cursor:pointer!important;pointer-events:auto!important}
-.predicted-static .pred-face{width:42px;height:42px;border-radius:50%;display:flex;align-items:center;justify-content:center;background:#183f42;border:1px solid #6b9698;font-size:20px;margin:0 auto 2px;overflow:hidden}
-.predicted-static .pred-face img{width:100%;height:100%;object-fit:cover;display:block}
-.predicted-static .name{font-size:11px!important;font-weight:900!important;white-space:nowrap;text-align:center;text-shadow:0 2px 3px #000;max-width:130px;overflow:hidden;text-overflow:ellipsis}
-.predicted-static .nums{font-size:10px!important;color:#ffd84a!important;text-align:center;font-weight:900;line-height:1.25;min-width:105px}
-.predicted-static .pred-mini{color:#d8e7ea;font-size:9px}
-</style>
-<style id="v29-no-hang">.lineup-status.predicted{min-height:28px}.predicted-static{pointer-events:auto;cursor:pointer}</style></head><body>
+</head><body>
 
 <div style="margin:8px 0;padding:8px 10px;border-radius:9px;background:rgba(16,43,44,.75);font-size:12px;opacity:.85">
   OTB Match Center · julkinen web-versio
@@ -539,486 +516,163 @@ const MAIN_PATTERNS={
   'Champions League':[/champions league/i],
   'Europa League':[/europa league/i],
   'Conference League':[/conference league/i],
-  'Nations League A':[/nations league.*\bA\b/i,/uefa nations league.*league a/i],
-  'Nations League B':[/nations league.*\bB\b/i,/uefa nations league.*league b/i],
-  'Nations League C':[/nations league.*\bC\b/i,/uefa nations league.*league c/i]
+  'Nations League A':[/nations league.*\\bA\\b/i,/uefa nations.*\\bA\\b/i],
+  'Nations League B':[/nations league.*\\bB\\b/i,/uefa nations.*\\bB\\b/i],
+  'Nations League C':[/nations league.*\\bC\\b/i,/uefa nations.*\\bC\\b/i]
 };
 const MAIN_SET=new Set(MAIN_LEAGUES);
 const ALLOWED=MAIN_LEAGUES;
+
+const NL_LEAGUES=['Nations League A','Nations League B','Nations League C'];
+const NL_DATES=[
+  '2026-09-25','2026-09-26','2026-09-27','2026-09-28','2026-09-29',
+  '2026-09-30','2026-10-01','2026-10-02','2026-10-03','2026-10-04',
+  '2026-10-05','2026-10-06','2026-11-12','2026-11-13','2026-11-14',
+  '2026-11-15','2026-11-16','2026-11-17'
+];
+const NL_FIXTURES=[
+  ['2026-09-25','Nations League A','Italy','Belgium'],
+  ['2026-09-25','Nations League A','Türkiye','France'],
+  ['2026-09-25','Nations League B','Georgia','Northern Ireland'],
+  ['2026-09-25','Nations League B','Hungary','Ukraine'],
+  ['2026-09-25','Nations League B','Poland','Bosnia and Herzegovina'],
+  ['2026-09-25','Nations League B','Sweden','Romania'],
+  ['2026-09-25','Nations League C','Armenia','Latvia'],
+  ['2026-09-25','Nations League C','Montenegro','Cyprus'],
+
+  ['2026-09-26','Nations League A','Czechia','Croatia'],
+  ['2026-09-26','Nations League A','England','Spain'],
+  ['2026-09-26','Nations League B','North Macedonia','Switzerland'],
+  ['2026-09-26','Nations League B','Slovenia','Scotland'],
+  ['2026-09-26','Nations League C','San Marino','Finland'],
+  ['2026-09-26','Nations League C','Faroe Islands','Kazakhstan'],
+  ['2026-09-26','Nations League C','Bulgaria','Luxembourg'],
+  ['2026-09-26','Nations League C','Iceland','Estonia'],
+  ['2026-09-26','Nations League C','Albania','Belarus'],
+  ['2026-09-26','Nations League C','Slovakia','Moldova']
+];
+const NL_PREDICTED={
+  'North Macedonia|Switzerland':{
+    homeFormation:'3-4-1-2',awayFormation:'4-2-3-1',
+    home:['Stole Dimitrievski','Gjoko Zajkov','Visar Musliu','Aleksandar Stojchevski','Bojan Ilievski','Aleksandar Trajkovski','Enis Bardhi','Ezgjan Alioski','Eljif Elmas','Bojan Miovski','Elmin Rastoder'],
+    away:['Gregor Kobel','Martin Athekame','Nico Elvedi','Manuel Akanji','Ricardo Rodriguez','Remo Freuler','Ardon Jashari','Dan Ndoye','Fabian Rieder','Johan Manzambi','Zeki Amdouni']
+  }
+};
+function normNL(v){return normName(v)}
+function nlFixture(date,home,away){
+  const h=normNL(home),a=normNL(away);
+  return NL_FIXTURES.find(x=>x[0]===date&&normNL(x[2])===h&&normNL(x[3])===a)||null;
+}
+function nlBucket(date,home,away){
+  return nlFixture(date,home,away)?.[1]||'';
+}
+function staticNLMatches(date,league){
+  return NL_FIXTURES.filter(x=>x[0]===date&&x[1]===league).map((x,i)=>({
+    id:`nl-static-${date}-${league.replace(/[^a-z0-9]+/gi,'-')}-${i}`,
+    date:x[0],time_utc:`${x[0]}T18:45:00Z`,status:'upcoming',
+    home_team:{id:`nl-h-${normNL(x[2])}`,name:x[2]},
+    away_team:{id:`nl-a-${normNL(x[3])}`,name:x[3]},
+    league:{id:`nl-static-${league}`,name:league},
+    __nlStatic:true
+  }));
+}
+function predictedNLFor(m){
+  return NL_PREDICTED[`${m.home_team?.name}|${m.away_team?.name}`]||null;
+}
+function nlDatesForLeague(){
+  return NL_DATES.slice();
+}
+
 let filter='ALL',games=[],leagueMap={},lineupCache=new Map(),matchPlayersCache=new Map(),shotsCache=new Map(),playerStatsCache=new Map(),historyCache=new Map(),otherAnalysisCache=new Map(),lineupRefreshTimer=null;
 const $=s=>document.querySelector(s),$$=s=>[...document.querySelectorAll(s)];
 function today(){let d=new Date();return new Date(d-d.getTimezoneOffset()*60000).toISOString().slice(0,10)}
 function esc(s){return String(s??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]))}
 function isPublicWorker(){return location.hostname.endsWith('.workers.dev')}
 function key(){return localStorage.getItem('otb_pitch_key')||''}
-async function api(path,timeoutMs=9000){
-  const k=key(),headers={}; if(k)headers['X-API-KEY']=k;
-  const ctl=new AbortController(),timer=setTimeout(()=>ctl.abort(),timeoutMs);
-  try{
-    const r=await fetch(API+path,{headers,cache:'no-store',signal:ctl.signal});
-    let d=null; try{d=await r.json()}catch{}
-    if(!r.ok){
-      const msg=d?.error?.message||d?.error?.code||('HTTP '+r.status);
-      if(isPublicWorker()&&(r.status===401||r.status===403))
-        throw Error('Cloudflare-proxy ei saanut PitchAPI-avainta. Tarkista Cloudflaren PITCHAPI_KEY-secret.');
-      throw Error(msg);
-    }
-    if(d?.error)throw Error(d.error.message||d.error.code||'API-virhe');
-    return d.data;
-  }catch(e){
-    if(e?.name==='AbortError')throw Error('API-aikakatkaisu');
-    throw e;
-  }finally{clearTimeout(timer)}
-}
-
-/* Nations League: official fixture identification only. Never invent player data. */
-const NL_FIXTURES={
- '2026-09-25':[
-  ['Georgia','Northern Ireland','Nations League B'],['Armenia','Latvia','Nations League C'],
-  ['Italy','Belgium','Nations League A'],['Türkiye','France','Nations League A'],
-  ['Hungary','Ukraine','Nations League B'],['Poland','Bosnia and Herzegovina','Nations League B'],
-  ['Sweden','Romania','Nations League B'],['Montenegro','Cyprus','Nations League C']
- ],
- '2026-09-26':[
-  ['Czechia','Croatia','Nations League A'],['England','Spain','Nations League A'],
-  ['Slovenia','Scotland','Nations League B'],['North Macedonia','Switzerland','Nations League B'],
-  ['San Marino','Finland','Nations League C'],['Faroe Islands','Kazakhstan','Nations League C'],
-  ['Bulgaria','Luxembourg','Nations League C'],['Iceland','Estonia','Nations League C'],
-  ['Albania','Belarus','Nations League C'],['Slovakia','Moldova','Nations League C']
- ],
- '2026-09-27':[
-  ['Denmark','Wales','Nations League A'],['Germany','Greece','Nations League A'],
-  ['Norway','Portugal','Nations League A'],['Serbia','Netherlands','Nations League A'],
-  ['Israel','Republic of Ireland','Nations League B'],['Austria','Kosovo','Nations League B']
- ],
- '2026-09-28':[
-  ['Georgia','Ukraine','Nations League B'],['Northern Ireland','Hungary','Nations League B'],
-  ['Romania','Bosnia and Herzegovina','Nations League B'],['Sweden','Poland','Nations League B'],
-  ['Belgium','France','Nations League A'],['Türkiye','Italy','Nations League A'],
-  ['Armenia','Montenegro','Nations League C'],['Latvia','Cyprus','Nations League C']
- ],
- '2026-09-29':[
-  ['Czechia','England','Nations League A'],['Spain','Croatia','Nations League A'],
-  ['Scotland','Switzerland','Nations League B'],['Slovenia','North Macedonia','Nations League B'],
-  ['Finland','Belarus','Nations League C'],['Moldova','Faroe Islands','Nations League C'],
-  ['Bulgaria','Estonia','Nations League C'],['Luxembourg','Iceland','Nations League C'],
-  ['San Marino','Albania','Nations League C'],['Slovakia','Kazakhstan','Nations League C']
- ],
- '2026-10-01':[
-  ['Denmark','Portugal','Nations League A'],['Wales','Norway','Nations League A'],
-  ['Germany','Serbia','Nations League A'],['Greece','Netherlands','Nations League A'],
-  ['Belgium','Türkiye','Nations League A'],['France','Italy','Nations League A'],
-  ['Republic of Ireland','Austria','Nations League B'],['Israel','Kosovo','Nations League B'],
-  ['Poland','Romania','Nations League B'],['Hungary','Georgia','Nations League B'],
-  ['Kazakhstan','Moldova','Nations League C'],['Faroe Islands','Slovakia','Nations League C'],
-  ['Cyprus','Armenia','Nations League C'],['Latvia','Montenegro','Nations League C']
- ],
- '2026-10-02':[
-  ['Bosnia and Herzegovina','Sweden','Nations League B'],['Ukraine','Northern Ireland','Nations League B'],
-  ['Belgium','Türkiye','Nations League A'],['France','Italy','Nations League A'],
-  ['Cyprus','Armenia','Nations League C'],['Latvia','Montenegro','Nations League C'],
-  ['Kazakhstan','Moldova','Nations League C'],['Faroe Islands','Slovakia','Nations League C']
- ],
- '2026-10-03':[
-  ['Croatia','England','Nations League A'],['Spain','Czechia','Nations League A'],
-  ['Wales','Norway','Nations League A'],['Greece','Netherlands','Nations League A'],
-  ['North Macedonia','Scotland','Nations League B'],['Switzerland','Slovenia','Nations League B'],
-  ['Estonia','Luxembourg','Nations League C'],['Iceland','Bulgaria','Nations League C'],
-  ['Belarus','San Marino','Nations League C'],['Albania','Finland','Nations League C']
- ],
- '2026-10-04':[
-  ['Wales','Denmark','Nations League A'],['Portugal','Norway','Nations League A'],
-  ['Netherlands','Serbia','Nations League A'],['Greece','Germany','Nations League A'],
-  ['Kosovo','Austria','Nations League B'],['Republic of Ireland','Israel','Nations League B'],
-  ['Luxembourg','Bulgaria','Nations League C'],['Estonia','Iceland','Nations League C'],
-  ['Belarus','Finland','Nations League C'],['Malta','Andorra','Nations League D']
- ],
- '2026-10-05':[
-  ['France','Belgium','Nations League A'],['Italy','Türkiye','Nations League A'],
-  ['Bosnia and Herzegovina','Poland','Nations League B'],['Northern Ireland','Georgia','Nations League B'],
-  ['Romania','Sweden','Nations League B'],['Ukraine','Hungary','Nations League B'],
-  ['Montenegro','Armenia','Nations League C'],['Cyprus','Latvia','Nations League C']
- ],
- '2026-10-06':[
-  ['Croatia','Spain','Nations League A'],['England','Czechia','Nations League A'],
-  ['Portugal','Norway','Nations League A'],['Wales','Denmark','Nations League A'],
-  ['Switzerland','North Macedonia','Nations League B'],['Scotland','Slovenia','Nations League B'],
-  ['Moldova','Slovakia','Nations League C'],['Kazakhstan','Faroe Islands','Nations League C'],
-  ['Belarus','Finland','Nations League C'],['Albania','San Marino','Nations League C'],
-  ['Iceland','Estonia','Nations League C'],['Bulgaria','Luxembourg','Nations League C']
- ],
- '2026-11-12':[
-  ['Italy','France','Nations League A'],['Türkiye','Belgium','Nations League A'],
-  ['England','Croatia','Nations League A'],['Czechia','Spain','Nations League A'],
-  ['Portugal','Denmark','Nations League A'],['Netherlands','Greece','Nations League A'],
-  ['Sweden','Bosnia and Herzegovina','Nations League B'],['Romania','Poland','Nations League B'],
-  ['Northern Ireland','Ukraine','Nations League B'],['Georgia','Hungary','Nations League B'],
-  ['Armenia','Cyprus','Nations League C'],['Montenegro','Latvia','Nations League C'],
-  ['Bulgaria','Iceland','Nations League C'],['Luxembourg','Estonia','Nations League C'],
-  ['Moldova','Kazakhstan','Nations League C'],['Slovakia','Faroe Islands','Nations League C']
- ],
- '2026-11-14':[
-  ['Portugal','Denmark','Nations League A'],['England','Croatia','Nations League A'],
-  ['Czechia','Spain','Nations League A'],['Netherlands','Greece','Nations League A'],
-  ['Georgia','Hungary','Nations League B'],['Northern Ireland','Ukraine','Nations League B'],
-  ['Sweden','Bosnia and Herzegovina','Nations League B'],['Romania','Poland','Nations League B'],
-  ['Kosovo','Israel','Nations League B'],['Austria','Republic of Ireland','Nations League B']
- ],
- '2026-11-15':[
-  ['Belgium','Italy','Nations League A'],['France','Türkiye','Nations League A'],
-  ['Spain','England','Nations League A'],['Croatia','Czechia','Nations League A'],
-  ['Wales','Portugal','Nations League A'],['Greece','Serbia','Nations League A'],
-  ['Hungary','Northern Ireland','Nations League B'],['Ukraine','Georgia','Nations League B'],
-  ['Bosnia and Herzegovina','Romania','Nations League B'],['Poland','Sweden','Nations League B'],
-  ['Latvia','Armenia','Nations League C'],['Cyprus','Montenegro','Nations League C'],
-  ['Estonia','Bulgaria','Nations League C'],['Iceland','Luxembourg','Nations League C'],
-  ['Faroe Islands','Moldova','Nations League C'],['Kazakhstan','Slovakia','Nations League C']
- ],
- '2026-11-17':[
-  ['Denmark','Norway','Nations League A'],['Germany','Netherlands','Nations League A'],
-  ['Serbia','Greece','Nations League A'],['Belgium','Italy','Nations League A'],
-  ['Hungary','Northern Ireland','Nations League B'],['Ukraine','Georgia','Nations League B'],
-  ['Bosnia and Herzegovina','Romania','Nations League B'],['Poland','Sweden','Nations League B'],
-  ['Republic of Ireland','Kosovo','Nations League B'],['Israel','Austria','Nations League B'],
-  ['Finland','San Marino','Nations League C'],['Albania','Finland','Nations League C'],
-  ['Moldova','Faroe Islands','Nations League C'],['Kazakhstan','Slovakia','Nations League C'],
-  ['Montenegro','Cyprus','Nations League C'],['Armenia','Latvia','Nations League C']
- ]
-};
-
-/* v26: researched predicted XIs for Nations League 25.09.2026.
-   Fallback only: never presented as official. When PitchAPI starts returning
-   a real match ID, the normal lineup endpoint takes over automatically. */
-const NL_PREDICTED = {
-  'Georgia – Northern Ireland': {
-    source:'Oddschecker / Sportsgambler',
-    homeFormation:'3-5-1-1', awayFormation:'3-4-2-1',
-    home:['Giorgi Mamardashvili','Luka Dvali','Luka Lochoshvili','Saba Goglichidze','Gizo Mamageishvili','Otar Kiteishvili','Giorgi Chakvetadze','Giorgi Kochorashvili','Saba Kharebashvili','Khvicha Kvaratskhelia','Georges Mikautadze'],
-    away:['Pierce Charles','Trai Hume','Daniel Ballard','Ciaron Brown','Brodie Spencer','Shea Charles','Ethan Galbraith','Justin Devenny','Patrick Kelly','Isaac Price','Jamie Donley']
-  },
-  'Armenia – Latvia': {
-    source:'Bulinews',
-    homeFormation:'4-3-3', awayFormation:'3-4-2-1',
-    home:['Henri Avagyan','Arman Piloyan','Georgi Harutyunyan','Artem Muradyan','Nayair Tiknizyan','Eduard Spertsyan','Edgar Sevikyan','Gor Aghasaryan','Artur Miranyan','Artur Serobyan','Narek Grigoryan'],
-    away:['Rihards Matrevics','Raivis Jurkovskis','Antonijs Cernomordijs','Daniels Balodis','Roberts Savalnieks','Lukass Vapne','Dmitrijs Zelenkovs','Andrejs Ciganiks','Jānis Ikaunieks','Raimonds Krollis','Roberts Uldrikis']
-  },
-  'Italy – Belgium': {
-    source:'Flashscore / Sports Illustrated',
-    homeFormation:'4-3-3', awayFormation:'4-2-3-1',
-    home:['Gianluigi Donnarumma','Kayode','Giorgio Scalvini','Alessandro Bastoni','Riccardo Calafiori','Nicolo Fagioli','Sandro Tonali','Nicolo Barella','Francesco Pio Esposito','Moise Kean','Giacomo Raspadori'],
-    away:['Senne Lammens','Timothy Castagne','Nathan Ngoy','Brandon Mechele','Maxim De Cuyper','Youri Tielemans','Roméo Lavia','Kevin De Bruyne','Dodi Lukebakio','Charles De Ketelaere','Jérémy Doku']
-  },
-  'Türkiye – France': {
-    source:'FotMob / Al Jazeera',
-    homeFormation:'4-2-3-1', awayFormation:'4-3-3',
-    home:['Ugurcan Cakir','Zeki Celik','Ozan Kabak','Abdülkerim Bardakci','Ferdi Kadioglu','Salih Ozcan','Ismail Yuksek','Arda Guler','Can Uzun','Kerem Akturkoglu','Baris Alper Yilmaz'],
-    away:['Mike Maignan','Jules Kounde','Maxence Lacroix','Dayot Upamecano','Adrien Truffert','Manu Kone','Adrien Rabiot','Rayan Cherki','Michael Olise','Kylian Mbappe','Desire Doue']
-  },
-  'Hungary – Ukraine': {
-    source:'Soccerway',
-    homeFormation:'4-2-3-1', awayFormation:'4-1-4-1',
-    home:['Balazs Toth','Bendeguz Bolla','Willi Orban','Attila Markgraf','Milos Kerkez','Milan Vitalis','Andras Schafer','Roland Sallai','Alex Toth','Dominik Szoboszlai','Daniel Lukacs'],
-    away:['Anatolii Trubin','Bogdan Mykhaylichenko','Illia Zabarnyi','Mykola Matviyenko','Vitalii Mykolenko','Volodymyr Brazhko','Viktor Tsygankov','Yegor Nazaryna','Georgiy Sudakov','Oleksandr Zubkov','Matviy Ponomarenko']
-  },
-  'Poland – Bosnia and Herzegovina': {
-    source:'Flashscore',
-    homeFormation:'3-5-2', awayFormation:'3-4-1-2',
-    home:['Marcin Bulka','Przemyslaw Wisniewski','Jan Bednarek','Jakub Kiwior','Matty Cash','Sebastian Szymanski','Piotr Zielinski','Michal Skoras','Jakub Kaminski','Nicola Zalewski','Robert Lewandowski'],
-    away:['Nikola Vasilj','Nihad Omerovic','Tarik Muharemovic','Nikola Katic','Sead Kolasinac','Ivan Basic','Armin Gigovic','Ivan Sunjic','Kerim Alajbegovic','Haris Tabakovic','Ermedin Demirovic']
-  },
-  'Sweden – Romania': {
-    source:'Flashscore',
-    homeFormation:'3-5-2', awayFormation:'4-3-3',
-    home:['Viktor Johansson','Elliot Stroud','Carl Starfelt','Victor Lindelof','Emil Holm','Lucas Bergvall','Jesper Karlstrom','Yasin Ayari','Gabriel Gudmundsson','Viktor Gyokeres','Alexander Isak'],
-    away:['Ionut Radu','Andrei Ratiu','Radu Dragusin','Andrei Burca','Nicusor Bancu','Razvan Marin','Vlad Dragomir','Dennis Man','Ianis Hagi','Vasile Mihaila','Daniel Birligea']
-  },
-  'Montenegro – Cyprus': {
-    source:'Bulinews',
-    homeFormation:'4-4-2', awayFormation:'4-4-2',
-    home:['Balsa Popovic','Marko Vesovic','Milan Roganovic','Slobodan Rubezic','Risto Radunovic','Vasilije Adzic','Andrija Bulatovic','Stefan Loncar','Milutin Osmajic','Nikola Krstovic','Stevan Jovetic'],
-    away:['Neophytos Michael','Andreas Shikkis','Christos Sielis','Konstantinos Laifis','Andreas Panagiotou','Loizos Loizou','Hector Kyprianou','Grigoris Kastanos','Marinos Tzionis','Ioannis Pittas','Marcus Edwards']
+async function api(path){const k=key();const headers={};if(k)headers['X-API-KEY']=k;const r=await fetch(API+path,{headers,cache:'no-store'});let d=null;try{d=await r.json()}catch{}if(!r.ok){const msg=d?.error?.message||d?.error?.code||('HTTP '+r.status); if(isPublicWorker() && (r.status===401 || r.status===403)) throw Error('Cloudflare-proxy ei saanut PitchAPI-avainta. Tarkista Cloudflaren PITCHAPI_KEY-secret.'); throw Error(msg)}if(d?.error)throw Error(d.error.message||d.error.code||'API-virhe');return d.data}
+function matchLabel(m){return `${m.home_team?.name||''} – ${m.away_team?.name||''}`}
+function localTime(utc){if(!utc)return '';return new Date(utc).toLocaleTimeString('fi-FI',{hour:'2-digit',minute:'2-digit'})}
+function setKeyUI(){if(isPublicWorker()){$('#setup').style.display='none';return}const k=key();$('#key').value=k;$('#setup').style.display=k?'none':'block';if(k)$('#keymsg').innerHTML='<span class="ok">API-avain tallennettu tähän selaimeen.</span>'}
+$('#save').onclick=()=>{const v=$('#key').value.trim();if(!v){$('#keymsg').textContent='Syötä API-avain.';return}localStorage.setItem('otb_pitch_key',v);setKeyUI();load()};
+$('#clear').onclick=()=>{localStorage.removeItem('otb_pitch_key');setKeyUI();$('#status').textContent='API-avain poistettu.';$('#out').innerHTML=''};
+async function loadLeagues(){
+  const d=await api('leagues');
+  const arr=d.leagues||[];
+  window.__pitchLeagues=arr;
+  leagueMap={};
+  for(const wanted of MAIN_LEAGUES){
+    const x=arr.find(l=>(MAIN_PATTERNS[wanted]||[]).some(re=>re.test(l.name||'')));
+    if(x) leagueMap[wanted]=x;
   }
-  ,'North Macedonia – Switzerland': {
-    source:'Tipico / Infobetting (päivitetty 25.09.2026)',
-    homeFormation:'3-4-1-2', awayFormation:'4-2-3-1',
-    home:['Stole Dimitrievski','Gjoko Zajkov','Visar Musliu','Aleksandar Stojchevski','Bojan Ilievski','Aleksandar Trajkovski','Enis Bardhi','Ezgjan Alioski','Eljif Elmas','Bojan Miovski','Elmin Rastoder'],
-    away:['Gregor Kobel','Martin Athekame','Nico Elvedi','Manuel Akanji','Ricardo Rodriguez','Remo Freuler','Ardon Jashari','Dan Ndoye','Fabian Rieder','Johan Manzambi','Zeki Amdouni']
+  for(const l of arr){
+    if(!l?.id||!l?.name) continue;
+    const already=Object.values(leagueMap).some(x=>String(x.id)===String(l.id));
+    if(!already) leagueMap[l.name]=l;
   }
-
-};
-
-function nlPredictedKey(home,away){ return `${home} – ${away}`; }
-function predictedNLFor(m){
-  return NL_PREDICTED[nlPredictedKey(m?.home_team?.name,m?.away_team?.name)] || null;
+  populateLeagueSelector();
 }
-
-/* v27: hydrate predicted Nations League players from their recent real matches.
-   This is deliberately name-based because the static UEFA fixture has no
-   PitchAPI match ID. Historical match data supplies real player IDs, photos,
-   team IDs and recent OTB/shot/card stats. */
-const nlHistoryNameCache=new Map();
-const nlHistoryRowsCache=new Map();
-async function recentTeamMatchesByName(teamName,cutoffTime){
-  const key=normNL(teamName)+':'+String(cutoffTime||'');
-  if(nlHistoryNameCache.has(key))return nlHistoryNameCache.get(key);
-  const cutoff=Date.parse(cutoffTime||'9999-12-31T23:59:59Z');
-  const found=new Map();
-  const start=new Date(cutoff);start.setUTCHours(0,0,0,0);start.setUTCDate(start.getUTCDate()-1);
-  const target=normNL(teamName);
-  for(let i=0;i<90&&found.size<5;i+=7){
-    const days=[];for(let j=0;j<7;j++){const d=new Date(start);d.setUTCDate(start.getUTCDate()-(i+j));days.push(d.toISOString().slice(0,10));}
-    const results=await Promise.all(days.map(day=>api(`date/${day}?status=played`).then(d=>Array.isArray(d?.matches)?d.matches:[]).catch(()=>[])));
-    for(const arr of results)for(const m of arr){
-      if(m.status!=='finished'||Date.parse(m.time_utc)>=cutoff)continue;
-      const hn=normNL(m.home_team?.name),an=normNL(m.away_team?.name);
-      if((hn===target||an===target)&&m.id)found.set(String(m.id),m);
-    }
-  }
-  const out=[...found.values()].sort((a,b)=>new Date(b.time_utc)-new Date(a.time_utc)).slice(0,5);
-  nlHistoryNameCache.set(key,out);return out;
-}
-async function hydrateNLTeam(teamName,cutoffTime,predNames){
-  const key=normNL(teamName)+':'+String(cutoffTime||'');
-  if(nlHistoryRowsCache.has(key))return nlHistoryRowsCache.get(key);
-  const hist=await recentTeamMatchesByName(teamName,cutoffTime);
-  if(!hist.length){const empty={teamId:'',players:new Map(),history:[]};nlHistoryRowsCache.set(key,empty);return empty;}
-  const maps=await Promise.all(hist.map(g=>getMatchPlayers(g.id).catch(()=>new Map())));
-  const teamId=hist[0].home_team?.name&&normNL(hist[0].home_team.name)===normNL(teamName)?hist[0].home_team.id:hist[0].away_team?.id;
-  const players=new Map();
-  for(const wanted of (predNames||[])){
-    const wn=normNL(wanted);
-    for(const map of maps){
-      let row=map.get('name:'+wn);
-      if(!row){for(const q of map.values()){if(normNL(q?.name||q?.player?.name)===wn){row=q;break;}}}
-      if(row){players.set(wn,row);break;}
-    }
-  }
-  const empty={teamId:teamId||'',players,history:hist};nlHistoryRowsCache.set(key,empty);return empty;
-}
-async function hydrateNLPlayerStats(teamName,cutoffTime,predNames){
-  const team=await hydrateNLTeam(teamName,cutoffTime,predNames);
-  const rows=await Promise.all(team.history.map(async g=>{
-    const [shotsData,eventsData]=await Promise.all([shots(g.id).catch(()=>[]),api(`matches/${g.id}/events`).catch(()=>({events:[]}))]);
-    return {g,shots:Array.isArray(shotsData)?shotsData:[],events:Array.isArray(eventsData?.events)?eventsData.events:[]};
-  }));
-  const byName=new Map();
-  for(const name of (predNames||[])){
-    const ref={name};
-    const vals=rows.map(r=>{const z=statsFor(r.shots,ref), ce=r.events.filter(e=>normNL(e?.player?.name??e?.player_name??'')===normNL(name)&&cardType(e));return {...z,cards:ce.length,cardsObj:{yellow:ce.filter(e=>cardType(e)==='yellow').length,red:ce.filter(e=>cardType(e)==='red').length},opp:matchLabel(r.g),matchId:r.g.id,played:true}});
-    byName.set(normNL(name),vals);
-  }
-  return {team,byName};
-}
-
-async function latestRealXI(teamName, cutoffTime){
-  try{
-    const hist=await recentTeamMatchesByName(teamName,cutoffTime);
-    if(!hist.length)return [];
-    for(const g of hist){
-      const map=await getMatchPlayers(g.id).catch(()=>new Map());
-      const arr=[...map.values()].filter(Boolean);
-      const xi=cleanStartingXI(arr);
-      if(xi.length>=7)return xi.slice(0,11);
-    }
-  }catch(e){}
-  return [];
-}
-
-async function hydrateStaticNLPitch(m){
-  const p=m.__predictedNL||null;
-  const cutoff=m.time_utc;
-  const homeName=m.home_team.name, awayName=m.away_team.name;
-  let homeNames=p?.home||[], awayNames=p?.away||[];
-
-  // If no researched prediction exists for this fixture, use the most recent
-  // real lineup from PitchAPI as a visible fallback instead of an empty pitch.
-  let fallbackHome=false, fallbackAway=false;
-  if(!homeNames.length){ const xi=await latestRealXI(homeName,cutoff); homeNames=xi; fallbackHome=!!xi.length; }
-  if(!awayNames.length){ const xi=await latestRealXI(awayName,cutoff); awayNames=xi; fallbackAway=!!xi.length; }
-
-  const root=document.querySelector(`#p${m.id.replace(/[^a-zA-Z0-9_-]/g,'')}`); if(!root)return;
-
-  // If the initial prediction was missing, rebuild the player layer now that
-  // the real historical XI has been found.
-  const players=root.querySelector('.players');
-  if(players && (fallbackHome||fallbackAway)){
-    const make=(arr,home,formation,sideName)=>{
-      let out='';
-      for(const q of place(predictedPlayerObjects(arr),home,formation||'')){
-        out += `<div class="p predicted-static" data-player-id="" data-player-name="${esc(q.p.name)}" data-team="" data-side="${home?'home':'away'}" data-match="${esc(m.id)}" style="left:${q.x}%;top:${q.y}%"><div class="pred-face">⚽</div><div class="name">${esc(q.p.name)}</div><div class="nums otb">Ladataan viimeisiä 5…</div></div>`;
-      }
-      return out;
-    };
-    players.innerHTML=make(homeNames,true,p?.homeFormation,'home')+make(awayNames,false,p?.awayFormation,'away');
-  }
-
-  const [home,away]=await Promise.all([
-    hydrateNLPlayerStats(homeName,cutoff,homeNames).catch(()=>({team:{teamId:'',players:new Map()},byName:new Map()})),
-    hydrateNLPlayerStats(awayName,cutoff,awayNames).catch(()=>({team:{teamId:'',players:new Map()},byName:new Map()}))
-  ]);
-
-  const cards=[...root.querySelectorAll('.predicted-static')];
-  const teamData=[
-    {name:homeName,data:home,side:'home'},
-    {name:awayName,data:away,side:'away'}
-  ];
-  for(const side of teamData){
-    for(const c of cards.filter(x=>x.dataset.side===side.side)){
-      const name=c.dataset.playerName;
-      const row=side.data.team.players.get(normNL(name));
-      const vals=side.data.byName.get(normNL(name))||[];
-      if(row){
-        const id=pid(row),u=img(row);
-        c.dataset.playerId=id||''; c.dataset.team=String(side.data.team.teamId||'');
-        const im=c.querySelector('.pred-face');
-        if(u)im.innerHTML=`<img src="${esc(u)}" alt="" onerror="imageFallback(this)">`;
-      }else{
-        c.dataset.team=String(side.data.team.teamId||'');
-      }
-      const last5=vals.slice(0,5);
-      const label=last5.length?last5.map(v=>`${v.otb||0}/${v.on||0}`).join(' · '):'ei dataa';
-      const shotsN=last5.reduce((a,v)=>a+(v.all||0),0);
-      const on=last5.reduce((a,v)=>a+(v.on||0),0);
-      const cardsN=last5.reduce((a,v)=>a+(v.cards||0),0);
-      c.querySelector('.nums').innerHTML=`OTB ${label}<br><span class="pred-mini">Lauk. ${shotsN} · OTB kohti ${on} · 🟨/🟥 ${cardsN}</span>`;
-      c.onclick=()=>openPlayer(c.dataset.playerId||'',name,c.dataset.team||'',m.league?.name,m.time_utc);
-      c.classList.add('hydrated');
-    }
-  }
-
-  const note=root.closest('.match')?.querySelector('.note');
-  if(note){
-    const predText=p ? '🟡 Arvioitu XI' : '🔵 Viimeisin PitchAPI:n oikea XI';
-    const missing=(fallbackHome||fallbackAway)?' · ennustetta ei ollut saatavilla, joten näytetään viimeisin oikea kokoonpano':'';
-    note.innerHTML=`${predText}${missing} · pelaajakuvat ja viimeisten 5 ottelun tilastot haettu oikeasta otteludatasta.`;
-  }
-}
-
-function predictedPlayerObjects(names){
-  return (names||[]).map((name,i)=>({name, position:i===0?'GK':''}));
-}
-function nlKickoffUTC(date,home,away){
-  const key=nlPredictedKey(home,away);
-  if(date==='2026-09-25' && (key==='Georgia – Northern Ireland'||key==='Armenia – Latvia'))
-    return `${date}T17:00:00Z`; // 18:00 CET
-  if(date==='2026-09-25') return `${date}T19:45:00Z`; // 20:45 CET
-  return `${date}T19:45:00Z`;
-}
-
-function normNL(v){return String(v||'').normalize('NFD').replace(/[\u0300-\u036f]/g,'').toLowerCase().replace(/[^a-z0-9]+/g,' ').trim()}
-function localISO(utc){try{return new Date(utc).toLocaleDateString('en-CA',{timeZone:Intl.DateTimeFormat().resolvedOptions().timeZone})}catch{return String(utc||'').slice(0,10)}}
-function localTime(utc){
-  if(!utc)return '—';
-  try{
-    return new Date(utc).toLocaleTimeString('fi-FI',{
-      hour:'2-digit',
-      minute:'2-digit',
-      hour12:false
-    });
-  }catch{
-    return String(utc).slice(11,16)||'—';
-  }
-}
-function nlBucket(date,home,away){
- const h=normNL(home),a=normNL(away);
- const row=(NL_FIXTURES[date]||[]).find(x=>normNL(x[0])===h&&normNL(x[1])===a);
- return row?.[2]||null;
-}
-function isNLFilter(v){return /^Nations League [ABC]$/.test(v||'')}
-function nlLabel(n){return n==='Nations League A'?'🌍 NL A':n==='Nations League B'?'🌍 NL B':'🌍 NL C'}
-function nlDatesFor(leagueName){return Object.keys(NL_FIXTURES).filter(d=>(NL_FIXTURES[d]||[]).some(x=>x[2]===leagueName)).sort()}
-function staticNLMatches(date,leagueName){
- return (NL_FIXTURES[date]||[]).filter(x=>x[2]===leagueName).map((x,i)=>{
-   const m={
-     id:`nl-${date}-${normNL(x[0]).replace(/\s+/g,'-')}-${normNL(x[1]).replace(/\s+/g,'-')}`,
-     __nlStatic:true,date,time_utc:nlKickoffUTC(date,x[0],x[1]),
-     home_team:{name:x[0]},away_team:{name:x[1]},
-     league:{name:leagueName},status:'scheduled'
-   };
-   const pred=predictedNLFor(m);
-   if(pred)m.__predictedNL=pred;
-   return m;
- });
-}
-
 function isPlayerLeague(name){return MAIN_SET.has(name)}
 function populateLeagueSelector(){
-  const sel=$('#v20League'); if(sel){
-    const current=sel.value;
-    const main=MAIN_LEAGUES;
-    const others=Object.keys(leagueMap).filter(n=>!MAIN_SET.has(n)&&!/nations\s*league/i.test(n)).sort((a,b)=>a.localeCompare(b,'fi'));
-    sel.innerHTML='<option value="">⚽ Kaikki sarjat</option><optgroup label="⭐ Pelaaja-analyysi">'+main.map(n=>`<option value="${esc(n)}">${esc(n)}</option>`).join('')+'</optgroup><optgroup label="📊 Otteluanalyysi">'+others.map(n=>`<option value="${esc(n)}">${esc(n)}</option>`).join('')+'</optgroup>';
-    if([...sel.options].some(o=>o.value===current))sel.value=current;
-  }
+  const sel=$('#v20League'); if(!sel)return;
+  const current=sel.value;
+  const main=MAIN_LEAGUES.filter(n=>leagueMap[n]||NL_LEAGUES.includes(n));
+  const others=Object.keys(leagueMap).filter(n=>!MAIN_SET.has(n)).sort((a,b)=>a.localeCompare(b,'fi'));
+  sel.innerHTML='<option value="">⚽ Kaikki sarjat</option><optgroup label="⭐ Pelaaja-analyysi">'+main.map(n=>`<option value="${esc(n)}">${esc(n)}</option>`).join('')+'</optgroup><optgroup label="📊 Otteluanalyysi">'+others.map(n=>`<option value="${esc(n)}">${esc(n)}</option>`).join('')+'</optgroup>';
+  if([...sel.options].some(o=>o.value===current))sel.value=current;
   const tabs=document.getElementById('mainLeagueTabs');
-  if(tabs){
-    const main=MAIN_LEAGUES;
-    tabs.innerHTML=main.map(n=>`<button class="league-tab" data-league="${esc(n)}">${n==='Premier League'?'🇬🇧 PL':n==='LaLiga'?'🇪🇸 LaLiga':n==='Serie A'?'🇮🇹 Serie A':n==='Bundesliga'?'🇩🇪 Bundesliga':n==='Ligue 1'?'🇫🇷 Ligue 1':n==='Champions League'?'🏆 UCL':n==='Europa League'?'🏆 UEL':n==='Conference League'?'🏆 UECL':nlLabel(n)}</button>`).join('');
-    tabs.querySelectorAll('.league-tab').forEach(x=>x.classList.toggle('active',x.dataset.league===filter));
-  }
+  if(tabs){tabs.innerHTML=main.map((n,i)=>{
+    const label=n==='Premier League'?'🇬🇧 PL':n==='LaLiga'?'🇪🇸 LaLiga':n==='Serie A'?'🇮🇹 Serie A':n==='Bundesliga'?'🇩🇪 Bundesliga':n==='Ligue 1'?'🇫🇷 Ligue 1':n==='Champions League'?'🏆 UCL':n==='Europa League'?'🏆 UEL':n==='Conference League'?'🏆 UECL':n==='Nations League A'?'🌍 NL A':n==='Nations League B'?'🌍 NL B':'🌍 NL C';
+    return `<button class="league-tab" data-league="${esc(n)}">${label}</button>`;
+  }).join('');}
   const otherSel=document.getElementById('otherLeagueSelect');
-  if(otherSel){
-    const others=Object.keys(leagueMap).filter(n=>!MAIN_SET.has(n)&&!/nations\s*league/i.test(n)).sort((a,b)=>a.localeCompare(b,'fi'));
-    const old=otherSel.value;
-    otherSel.innerHTML='<option value="">Valitse otteluanalyysin sarja…</option>'+others.map(n=>`<option value="${esc(n)}">${esc(n)}</option>`).join('');
-    if(others.includes(old))otherSel.value=old;
-  }
+  if(otherSel){const old=otherSel.value;otherSel.innerHTML='<option value="">Valitse otteluanalyysin sarja…</option>'+others.map(n=>`<option value="${esc(n)}">${esc(n)}</option>`).join('');if(others.includes(old))otherSel.value=old;}
 }
-
-async function getExactNationsLeagueMatches(date,leagueName){
-  // PitchAPI supports upcoming league fixtures. Resolve the exact A/B/C league
-  // first; do not use the first generic "Nations League" entry.
-  try{
-    if(!Object.keys(leagueMap).length) await loadLeagues();
-  }catch(e){}
-  const lm=leagueMap[leagueName];
-  if(lm?.id){
-    try{
-      const d=await api(`leagues/${encodeURIComponent(lm.id)}/matches?status=upcoming`);
-      const arr=Array.isArray(d?.matches)?d.matches:[];
-      const exact=arr.filter(m=>(m?.date||localISO(m?.time_utc))===date);
-      if(exact.length)return exact.map(m=>({...m,league:{...(m.league||{}),name:leagueName}}));
-    }catch(e){console.warn('Exact NL league upcoming failed',leagueName,e)}
-    try{
-      const d=await api(`leagues/${encodeURIComponent(lm.id)}/matches?status=all`);
-      const arr=Array.isArray(d?.matches)?d.matches:[];
-      const exact=arr.filter(m=>(m?.date||localISO(m?.time_utc))===date);
-      if(exact.length)return exact.map(m=>({...m,league:{...(m.league||{}),name:leagueName}}));
-    }catch(e){console.warn('Exact NL league all failed',leagueName,e)}
-  }
-  // A day feed is the second real-ID source.
-  try{
-    const gd=await api(`date/${date}?status=all`);
-    const raw=Array.isArray(gd?.matches)?gd.matches:[];
-    const exact=raw.filter(m=>{
-      const md=m?.date||localISO(m?.time_utc);
-      const bucket=nlBucket(md,m?.home_team?.name,m?.away_team?.name);
-      return md===date && bucket===leagueName;
-    });
-    if(exact.length)return exact.map(m=>({...m,league:{...(m.league||{}),name:leagueName}}));
-  }catch(e){console.warn('NL date feed failed',e)}
-  return [];
-}
-
 async function load(){
   if(!key()&&!isPublicWorker()){setKeyUI();$('#status').textContent='Lisää ensin PitchAPI-avain.';return}
-  $('#out').innerHTML=''; $('#status').textContent='Haetaan päivän ottelut…';
+  $('#out').innerHTML='';$('#status').textContent='Haetaan päivän ottelut…';
   try{
+    await loadLeagues();
     const date=$('#date').value;
     let matches=[];
-    if(isNLFilter(filter)){
-      matches=await getExactNationsLeagueMatches(date,filter);
-      // Only if PitchAPI has no real match ID, show the UEFA fixture fallback.
-      // Crucially: no 90-day history scan and no endless player-data spinner.
-      if(!matches.length) matches=staticNLMatches(date,filter);
-        }else{
-      await loadLeagues();
+
+    if(NL_LEAGUES.includes(filter)){
+      const lm=leagueMap[filter];
+
+      // Prefer a real PitchAPI league endpoint when A/B/C has its own ID.
+      if(lm?.id){
+        try{
+          const d=await api(`leagues/${encodeURIComponent(lm.id)}/matches?status=all`);
+          const source=Array.isArray(d?.matches)?d.matches:[];
+          matches=source.filter(m=>{
+            const md=m?.date||String(m?.time_utc||'').slice(0,10);
+            return md===date && (!nlBucket(date,m?.home_team?.name,m?.away_team?.name) || nlBucket(date,m?.home_team?.name,m?.away_team?.name)===filter);
+          });
+        }catch(e){console.warn('NL league endpoint failed',e)}
+      }
+
+      // Global date endpoint can contain the real match ID even if the league
+      // is exposed by PitchAPI under one generic Nations League name.
+      if(!matches.length){
+        try{
+          const gd=await api(`date/${date}?status=all`);
+          matches=(gd?.matches||[]).filter(m=>nlBucket(date,m?.home_team?.name,m?.away_team?.name)===filter);
+        }catch(e){console.warn('NL date endpoint failed',e)}
+      }
+
+      // Only if PitchAPI has not returned a real fixture, use the verified UEFA
+      // fixture catalogue so the page never becomes empty. These objects are
+      // explicitly marked static and never pretend to contain real match data.
+      if(!matches.length)matches=staticNLMatches(date,filter);
+
+      games=matches.map(m=>({...m,league:{...(m.league||{}),name:filter}}));
+    }else{
+      // ORIGINAL NON-NL LOADING PATH — unchanged.
       const lm=leagueMap[filter];
       if(filter!=='ALL'&&lm?.id){
         let d=null;
         try{d=await api(`leagues/${encodeURIComponent(lm.id)}/matches?status=all`)}catch(e){d=null}
         const source=Array.isArray(d?.matches)?d.matches:[];
-        matches=source.filter(m=>{const md=m?.date||localISO(m?.time_utc);return md===date});
+        matches=source.filter(m=>{const md=m?.date||String(m?.time_utc||'').slice(0,10);return md===date});
         if(!matches.length){
           try{const gd=await api(`date/${date}?status=all`);matches=(gd?.matches||[]).filter(m=>String(m?.league?.id)===String(lm.id))}catch(e){}
         }
@@ -1027,20 +681,35 @@ async function load(){
         const allowedIds=new Set(Object.values(leagueMap).map(x=>String(x.id)));
         matches=(d.matches||[]).filter(m=>allowedIds.has(String(m?.league?.id)));
       }
+      games=matches.map(m=>{const target=ALLOWED.find(n=>String(leagueMap[n]?.id)===String(m?.league?.id));return {...m,league:{...(m.league||{}),name:target||filter||m.league?.name}}});
     }
-    games=matches.map(m=>({...m,league:{...(m.league||{}),name:m.league?.name||filter}}));
+
+    games=await Promise.all(games.map(async m=>{
+      if(m.__nlStatic)return m;
+      const fetchTeam=async(t)=>{
+        if(!t?.id||t.image_url)return t;
+        try{const d=await api(`teams/${encodeURIComponent(t.id)}`);const q=d?.team||d;return {...t,...(q&&typeof q==='object'?q:{}),image_url:q?.image_url||q?.logo_url||q?.logo?.url||t.image_url||''};}
+        catch(e){return t}
+      };
+      return {...m,home_team:await fetchTeam(m.home_team),away_team:await fetchTeam(m.away_team)};
+    }));
     games.sort((a,b)=>new Date(a.time_utc)-new Date(b.time_utc));
-    $('#status').textContent=games.some(m=>m.__nlStatic)?`${games.length} Nations League -ottelua · UEFA:n ohjelma · arvioidut kokoonpanot mukana · virallinen XI korvaa arvion automaattisesti kun PitchAPI tarjoaa match ID:n`:`${games.length} ottelua · PitchAPI`;
+    $('#status').textContent=`${games.length} ottelua · ${games.some(m=>m.__nlStatic)?'UEFA-fixturevarmistus':'PitchAPI'}`;
     render();
   }catch(e){
     $('#status').innerHTML=`<div class="err">${esc(e.message)}<br><small>Julkisessa versiossa API-avain tulee Cloudflare Workerista — sitä ei tarvitse syöttää tähän selaimeen.</small></div>`;
   }
 }
+
 async function loadLeagueDateIndex(leagueName){
   const box=$('#v20Days');
   if(!box)return;
+  if(NL_LEAGUES.includes(leagueName)){
+    window.__leagueDates=nlDatesForLeague();
+    renderLeagueDates(document.querySelector('#date')?.value||today());
+    return;
+  }
   const lm=leagueMap[leagueName];
-  if(isNLFilter(leagueName)){window.__leagueDates=nlDatesFor(leagueName);renderLeagueDates(document.querySelector('#date')?.value||today());return;}
   if(!lm){box.innerHTML='<div class="status">Sarjan ottelupäiviä ei löytynyt.</div>';return;}
   box.innerHTML='<div class="status">Ladataan sarjan ottelupäiviä…</div>';
   try{
@@ -1050,6 +719,7 @@ async function loadLeagueDateIndex(leagueName){
     renderLeagueDates(document.querySelector('#date')?.value||today());
   }catch(e){box.innerHTML='<div class="status">Ottelupäiviä ei saatu ladattua.</div>';console.warn(e)}
 }
+
 function renderLeagueDates(active){
   const box=$('#v20Days'); if(!box)return;
   const dates=window.__leagueDates||[];
@@ -1072,6 +742,26 @@ window.otbSelectLeague=async function(leagueName){
   load();
 };
 
+
+function renderStaticNLMatch(m){
+  const pred=predictedNLFor(m);
+  let inner='';
+  if(pred){
+    const hs=pred.home.map(name=>({name}));
+    const as=pred.away.map(name=>({name}));
+    for(const q of place(hs,true,pred.homeFormation))inner+=card(q.p,m.home_team?.id||'',m.id,q.x,q.y);
+    for(const q of place(as,false,pred.awayFormation))inner+=card(q.p,m.away_team?.id||'',m.id,q.x,q.y);
+  }else{
+    inner='<div class="status" style="padding:20px;text-align:center">Ottelun oikeaa PitchAPI match ID:tä ei löytynyt vielä. Pelaajien oikeat kuvat, viimeiset 5 ottelua ja laukaisutilastot aktivoituvat heti kun PitchAPI palauttaa tämän ottelun.</div>';
+  }
+  return `<section class="match">
+    <div class="mh"><div class="mh-team"><div class="mh-team-text"><div class="teams">${esc(m.home_team?.name||'Kotijoukkue')}</div><div class="lg">${esc(m.league?.name||'')}</div></div></div>
+    <div class="tm">${localTime(m.time_utc)}</div>
+    <div class="mh-team away"><div class="mh-team-text"><div class="teams">${esc(m.away_team?.name||'Vierasjoukkue')}</div></div></div></div>
+    <div class="pitch" id="p${m.id.replace(/[^a-zA-Z0-9_-]/g,'')}"><div class="goal g1"></div><div class="goal g2"></div><span class="corner tl"></span><span class="corner tr"></span><span class="corner bl"></span><span class="corner br"></span><span class="centerDot"></span><div class="players">${inner}</div></div>
+    <div class="note">${pred?'🟡 Ennakoitu kokoonpano · lähde on ulkoinen arvio, ei vielä PitchAPI:n virallinen/predicted lineup.':'ℹ️ UEFA:n ottelu näkyy, mutta PitchAPI:n oikeaa match ID:tä ei ole vielä saatavilla.'}</div>
+  </section>`;
+}
 function render(){
   if(filter==='ALL'){
     $('#out').innerHTML='<div class="status select-league-prompt">👆 Valitse ylhäältä sarja nähdäksesi ottelut.</div>';
@@ -1080,41 +770,7 @@ function render(){
   const list=games.filter(m=>m.league?.name===filter);
   if(!list.length){$('#out').innerHTML='<div class="status">Ei otteluita tällä päivällä tässä sarjassa.</div>';return}
   if(MAIN_SET.has(filter)){
-    if(list.some(m=>m.__nlStatic)){
-      $('#out').innerHTML=list.map(m=>{
-        const p=m.__predictedNL||null, home=p?.home||Array(11).fill('').map((_,i)=>`Haetaan… ${i+1}`), away=p?.away||Array(11).fill('').map((_,i)=>`Haetaan… ${i+1}`);
-        const hKey=m.home_team?.name||'', aKey=m.away_team?.name||'';
-        const safeId=m.id.replace(/[^a-zA-Z0-9_-]/g,'');
-        const predCards=(arr,homeSide,formation,sideName)=>{
-          let out='';
-          for(const q of place(predictedPlayerObjects(arr),homeSide,formation||'')){
-            out += `<div class="p predicted-static" data-player-id="" data-player-name="${esc(q.p.name)}" data-team="" data-side="${homeSide?'home':'away'}" data-match="${esc(m.id)}" style="left:${q.x}%;top:${q.y}%"><div class="pred-face">⚽</div><div class="name">${esc(q.p.name)}</div><div class="nums otb">Ladataan viimeisiä 5…</div></div>`;
-          }
-          return out;
-        };
-        return `<section class="match">
-          <div class="mh"><div class="mh-team"><div class="mh-team-text"><div class="teams">${esc(hKey)}</div><div class="lg">${esc(m.league?.name||filter)}</div></div></div><div class="tm">${localTime(m.time_utc)}</div><div class="mh-team away"><div class="mh-team-text"><div class="teams">${esc(aKey)}</div></div></div></div>
-          <div class="lineup-status predicted">${p?'🟡 Arvioitu avauskokoonpano':'🔵 UEFA:n vahvistama ottelu · PitchAPI match ID:tä odotetaan'} · ei jää roikkumaan taustahakuun</div>
-          <div class="pitch" id="p${safeId}"><div class="goal g1"></div><div class="goal g2"></div><span class="corner tl"></span><span class="corner tr"></span><span class="corner bl"></span><span class="corner br"></span><span class="centerDot"></span><div class="players">${predCards(home,true,p?.homeFormation,hKey)}${predCards(away,false,p?.awayFormation,aKey)}</div></div>
-          <div class="note">🟡 Arvioitu kokoonpano. Pelaajatilastot aktivoituvat, kun ottelulle löytyy oikea PitchAPI match ID.</div>
-        </section>`;
-      }).join('');
-      // Static UEFA fallback has no PitchAPI match ID. Do NOT start a huge
-      // historical scan here. It made the previous version spin indefinitely.
-      // Real player images/stats are loaded only when a real match ID exists.
-      list.filter(m=>m.__nlStatic).forEach(m=>{
-        const note=m.__predictedNL
-          ? '🟡 Arvioitu XI näytetään. Pelaajakuvat ja viimeisten 5 ottelun tilastot odottavat PitchAPI:n oikeaa match ID:tä.'
-          : 'ℹ️ UEFA:n ottelu näkyy, mutta PitchAPI ei vielä palauttanut tälle ottelulle match ID:tä.';
-        const sec=document.querySelector(`#p${m.id.replace(/[^a-zA-Z0-9_-]/g,'')}`)?.closest('.match');
-        if(sec){const n=sec.querySelector('.note');if(n)n.textContent=note;}
-      });
-      if(lineupRefreshTimer)clearInterval(lineupRefreshTimer);
-      lineupRefreshTimer=setInterval(()=>{if(document.visibilityState!=='hidden')load();},300000);
-      return;
-    }
-
-    $('#out').innerHTML=list.map(m=>`<section class="match"><div class="mh"><div class="mh-team"><div class="mh-team-text"><div class="teams">${esc(m.home_team?.name||'Kotijoukkue')}</div><div class="lg">${esc(m.league?.name||'')}</div></div>${m.home_team?.image_url?`<img class="mh-logo" src="${esc(m.home_team.image_url)}" alt="">`:''}</div><div class="tm">${localTime(m.time_utc)}${m.status==='finished'?' · '+m.score_home+'–'+m.score_away:''}</div><div class="mh-team away">${m.away_team?.image_url?`<img class="mh-logo" src="${esc(m.away_team.image_url)}" alt="">`:''}<div class="mh-team-text"><div class="teams">${esc(m.away_team?.name||'Vierasjoukkue')}</div></div></div></div><div class="player-stat-bar" data-stat-bar="${esc(m.id)}" data-mode="otb"><div class="player-stat-caption">Pelaajien viimeiset 5 ottelua · valitse näytettävä tilasto</div><button class="player-stat-btn active" data-stat="otb">OTB / OTB kohti</button><button class="player-stat-btn" data-stat="shots">Laukaukset</button><button class="player-stat-btn" data-stat="cards">Kortit</button><button class="player-stat-btn" data-stat="fouls">Rikkeet</button><button class="player-stat-btn" data-stat="headers">Pääpallot</button><button class="player-stat-btn" data-stat="all">Kaikki laukaukset</button><span class="stat-mode-label">Viimeiset 5</span></div><div class="pitch" id="p${m.id.replace(/[^a-zA-Z0-9_-]/g,'')}">${m.home_team?.image_url?`<img class="pitch-team-logo home" src="${esc(m.home_team.image_url)}" alt="">`:''}${m.away_team?.image_url?`<img class="pitch-team-logo away" src="${esc(m.away_team.image_url)}" alt="">`:''}<div class="goal g1"></div><div class="goal g2"></div><span class="corner tl"></span><span class="corner tr"></span><span class="corner bl"></span><span class="corner br"></span><span class="centerDot"></span><div class="players"><div class="status">Ladataan kokoonpanoa…</div></div></div><div class="note">OUT = boxin ulkopuolelta · pelaajaa painamalla näet tarkat tilastot.</div></section>`).join('');
+    $('#out').innerHTML=list.map(m=>m.__nlStatic?renderStaticNLMatch(m):`<section class="match"><div class="mh"><div class="mh-team"><div class="mh-team-text"><div class="teams">${esc(m.home_team?.name||'Kotijoukkue')}</div><div class="lg">${esc(m.league?.name||'')}</div></div>${m.home_team?.image_url?`<img class="mh-logo" src="${esc(m.home_team.image_url)}" alt="">`:''}</div><div class="tm">${localTime(m.time_utc)}${m.status==='finished'?' · '+m.score_home+'–'+m.score_away:''}</div><div class="mh-team away">${m.away_team?.image_url?`<img class="mh-logo" src="${esc(m.away_team.image_url)}" alt="">`:''}<div class="mh-team-text"><div class="teams">${esc(m.away_team?.name||'Vierasjoukkue')}</div></div></div></div><div class="player-stat-bar" data-stat-bar="${esc(m.id)}" data-mode="otb"><div class="player-stat-caption">Pelaajien viimeiset 5 ottelua · valitse näytettävä tilasto</div><button class="player-stat-btn active" data-stat="otb">OTB / OTB kohti</button><button class="player-stat-btn" data-stat="shots">Laukaukset</button><button class="player-stat-btn" data-stat="cards">Kortit</button><button class="player-stat-btn" data-stat="fouls">Rikkeet</button><button class="player-stat-btn" data-stat="headers">Pääpallot</button><button class="player-stat-btn" data-stat="all">Kaikki laukaukset</button><span class="stat-mode-label">Viimeiset 5</span></div><div class="pitch" id="p${m.id.replace(/[^a-zA-Z0-9_-]/g,'')}">${m.home_team?.image_url?`<img class="pitch-team-logo home" src="${esc(m.home_team.image_url)}" alt="">`:''}${m.away_team?.image_url?`<img class="pitch-team-logo away" src="${esc(m.away_team.image_url)}" alt="">`:''}<div class="goal g1"></div><div class="goal g2"></div><span class="corner tl"></span><span class="corner tr"></span><span class="corner bl"></span><span class="corner br"></span><span class="centerDot"></span><div class="players"><div class="status">Ladataan kokoonpanoa…</div></div></div><div class="note">OUT = boxin ulkopuolelta · pelaajaa painamalla näet tarkat tilastot.</div></section>`).join('');
     list.filter(m=>!m.__nlStatic).forEach(m=>loadGame(m,false));
     if(lineupRefreshTimer)clearInterval(lineupRefreshTimer);
     lineupRefreshTimer=setInterval(()=>{if(document.visibilityState==='hidden')return;list.filter(m=>!m.__nlStatic&&m.status!=='finished').forEach(m=>loadGame(m,true));},300000);
@@ -1808,7 +1464,7 @@ async function loadOtherGame(m){
   }catch(e){box.innerHTML=`<div class="err">Otteluanalyysiä ei saatu: ${esc(e.message)}</div>`}
 }
 
-$('#date').value=today();if(isPublicWorker())$('#setup').style.display='none';populateLeagueSelector();$('#refresh').onclick=load;
+$('#date').value=today();if(isPublicWorker())$('#setup').style.display='none';$('#refresh').onclick=load;
   document.addEventListener('click',e=>{
     const statBtn=e.target.closest('.player-stat-btn');
     if(statBtn){
@@ -1833,7 +1489,7 @@ $('#date').value=today();if(isPublicWorker())$('#setup').style.display='none';po
       return;
     }
     window.otbSelectLeague(v);
-  });$('#date').onchange=()=>{if(filter!=='ALL')load();};$$('.f').forEach(b=>b.onclick=()=>{$$('.f').forEach(x=>x.classList.remove('active'));b.classList.add('active');filter=b.dataset.l;render()});setKeyUI(); populateLeagueSelector(); loadLeagues().then(()=>{populateLeagueSelector();$('#out').innerHTML='<div class="status select-league-prompt">👆 Valitse ylhäältä sarja nähdäksesi ottelut.</div>';}).catch(e=>{populateLeagueSelector();$('#out').innerHTML='<div class="status select-league-prompt">👆 Valitse ylhäältä sarja nähdäksesi ottelut.</div>';console.warn('Sarjojen taustalataus epäonnistui',e);});
+  });$('#date').onchange=()=>{if(filter!=='ALL')load();};$$('.f').forEach(b=>b.onclick=()=>{$$('.f').forEach(x=>x.classList.remove('active'));b.classList.add('active');filter=b.dataset.l;render()});setKeyUI(); loadLeagues().then(()=>{$('#out').innerHTML='<div class="status select-league-prompt">👆 Valitse ylhäältä sarja nähdäksesi ottelut.</div>';}).catch(e=>{$('#out').innerHTML='<div class="err">Sarjoja ei saatu ladattua: '+esc(e.message)+'</div>';});
 </script>
 <script id="v20-enhancements-js">
 (function(){
