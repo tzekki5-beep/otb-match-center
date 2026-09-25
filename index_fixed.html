@@ -229,6 +229,13 @@ html,body{overflow-x:hidden}
 .shot-summary{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:7px}.shot-summary .stat{padding:8px}.shot-summary .stat b{font-size:18px}.player-metric-grid{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:7px;margin:10px 0}.player-metric{background:#0b2832;border:1px solid #294b55;border-radius:9px;padding:8px}.player-metric b{display:block;font-size:16px}.player-metric span{font-size:10px;color:#9fb5bd}.raw-group{margin:10px 0}.raw-title{font-weight:900;font-size:13px;margin-bottom:6px}.raw-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:6px}.raw-item{background:#0b2832;border-radius:8px;padding:7px;font-size:11px}.raw-item b{float:right}.drawer-table{font-size:11px}.drawer-table td,.drawer-table th{padding:6px 5px}.drawer-note{font-size:10px;color:#8fa7ae;margin-top:7px}
 @media(max-width:650px){.shotmap-wrap{grid-template-columns:1fr}.player-metric-grid{grid-template-columns:repeat(2,minmax(0,1fr))}}
 </style>
+<style id="v26-predicted-static-ui">
+.predicted-static{pointer-events:none!important}
+.predicted-static .pred-face{width:38px;height:38px;border-radius:50%;display:flex;align-items:center;justify-content:center;background:#183f42;border:1px solid #6b9698;font-size:20px;margin:0 auto 2px}
+.predicted-static .name{font-size:11px!important;font-weight:900!important;white-space:nowrap;text-align:center;text-shadow:0 2px 3px #000}
+.predicted-static .nums{font-size:9px!important;color:#ffd84a!important;text-align:center;font-weight:900}
+.lineup-status.predicted{color:#ffd84a;border-color:#806d24}
+</style>
 <style id="lineup-status-ui">.lineup-status{position:absolute;left:50%;top:8px;transform:translateX(-50%);z-index:3;background:#071b22dd;border:1px solid #527273;border-radius:9px;padding:6px 10px;font-size:11px;font-weight:800;white-space:nowrap;max-width:92%;overflow:hidden;text-overflow:ellipsis;text-align:center}.lineup-status.predicted{color:#ffd84a;border-color:#806d24}.lineup-status.official{color:#39c98b;border-color:#2b7859}@media(max-width:600px){.lineup-status{font-size:9px;padding:5px 7px;top:5px}}</style>
 <style id="lineup-readability-v2">
 .p{width:132px!important}
@@ -664,6 +671,76 @@ const NL_FIXTURES={
   ['Montenegro','Cyprus','Nations League C'],['Armenia','Latvia','Nations League C']
  ]
 };
+
+/* v26: researched predicted XIs for Nations League 25.09.2026.
+   Fallback only: never presented as official. When PitchAPI starts returning
+   a real match ID, the normal lineup endpoint takes over automatically. */
+const NL_PREDICTED_2026_09_25 = {
+  'Georgia – Northern Ireland': {
+    source:'Oddschecker / Sportsgambler',
+    homeFormation:'3-5-1-1', awayFormation:'3-4-2-1',
+    home:['Giorgi Mamardashvili','Luka Dvali','Luka Lochoshvili','Saba Goglichidze','Gizo Mamageishvili','Otar Kiteishvili','Giorgi Chakvetadze','Giorgi Kochorashvili','Saba Kharebashvili','Khvicha Kvaratskhelia','Georges Mikautadze'],
+    away:['Pierce Charles','Trai Hume','Daniel Ballard','Ciaron Brown','Brodie Spencer','Shea Charles','Ethan Galbraith','Justin Devenny','Patrick Kelly','Isaac Price','Jamie Donley']
+  },
+  'Armenia – Latvia': {
+    source:'Bulinews',
+    homeFormation:'4-3-3', awayFormation:'3-4-2-1',
+    home:['Henri Avagyan','Arman Piloyan','Georgi Harutyunyan','Artem Muradyan','Nayair Tiknizyan','Eduard Spertsyan','Edgar Sevikyan','Gor Aghasaryan','Artur Miranyan','Artur Serobyan','Narek Grigoryan'],
+    away:['Rihards Matrevics','Raivis Jurkovskis','Antonijs Cernomordijs','Daniels Balodis','Roberts Savalnieks','Lukass Vapne','Dmitrijs Zelenkovs','Andrejs Ciganiks','Jānis Ikaunieks','Raimonds Krollis','Roberts Uldrikis']
+  },
+  'Italy – Belgium': {
+    source:'Flashscore / Sports Illustrated',
+    homeFormation:'4-3-3', awayFormation:'4-2-3-1',
+    home:['Gianluigi Donnarumma','Kayode','Giorgio Scalvini','Alessandro Bastoni','Riccardo Calafiori','Nicolo Fagioli','Sandro Tonali','Nicolo Barella','Francesco Pio Esposito','Moise Kean','Giacomo Raspadori'],
+    away:['Senne Lammens','Timothy Castagne','Nathan Ngoy','Brandon Mechele','Maxim De Cuyper','Youri Tielemans','Roméo Lavia','Kevin De Bruyne','Dodi Lukebakio','Charles De Ketelaere','Jérémy Doku']
+  },
+  'Türkiye – France': {
+    source:'FotMob / Al Jazeera',
+    homeFormation:'4-2-3-1', awayFormation:'4-3-3',
+    home:['Ugurcan Cakir','Zeki Celik','Ozan Kabak','Abdülkerim Bardakci','Ferdi Kadioglu','Salih Ozcan','Ismail Yuksek','Arda Guler','Can Uzun','Kerem Akturkoglu','Baris Alper Yilmaz'],
+    away:['Mike Maignan','Jules Kounde','Maxence Lacroix','Dayot Upamecano','Adrien Truffert','Manu Kone','Adrien Rabiot','Rayan Cherki','Michael Olise','Kylian Mbappe','Desire Doue']
+  },
+  'Hungary – Ukraine': {
+    source:'Soccerway',
+    homeFormation:'4-2-3-1', awayFormation:'4-1-4-1',
+    home:['Balazs Toth','Bendeguz Bolla','Willi Orban','Attila Markgraf','Milos Kerkez','Milan Vitalis','Andras Schafer','Roland Sallai','Alex Toth','Dominik Szoboszlai','Daniel Lukacs'],
+    away:['Anatolii Trubin','Bogdan Mykhaylichenko','Illia Zabarnyi','Mykola Matviyenko','Vitalii Mykolenko','Volodymyr Brazhko','Viktor Tsygankov','Yegor Nazaryna','Georgiy Sudakov','Oleksandr Zubkov','Matviy Ponomarenko']
+  },
+  'Poland – Bosnia and Herzegovina': {
+    source:'Flashscore',
+    homeFormation:'3-5-2', awayFormation:'3-4-1-2',
+    home:['Marcin Bulka','Przemyslaw Wisniewski','Jan Bednarek','Jakub Kiwior','Matty Cash','Sebastian Szymanski','Piotr Zielinski','Michal Skoras','Jakub Kaminski','Nicola Zalewski','Robert Lewandowski'],
+    away:['Nikola Vasilj','Nihad Omerovic','Tarik Muharemovic','Nikola Katic','Sead Kolasinac','Ivan Basic','Armin Gigovic','Ivan Sunjic','Kerim Alajbegovic','Haris Tabakovic','Ermedin Demirovic']
+  },
+  'Sweden – Romania': {
+    source:'Flashscore',
+    homeFormation:'3-5-2', awayFormation:'4-3-3',
+    home:['Viktor Johansson','Elliot Stroud','Carl Starfelt','Victor Lindelof','Emil Holm','Lucas Bergvall','Jesper Karlstrom','Yasin Ayari','Gabriel Gudmundsson','Viktor Gyokeres','Alexander Isak'],
+    away:['Ionut Radu','Andrei Ratiu','Radu Dragusin','Andrei Burca','Nicusor Bancu','Razvan Marin','Vlad Dragomir','Dennis Man','Ianis Hagi','Vasile Mihaila','Daniel Birligea']
+  },
+  'Montenegro – Cyprus': {
+    source:'Bulinews',
+    homeFormation:'4-4-2', awayFormation:'4-4-2',
+    home:['Balsa Popovic','Marko Vesovic','Milan Roganovic','Slobodan Rubezic','Risto Radunovic','Vasilije Adzic','Andrija Bulatovic','Stefan Loncar','Milutin Osmajic','Nikola Krstovic','Stevan Jovetic'],
+    away:['Neophytos Michael','Andreas Shikkis','Christos Sielis','Konstantinos Laifis','Andreas Panagiotou','Loizos Loizou','Hector Kyprianou','Grigoris Kastanos','Marinos Tzionis','Ioannis Pittas','Marcus Edwards']
+  }
+};
+
+function nlPredictedKey(home,away){ return `${home} – ${away}`; }
+function predictedNLFor(m){
+  return NL_PREDICTED_2026_09_25[nlPredictedKey(m?.home_team?.name,m?.away_team?.name)] || null;
+}
+function predictedPlayerObjects(names){
+  return (names||[]).map((name,i)=>({name, position:i===0?'GK':''}));
+}
+function nlKickoffUTC(date,home,away){
+  const key=nlPredictedKey(home,away);
+  if(date==='2026-09-25' && (key==='Georgia – Northern Ireland'||key==='Armenia – Latvia'))
+    return `${date}T17:00:00Z`; // 18:00 CET
+  if(date==='2026-09-25') return `${date}T19:45:00Z`; // 20:45 CET
+  return `${date}T19:45:00Z`;
+}
+
 function normNL(v){return String(v||'').normalize('NFD').replace(/[\u0300-\u036f]/g,'').toLowerCase().replace(/[^a-z0-9]+/g,' ').trim()}
 function localISO(utc){try{return new Date(utc).toLocaleDateString('en-CA',{timeZone:Intl.DateTimeFormat().resolvedOptions().timeZone})}catch{return String(utc||'').slice(0,10)}}
 function nlBucket(date,home,away){
@@ -675,12 +752,17 @@ function isNLFilter(v){return /^Nations League [ABC]$/.test(v||'')}
 function nlLabel(n){return n==='Nations League A'?'🌍 NL A':n==='Nations League B'?'🌍 NL B':'🌍 NL C'}
 function nlDatesFor(leagueName){return Object.keys(NL_FIXTURES).filter(d=>(NL_FIXTURES[d]||[]).some(x=>x[2]===leagueName)).sort()}
 function staticNLMatches(date,leagueName){
- return (NL_FIXTURES[date]||[]).filter(x=>x[2]===leagueName).map((x,i)=>({
-   id:`nl-${date}-${normNL(x[0]).replace(/\s+/g,'-')}-${normNL(x[1]).replace(/\s+/g,'-')}`,
-   __nlStatic:true,date,time_utc:`${date}T20:45:00Z`,
-   home_team:{name:x[0]},away_team:{name:x[1]},
-   league:{name:leagueName},status:'scheduled'
- }));
+ return (NL_FIXTURES[date]||[]).filter(x=>x[2]===leagueName).map((x,i)=>{
+   const m={
+     id:`nl-${date}-${normNL(x[0]).replace(/\s+/g,'-')}-${normNL(x[1]).replace(/\s+/g,'-')}`,
+     __nlStatic:true,date,time_utc:nlKickoffUTC(date,x[0],x[1]),
+     home_team:{name:x[0]},away_team:{name:x[1]},
+     league:{name:leagueName},status:'scheduled'
+   };
+   const pred=predictedNLFor(m);
+   if(pred)m.__predictedNL=pred;
+   return m;
+ });
 }
 
 function isPlayerLeague(name){return MAIN_SET.has(name)}
@@ -763,7 +845,7 @@ async function load(){
     }
     games=matches.map(m=>({...m,league:{...(m.league||{}),name:m.league?.name||filter}}));
     games.sort((a,b)=>new Date(a.time_utc)-new Date(b.time_utc));
-    $('#status').textContent=games.some(m=>m.__nlStatic)?`${games.length} Nations League -ottelua · UEFA:n ohjelma · pelaajadata haetaan kun PitchAPI tarjoaa match ID:n`:`${games.length} ottelua · PitchAPI`;
+    $('#status').textContent=games.some(m=>m.__nlStatic)?`${games.length} Nations League -ottelua · UEFA:n ohjelma · arvioidut kokoonpanot mukana · virallinen XI korvaa arvion automaattisesti kun PitchAPI tarjoaa match ID:n`:`${games.length} ottelua · PitchAPI`;
     render();
   }catch(e){
     $('#status').innerHTML=`<div class="err">${esc(e.message)}<br><small>Julkisessa versiossa API-avain tulee Cloudflare Workerista — sitä ei tarvitse syöttää tähän selaimeen.</small></div>`;
@@ -814,7 +896,36 @@ function render(){
   if(!list.length){$('#out').innerHTML='<div class="status">Ei otteluita tällä päivällä tässä sarjassa.</div>';return}
   if(MAIN_SET.has(filter)){
     if(list.some(m=>m.__nlStatic)){
-      $('#out').innerHTML=list.map(m=>`<section class="match"><div class="mh"><div class="mh-team"><div class="mh-team-text"><div class="teams">${esc(m.home_team?.name||'')}</div><div class="lg">${esc(m.league?.name||filter)}</div></div></div><div class="tm">${localTime(m.time_utc)}</div><div class="mh-team away"><div class="mh-team-text"><div class="teams">${esc(m.away_team?.name||'')}</div></div></div></div><div class="lineup-status">ℹ️ UEFA:n ottelu vahvistettu. PitchAPI ei palauttanut tälle ottelulle match ID:tä, joten kokoonpano- ja pelaajatilastoja ei voida näyttää vielä.</div></section>`).join('');
+      $('#out').innerHTML=list.map(m=>{
+        const p=m.__predictedNL, home=p?.home||[], away=p?.away||[];
+        const hKey=m.home_team?.name||'', aKey=m.away_team?.name||'';
+        const safeId=m.id.replace(/[^a-zA-Z0-9_-]/g,'');
+        const predCards=(arr,homeSide,formation)=>{
+          let out='', xi=predictedPlayerObjects(arr);
+          for(const q of place(xi,homeSide,formation||'')){
+            out += `<div class="p predicted-static" data-player-id="" data-player-name="${esc(q.p.name)}" data-team="" data-match="${esc(m.id)}" style="left:${q.x}%;top:${q.y}%"><div class="pred-face">${q.p.position==='GK'?'🧤':'⚽'}</div><div class="name">${esc(q.p.name)}</div><div class="nums otb">arvioitu XI</div></div>`;
+          }
+          return out;
+        };
+        return `<section class="match">
+          <div class="mh">
+            <div class="mh-team"><div class="mh-team-text"><div class="teams">${esc(hKey)}</div><div class="lg">${esc(m.league?.name||filter)}</div></div></div>
+            <div class="tm">${localTime(m.time_utc)}</div>
+            <div class="mh-team away"><div class="mh-team-text"><div class="teams">${esc(aKey)}</div></div></div>
+          </div>
+          <div class="lineup-status predicted">🟡 Arvioidut avauskokoonpanot · lähde: ${esc(p?.source||'useita ennakkolähteitä')} · viralliset korvaavat nämä kun PitchAPI palauttaa ottelun</div>
+          <div class="pitch" id="p${safeId}">
+            <div class="goal g1"></div><div class="goal g2"></div><span class="corner tl"></span><span class="corner tr"></span><span class="corner bl"></span><span class="corner br"></span><span class="centerDot"></span>
+            <div class="players">${predCards(home,true,p?.homeFormation)}${predCards(away,false,p?.awayFormation)}</div>
+          </div>
+          <div class="note">🟡 Arvioitu XI · OTB-, laukaus-, kortti- ja viimeiset 5 -tilastot aktivoituvat, kun ottelulle saadaan PitchAPI:n oikea match ID. Kokoonpano tarkistetaan automaattisesti uudelleen.</div>
+        </section>`;
+      }).join('');
+      if(lineupRefreshTimer)clearInterval(lineupRefreshTimer);
+      lineupRefreshTimer=setInterval(()=>{
+        if(document.visibilityState==='hidden')return;
+        load();
+      },300000);
       return;
     }
     $('#out').innerHTML=list.map(m=>`<section class="match"><div class="mh"><div class="mh-team"><div class="mh-team-text"><div class="teams">${esc(m.home_team?.name||'Kotijoukkue')}</div><div class="lg">${esc(m.league?.name||'')}</div></div>${m.home_team?.image_url?`<img class="mh-logo" src="${esc(m.home_team.image_url)}" alt="">`:''}</div><div class="tm">${localTime(m.time_utc)}${m.status==='finished'?' · '+m.score_home+'–'+m.score_away:''}</div><div class="mh-team away">${m.away_team?.image_url?`<img class="mh-logo" src="${esc(m.away_team.image_url)}" alt="">`:''}<div class="mh-team-text"><div class="teams">${esc(m.away_team?.name||'Vierasjoukkue')}</div></div></div></div><div class="player-stat-bar" data-stat-bar="${esc(m.id)}" data-mode="otb"><div class="player-stat-caption">Pelaajien viimeiset 5 ottelua · valitse näytettävä tilasto</div><button class="player-stat-btn active" data-stat="otb">OTB / OTB kohti</button><button class="player-stat-btn" data-stat="shots">Laukaukset</button><button class="player-stat-btn" data-stat="cards">Kortit</button><button class="player-stat-btn" data-stat="fouls">Rikkeet</button><button class="player-stat-btn" data-stat="headers">Pääpallot</button><button class="player-stat-btn" data-stat="all">Kaikki laukaukset</button><span class="stat-mode-label">Viimeiset 5</span></div><div class="pitch" id="p${m.id.replace(/[^a-zA-Z0-9_-]/g,'')}">${m.home_team?.image_url?`<img class="pitch-team-logo home" src="${esc(m.home_team.image_url)}" alt="">`:''}${m.away_team?.image_url?`<img class="pitch-team-logo away" src="${esc(m.away_team.image_url)}" alt="">`:''}<div class="goal g1"></div><div class="goal g2"></div><span class="corner tl"></span><span class="corner tr"></span><span class="corner bl"></span><span class="corner br"></span><span class="centerDot"></span><div class="players"><div class="status">Ladataan kokoonpanoa…</div></div></div><div class="note">OUT = boxin ulkopuolelta · pelaajaa painamalla näet tarkat tilastot.</div></section>`).join('');
