@@ -516,13 +516,12 @@ const MAIN_PATTERNS={
   'Champions League':[/champions league/i],
   'Europa League':[/europa league/i],
   'Conference League':[/conference league/i],
-  'Nations League A':[/nations league.*(?:league\s*)?a\b/i,/uefa nations league.*\ba\b/i],
-  'Nations League B':[/nations league.*(?:league\s*)?b\b/i,/uefa nations league.*\bb\b/i],
-  'Nations League C':[/nations league.*(?:league\s*)?c\b/i,/uefa nations league.*\bc\b/i]
+  'Nations League A':[/nations league.*(?:league|liga)\s*A/i,/UEFA\s*Nations\s*League.*\bA\b/i,/nations league.*\bA\b/i],
+  'Nations League B':[/nations league.*(?:league|liga)\s*B/i,/UEFA\s*Nations\s*League.*\bB\b/i,/nations league.*\bB\b/i],
+  'Nations League C':[/nations league.*(?:league|liga)\s*C/i,/UEFA\s*Nations\s*League.*\bC\b/i,/nations league.*\bC\b/i]
 };
 const MAIN_SET=new Set(MAIN_LEAGUES);
 const ALLOWED=MAIN_LEAGUES;
-const NATIONS_MAIN=['Nations League A','Nations League B','Nations League C'];
 let filter='ALL',games=[],leagueMap={},lineupCache=new Map(),matchPlayersCache=new Map(),shotsCache=new Map(),playerStatsCache=new Map(),historyCache=new Map(),otherAnalysisCache=new Map(),lineupRefreshTimer=null;
 const $=s=>document.querySelector(s),$$=s=>[...document.querySelectorAll(s)];
 function today(){let d=new Date();return new Date(d-d.getTimezoneOffset()*60000).toISOString().slice(0,10)}
@@ -550,14 +549,68 @@ async function loadLeagues(){
   }
   populateLeagueSelector();
 }
+
+const NL_FIXTURES = {
+  '2026-09-25': [
+    ['Armenia','Latvia','Nations League C'],
+    ['Georgia','Northern Ireland','Nations League B'],
+    ['Italy','Belgium','Nations League A'],
+    ['Turkey','France','Nations League A'],
+    ['Türkiye','France','Nations League A'],
+    ['Hungary','Ukraine','Nations League B'],
+    ['Poland','Bosnia and Herzegovina','Nations League B'],
+    ['Sweden','Romania','Nations League B'],
+    ['Montenegro','Cyprus','Nations League C']
+  ],
+  '2026-09-26': [
+    ['Slovenia','Scotland','Nations League B'],
+    ['San Marino','Finland','Nations League C'],
+    ['Faroe Islands','Kazakhstan','Nations League C'],
+    ['Bulgaria','Luxembourg','Nations League C'],
+    ['Iceland','Estonia','Nations League C'],
+    ['Czechia','Croatia','Nations League A'],
+    ['England','Spain','Nations League A'],
+    ['North Macedonia','Switzerland','Nations League B'],
+    ['Albania','Belarus','Nations League C'],
+    ['Slovakia','Moldova','Nations League C']
+  ],
+  '2026-09-28': [
+    ['Georgia','Ukraine','Nations League B'],['Armenia','Montenegro','Nations League C'],
+    ['Belgium','France','Nations League A'],['Turkey','Italy','Nations League A'],
+    ['Türkiye','Italy','Nations League A'],['Northern Ireland','Hungary','Nations League B'],
+    ['Romania','Bosnia and Herzegovina','Nations League B'],['Sweden','Poland','Nations League B'],
+    ['Latvia','Cyprus','Nations League C']
+  ],
+  '2026-09-29': [
+    ['Finland','Belarus','Nations League C'],['Moldova','Faroe Islands','Nations League C'],
+    ['Bulgaria','Estonia','Nations League C'],['Czechia','England','Nations League A'],
+    ['Luxembourg','Iceland','Nations League C'],['San Marino','Albania','Nations League C'],
+    ['Scotland','Switzerland','Nations League B'],['Slovakia','Kazakhstan','Nations League C'],
+    ['Slovenia','North Macedonia','Nations League B'],['Spain','Croatia','Nations League A']
+  ]
+};
+function normTeamName(v){
+  return String(v||'').toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g,'')
+    .replace(/turkiye/g,'turkey').replace(/türkiye/g,'turkey')
+    .replace(/republic of ireland/g,'ireland').replace(/northern ireland/g,'northern ireland')
+    .replace(/[^a-z0-9]+/g,' ').trim();
+}
+function nlPairForDate(date, home, away){
+  const rows=NL_FIXTURES[date]||[];
+  const h=normTeamName(home), a=normTeamName(away);
+  const row=rows.find(x=>normTeamName(x[0])===h && normTeamName(x[1])===a);
+  return row ? row[2] : null;
+}
+function isNationsLeagueMatch(m){
+  const name=String(m?.league?.name||m?.competition?.name||'').toLowerCase();
+  return /nations\s*league|uefa nations/i.test(name);
+}
+
 function isPlayerLeague(name){return MAIN_SET.has(name)}
 function populateLeagueSelector(){
   const sel=$('#v20League'); if(!sel)return;
   const current=sel.value;
-  // Keep Nations League A/B/C visible even before the date endpoint resolves
-  // their league IDs. This prevents the tabs from disappearing on dates where
-  // the league catalogue is incomplete.
-  const main=MAIN_LEAGUES.filter(n=>leagueMap[n] || NATIONS_MAIN.includes(n));
+  const main=MAIN_LEAGUES.filter(n=>leagueMap[n]);
   const others=Object.keys(leagueMap).filter(n=>!MAIN_SET.has(n)).sort((a,b)=>a.localeCompare(b,'fi'));
   sel.innerHTML='<option value="">⚽ Kaikki sarjat</option><optgroup label="⭐ Pelaaja-analyysi">'+main.map(n=>`<option value="${esc(n)}">${esc(n)}</option>`).join('')+'</optgroup><optgroup label="📊 Otteluanalyysi">'+others.map(n=>`<option value="${esc(n)}">${esc(n)}</option>`).join('')+'</optgroup>';
   if([...sel.options].some(o=>o.value===current))sel.value=current;
@@ -566,40 +619,131 @@ function populateLeagueSelector(){
   const otherSel=document.getElementById('otherLeagueSelect');
   if(otherSel){const old=otherSel.value;otherSel.innerHTML='<option value="">Valitse otteluanalyysin sarja…</option>'+others.map(n=>`<option value="${esc(n)}">${esc(n)}</option>`).join('');if(others.includes(old))otherSel.value=old;}
 }
-async function load(){if(!key()&&!isPublicWorker()){setKeyUI();$('#status').textContent='Lisää ensin PitchAPI-avain.';return}$('#out').innerHTML='';$('#status').textContent='Haetaan päivän ottelut…';try{await loadLeagues();const date=$('#date').value;let matches=[];
-  // Use the selected league's own fixture endpoint. The global /date endpoint
-  // can omit UEFA competitions on some dates, so UCL/UEL/UECL must be read
-  // directly from their league fixture lists.
-  const lm=leagueMap[filter];
-  if(filter!=='ALL'&&lm?.id){
-    let d=null;
-    try{d=await api(`leagues/${encodeURIComponent(lm.id)}/matches?status=all`)}catch(e){d=null}
-    const source=Array.isArray(d?.matches)?d.matches:[];
-    matches=source.filter(m=>{const md=m?.date||String(m?.time_utc||'').slice(0,10);return md===date});
-    if(!matches.length){
-      // Fallback to the global date endpoint if the league endpoint has no
-      // dated result or the provider uses a different date field.
-      try{const gd=await api(`date/${date}?status=all`);matches=(gd?.matches||[]).filter(m=>String(m?.league?.id)===String(lm.id))}catch(e){}
+async function load(){
+  if(!key()&&!isPublicWorker()){setKeyUI();$('#status').textContent='Lisää ensin PitchAPI-avain.';return}
+  $('#out').innerHTML='';
+  $('#status').textContent='Haetaan päivän ottelut…';
+  try{
+    await loadLeagues();
+    const date=$('#date').value;
+    let matches=[];
+    const isNL=/^Nations League [ABC]$/.test(filter);
+    const lm=leagueMap[filter];
+
+    if(isNL){
+      // 1) Use the provider's league endpoint if the Nations League exists
+      // in its league catalogue.
+      if(lm?.id){
+        try{
+          const d=await api(`leagues/${encodeURIComponent(lm.id)}/matches?status=all`);
+          const source=Array.isArray(d?.matches)?d.matches:[];
+          matches=source.filter(m=>{
+            const md=m?.date||String(m?.time_utc||'').slice(0,10);
+            return md===date;
+          });
+        }catch(e){}
+      }
+
+      // 2) Important fallback: PitchAPI's global date catalogue may contain
+      // Nations League games even when /leagues does not expose the competition.
+      if(!matches.length){
+        try{
+          const gd=await api(`date/${date}?status=all`);
+          const all=Array.isArray(gd?.matches)?gd.matches:[];
+          matches=all.map(m=>{
+            if(!isNationsLeagueMatch(m)) return null;
+            const bucket=nlPairForDate(date,m?.home_team?.name,m?.away_team?.name);
+            if(bucket && bucket===filter) return {...m,league:{...(m.league||{}),name:filter}};
+            return null;
+          }).filter(Boolean);
+        }catch(e){}
+      }
+
+      // 3) Final schedule fallback for the currently known 2026 matchdays.
+      // This creates no fake stats: it only keeps the date/teams visible if
+      // the provider returns a matching fixture without a usable competition name.
+      if(!matches.length && NL_FIXTURES[date]){
+        const rows=NL_FIXTURES[date].filter(x=>x[2]===filter);
+        try{
+          const gd=await api(`date/${date}?status=all`);
+          const all=Array.isArray(gd?.matches)?gd.matches:[];
+          for(const row of rows){
+            const h=normTeamName(row[0]), a=normTeamName(row[1]);
+            const found=all.find(m=>normTeamName(m?.home_team?.name)===h && normTeamName(m?.away_team?.name)===a);
+            if(found) matches.push({...found,league:{...(found.league||{}),name:filter}});
+          }
+        }catch(e){}
+      }
+    }else if(filter!=='ALL'&&lm?.id){
+      let d=null;
+      try{d=await api(`leagues/${encodeURIComponent(lm.id)}/matches?status=all`)}catch(e){d=null}
+      const source=Array.isArray(d?.matches)?d.matches:[];
+      matches=source.filter(m=>{
+        const md=m?.date||String(m?.time_utc||'').slice(0,10);
+        return md===date;
+      });
+      if(!matches.length){
+        try{
+          const gd=await api(`date/${date}?status=all`);
+          matches=(gd?.matches||[]).filter(m=>String(m?.league?.id)===String(lm.id));
+        }catch(e){}
+      }
+    }else{
+      const d=await api(`date/${date}?status=all`);
+      const allowedIds=new Set(Object.values(leagueMap).map(x=>String(x.id)));
+      matches=(d.matches||[]).filter(m=>allowedIds.has(String(m?.league?.id)));
     }
-  }else{
-    const d=await api(`date/${date}?status=all`);
-    const allowedIds=new Set(Object.values(leagueMap).map(x=>String(x.id)));
-    matches=(d.matches||[]).filter(m=>allowedIds.has(String(m?.league?.id)));
+
+    games=matches.map(m=>{
+      const target=isNL?filter:ALLOWED.find(n=>String(leagueMap[n]?.id)===String(m?.league?.id));
+      return {...m,league:{...(m.league||{}),name:target||filter||m.league?.name}};
+    });
+
+    games=await Promise.all(games.map(async m=>{
+      const fetchTeam=async(t)=>{
+        if(!t?.id||t.image_url)return t;
+        try{
+          const d=await api(`teams/${encodeURIComponent(t.id)}`);
+          const q=d?.team||d;
+          return {...t,...(q&&typeof q==='object'?q:{}),image_url:q?.image_url||q?.logo_url||q?.logo?.url||t.image_url||''};
+        }catch(e){return t}
+      };
+      return {...m,home_team:await fetchTeam(m.home_team),away_team:await fetchTeam(m.away_team)};
+    }));
+    games.sort((a,b)=>new Date(a.time_utc)-new Date(b.time_utc));
+
+    if(isNL && !games.length){
+      $('#status').innerHTML='<div class="status">Nations League: tämän päivän otteluita ei saatu PitchAPI:n otteludatasta.</div>';
+    }else{
+      $('#status').textContent=`${games.length} ottelua · PitchAPI`;
+    }
+    render();
+  }catch(e){
+    $('#status').innerHTML=`<div class="err">${esc(e.message)}<br><small>Julkisessa versiossa API-avain tulee Cloudflare Workerista — sitä ei tarvitse syöttää tähän selaimeen.</small></div>`;
   }
-  games=matches.map(m=>{const target=ALLOWED.find(n=>String(leagueMap[n]?.id)===String(m?.league?.id));return {...m,league:{...(m.league||{}),name:target||filter||m.league?.name}}});
-  games=await Promise.all(games.map(async m=>{const fetchTeam=async(t)=>{if(!t?.id||t.image_url)return t;try{const d=await api(`teams/${encodeURIComponent(t.id)}`);const q=d?.team||d;return {...t,...(q&&typeof q==='object'?q:{}),image_url:q?.image_url||q?.logo_url||q?.logo?.url||t.image_url||''};}catch(e){return t}};return {...m,home_team:await fetchTeam(m.home_team),away_team:await fetchTeam(m.away_team)}}));games.sort((a,b)=>new Date(a.time_utc)-new Date(b.time_utc));$('#status').textContent=`${games.length} ottelua · PitchAPI`;render()}catch(e){$('#status').innerHTML=`<div class="err">${esc(e.message)}<br><small>Julkisessa versiossa API-avain tulee Cloudflare Workerista — sitä ei tarvitse syöttää tähän selaimeen.</small></div>`}}
+}
+
 async function loadLeagueDateIndex(leagueName){
   const box=$('#v20Days');
   if(!box)return;
-  const lm=leagueMap[leagueName];
-  if(!lm){box.innerHTML='<div class="status">Sarjan ottelupäiviä ei löytynyt.</div>';return;}
   box.innerHTML='<div class="status">Ladataan sarjan ottelupäiviä…</div>';
   try{
-    const d=await api(`leagues/${encodeURIComponent(lm.id)}/matches?status=all`);
-    const dates=[...new Set((d.matches||[]).map(m=>m.date||String(m.time_utc||'').slice(0,10)).filter(Boolean))].filter(x=>x>=today()).sort();
-    window.__leagueDates=dates;
+    const lm=leagueMap[leagueName];
+    let dates=[];
+    if(lm?.id){
+      const d=await api(`leagues/${encodeURIComponent(lm.id)}/matches?status=all`);
+      dates=[...new Set((d.matches||[]).map(m=>m.date||String(m.time_utc||'').slice(0,10)).filter(Boolean))];
+    }
+    if(!dates.length && /^Nations League [ABC]$/.test(leagueName)){
+      dates=Object.keys(NL_FIXTURES).filter(d=>(NL_FIXTURES[d]||[]).some(x=>x[2]===leagueName));
+    }
+    window.__leagueDates=dates.filter(x=>x>=today()).sort();
     renderLeagueDates(document.querySelector('#date')?.value||today());
-  }catch(e){box.innerHTML='<div class="status">Ottelupäiviä ei saatu ladattua.</div>';console.warn(e)}
+  }catch(e){
+    const dates=Object.keys(NL_FIXTURES).filter(d=>(NL_FIXTURES[d]||[]).some(x=>x[2]===leagueName));
+    window.__leagueDates=dates.filter(x=>x>=today()).sort();
+    renderLeagueDates(document.querySelector('#date')?.value||today());
+  }
 }
 function renderLeagueDates(active){
   const box=$('#v20Days'); if(!box)return;
@@ -615,45 +759,12 @@ function renderLeagueDates(active){
     const iso=b.dataset.iso; const el=$('#date'); el.value=iso; el.dispatchEvent(new Event('change',{bubbles:true})); renderLeagueDates(iso);
   });
 }
-async function resolveMainLeague(leagueName){
-  if(leagueMap[leagueName]?.id) return leagueMap[leagueName];
-  if(!NATIONS_MAIN.includes(leagueName)) return null;
-  // Some catalogue versions expose UEFA Nations League only through the
-  // fixture feed. Resolve the exact A/B/C league from the selected date.
-  try{
-    const date=document.querySelector('#date')?.value||today();
-    const d=await api(`date/${date}?status=all`);
-    const matches=d?.matches||[];
-    const pat=MAIN_PATTERNS[leagueName]||[];
-    const hit=matches.find(m=>pat.some(re=>re.test(m?.league?.name||'')));
-    if(hit?.league?.id){
-      leagueMap[leagueName]={...hit.league};
-      return leagueMap[leagueName];
-    }
-    // If the provider uses a generic league name, use the division marker
-    // found in the match's round/group text when available.
-    const generic=matches.find(m=>/nations league/i.test(m?.league?.name||''));
-    if(generic?.league?.id && new RegExp(leagueName.slice(-1),'i').test(String(generic?.round_name||generic?.league?.name||''))){
-      leagueMap[leagueName]={...generic.league};
-      return leagueMap[leagueName];
-    }
-  }catch(e){console.warn('Nations League resolve failed',e)}
-  return null;
-}
 window.otbSelectLeague=async function(leagueName){
   filter=leagueName||'ALL';
   document.querySelectorAll('.league-tab').forEach(x=>x.classList.toggle('active',x.dataset.league===filter));
   if(filter==='ALL'){$('#out').innerHTML='<div class="status select-league-prompt">👆 Valitse ensin pääsarja tai muu sarja nähdäksesi ottelut.</div>';return;}
-  $('#status').textContent='Etsitään sarjan otteluita…';
-  if(!leagueMap[filter]?.id){
-    const resolved=await resolveMainLeague(filter);
-    if(!resolved){
-      $('#out').innerHTML='<div class="status">Nations League -sarjaa ei löytynyt PitchAPI:n tämän päivän otteludatasta. Muita sarjoja ei muutettu.</div>';
-      return;
-    }
-  }
   await loadLeagueDateIndex(filter);
-  await load();
+  load();
 };
 
 function render(){
@@ -1383,7 +1494,7 @@ $('#date').value=today();if(isPublicWorker())$('#setup').style.display='none';$(
       return;
     }
     window.otbSelectLeague(v);
-  });$('#date').onchange=async()=>{if(filter!=='ALL'){window.__leagueDates=window.__leagueDates||[]; await load(); if(window.__leagueDates.length) renderLeagueDates($('#date').value);}};$$('.f').forEach(b=>b.onclick=()=>{$$('.f').forEach(x=>x.classList.remove('active'));b.classList.add('active');filter=b.dataset.l;render()});setKeyUI(); loadLeagues().then(()=>{$('#out').innerHTML='<div class="status select-league-prompt">👆 Valitse ylhäältä sarja nähdäksesi ottelut.</div>';}).catch(e=>{$('#out').innerHTML='<div class="err">Sarjoja ei saatu ladattua: '+esc(e.message)+'</div>';});
+  });$('#date').onchange=()=>{if(filter!=='ALL')load();};$$('.f').forEach(b=>b.onclick=()=>{$$('.f').forEach(x=>x.classList.remove('active'));b.classList.add('active');filter=b.dataset.l;render()});setKeyUI(); loadLeagues().then(()=>{$('#out').innerHTML='<div class="status select-league-prompt">👆 Valitse ylhäältä sarja nähdäksesi ottelut.</div>';}).catch(e=>{$('#out').innerHTML='<div class="err">Sarjoja ei saatu ladattua: '+esc(e.message)+'</div>';});
 </script>
 <script id="v20-enhancements-js">
 (function(){
@@ -1599,11 +1710,4 @@ $('#date').value=today();if(isPublicWorker())$('#setup').style.display='none';$(
 })();
 </script>
 <style id="v40-long-pitch">.pitch{min-height:1700px!important;height:1700px!important;overflow:visible!important}.pitch .players{height:1700px!important;min-height:1700px!important}@media(max-width:600px){.pitch{min-height:1350px!important;height:1350px!important}.pitch .players{height:1350px!important;min-height:1350px!important}}</style>
-
-<script id="nations-league-v20-fix">
-// NL A/B/C are first-class player-analysis leagues. Existing main-league
-// rendering is reused, so OTB, shots, cards, fouls, headers, last-5 and shotmaps
-// all use the same data pipeline as PL/UCL/UEL/UECL.
-window.OTB_BUILD='v20-NL';
-</script>
 </body></html>
