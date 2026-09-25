@@ -907,6 +907,18 @@ function nlKickoffUTC(date,home,away){
 
 function normNL(v){return String(v||'').normalize('NFD').replace(/[\u0300-\u036f]/g,'').toLowerCase().replace(/[^a-z0-9]+/g,' ').trim()}
 function localISO(utc){try{return new Date(utc).toLocaleDateString('en-CA',{timeZone:Intl.DateTimeFormat().resolvedOptions().timeZone})}catch{return String(utc||'').slice(0,10)}}
+function localTime(utc){
+  if(!utc)return '—';
+  try{
+    return new Date(utc).toLocaleTimeString('fi-FI',{
+      hour:'2-digit',
+      minute:'2-digit',
+      hour12:false
+    });
+  }catch{
+    return String(utc).slice(11,16)||'—';
+  }
+}
 function nlBucket(date,home,away){
  const h=normNL(home),a=normNL(away);
  const row=(NL_FIXTURES[date]||[]).find(x=>normNL(x[0])===h&&normNL(x[1])===a);
