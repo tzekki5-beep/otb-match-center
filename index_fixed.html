@@ -2,7 +2,7 @@
 <html lang="fi">
 <head>
 <meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
-<meta name="theme-color" content="#071120"><title>OTB Match Center V33 – PitchAPI</title>
+<meta name="theme-color" content="#071120"><title>OTB Match Center V34 – PitchAPI</title>
 <style>
 :root{--bg:#071120;--card:#0d1a2e;--line:#29405f;--txt:#edf4ff;--muted:#93a8c5;--accent:#4389c8;--good:#39c98b;--bad:#ff7385}
 *{box-sizing:border-box}body{margin:0;background:var(--bg);color:var(--txt);font-family:system-ui,-apple-system,Segoe UI,Roboto,sans-serif}header{padding:18px 15px 13px;background:#081323;position:sticky;top:0;z-index:5;border-bottom:1px solid var(--line)}h1{font-size:27px;margin:0}.sub{color:var(--muted);margin-top:4px;line-height:1.35}.controls{display:flex;gap:8px;flex-wrap:wrap;margin-top:14px}button,input[type=date],input[type=password]{font:inherit;background:#102039;color:var(--txt);border:1px solid #2b4565;border-radius:12px;padding:10px 13px}button.active{background:var(--accent)}main{max-width:1150px;margin:auto;padding:15px}.status{color:var(--muted);margin-bottom:12px}.err{background:#391722;color:#ffbcc6;border:1px solid #713544;padding:12px;border-radius:12px}.setup{background:#0d1a2e;border:1px solid #29405f;border-radius:16px;padding:15px;margin-bottom:14px}.setup input{width:100%;margin:8px 0}.setup .row{display:flex;gap:8px}.setup .row button{flex:1}.ok{color:var(--good)}
@@ -743,6 +743,176 @@ window.otbSelectLeague=async function(leagueName){
 };
 
 
+const nlTeamHistoryCache=new Map();
+const nlTeamHistoryPromiseCache=new Map();
+
+function nlNameMatch(a,b){
+  const x=normName(a),y=normName(b);
+  if(!x||!y)return false;
+  if(x===y)return true;
+  const xt=x.split(' '),yt=y.split(' ');
+  const xl=xt[xt.length-1],yl=yt[yt.length-1];
+  if(xl&&yl&&xl===yl)return true;
+  return xt.length>1&&yt.length>1&&xt.slice(-2).join(' ')===yt.slice(-2).join(' ');
+}
+
+async function nlRecentTeamMatchesByName(teamName,cutoffTime){
+  const ck=normName(teamName)+':'+String(cutoffTime||'');
+  if(nlTeamHistoryCache.has(ck))return nlTeamHistoryCache.get(ck);
+  if(nlTeamHistoryPromiseCache.has(ck))return nlTeamHistoryPromiseCache.get(ck);
+
+  const promise=(async()=>{
+    const cutoff=Date.parse(cutoffTime||'9999-12-31T23:59:59Z');
+    const found=new Map();
+    const start=new Date(cutoff);
+    start.setUTCHours(0,0,0,0);
+    start.setUTCDate(start.getUTCDate()-1);
+
+    // One shared date scan per national team, stopping as soon as five
+    // finished matches are found. Unlike the old version, this does not scan
+    // 90 days separately for every player.
+    for(let offset=0;offset<120&&found.size<5;offset+=7){
+      const days=[];
+      for(let j=0;j<7&&offset+j<120;j++){
+        const d=new Date(start);
+        d.setUTCDate(start.getUTCDate()-offset-j);
+        days.push(d.toISOString().slice(0,10));
+      }
+      const results=await Promise.all(days.map(async day=>{
+        try{
+          const d=await api(`date/${day}?status=played`);
+          return Array.isArray(d?.matches)?d.matches:[];
+        }catch(e){return[]}
+      }));
+      for(const arr of results){
+        for(const g of arr){
+          if(g?.status!=='finished'||Date.parse(g.time_utc||'')>=cutoff)continue;
+          const hn=g.home_team?.name||'',an=g.away_team?.name||'';
+          if(nlNameMatch(teamName,hn)||nlNameMatch(teamName,an)){
+            found.set(String(g.id),g);
+          }
+        }
+      }
+    }
+    const out=[...found.values()]
+      .sort((a,b)=>Date.parse(b.time_utc)-Date.parse(a.time_utc))
+      .slice(0,5);
+    nlTeamHistoryCache.set(ck,out);
+    return out;
+  })();
+
+  nlTeamHistoryPromiseCache.set(ck,promise);
+  try{return await promise}finally{nlTeamHistoryPromiseCache.delete(ck)}
+}
+
+function nlFindPlayerInRows(rows,name){
+  for(const r of rows){
+    const map=r.players;
+    if(!map)continue;
+    for(const q of map.values()){
+      const qn=q?.player?.name||q?.name||q?.player_name||'';
+      if(nlNameMatch(name,qn))return q;
+    }
+  }
+  return null;
+}
+
+function nlFallbackHistory(hist,playerRef){
+  return hist.map(g=>({
+    otb:0,on:0,shotOn:0,all:0,headers:0,shots:[],
+    fouls:0,cards:0,cardsObj:{yellow:0,red:0},
+    opp:matchLabel(g),matchId:g.id,played:false
+  }));
+}
+
+async function hydrateStaticNLMatch(m){
+  if(m.__nlHydrating||m.__nlHydrated)return;
+  const pred=predictedNLFor(m);
+  if(!pred)return;
+  m.__nlHydrating=true;
+  const root=document.querySelector(`#p${m.id.replace(/[^a-zA-Z0-9_-]/g,'')}`);
+  if(!root)return;
+  const status=root.querySelector('.players .status');
+  if(status)status.textContent='Haetaan pelaajien viimeisiä 5 ottelua…';
+
+  try{
+    const [homeHist,awayHist]=await Promise.all([
+      nlRecentTeamMatchesByName(m.home_team?.name||'',m.time_utc),
+      nlRecentTeamMatchesByName(m.away_team?.name||'',m.time_utc)
+    ]);
+
+    const [homeRows,awayRows]=await Promise.all([
+      buildTeamHistoryRows(homeHist),
+      buildTeamHistoryRows(awayHist)
+    ]);
+
+    const resolveSide=async(names,rows,hist,homeSide,formation,teamName)=>{
+      const out=[];
+      for(const name of names){
+        const q=nlFindPlayerInRows(rows,name);
+        const ref=q||{name};
+        let vals=[];
+        try{vals=await buildHistoryRows(rows,ref)}
+        catch(e){vals=nlFallbackHistory(hist,ref)}
+        out.push({
+          ...(q||{}),
+          name:q?.player?.name||q?.name||name,
+          image_url:q?.player?.image_url||q?.image_url||'',
+          player_id:pid(q)||q?.player_id||null,
+          __history:vals
+        });
+      }
+      return out;
+    };
+
+    const [hs,as]=await Promise.all([
+      resolveSide(pred.home,homeRows,homeHist,true,pred.homeFormation,m.home_team?.name||''),
+      resolveSide(pred.away,awayRows,awayHist,false,pred.awayFormation,m.away_team?.name||'')
+    ]);
+
+    let inner='';
+    for(const q of place(hs,true,pred.homeFormation)){
+      const p=q.p; inner+=card(p,m.home_team?.id||'',m.id,q.x,q.y);
+    }
+    for(const q of place(as,false,pred.awayFormation)){
+      const p=q.p; inner+=card(p,m.away_team?.id||'',m.id,q.x,q.y);
+    }
+
+    root.querySelector('.players').innerHTML=inner;
+
+    const all=[...root.querySelectorAll('.p')];
+    const byName=new Map();
+    [...hs,...as].forEach(p=>byName.set(normName(pName(p)),p));
+    all.forEach(el=>{
+      const nm=normName(el.dataset.playerName||el.querySelector('.name')?.textContent||'');
+      const p=byName.get(nm)||[...byName.values()].find(q=>nlNameMatch(q?.name||q?.player?.name||'',el.dataset.playerName||''));
+      if(!p)return;
+      const id=pid(p);
+      el._history=Array.isArray(p.__history)?p.__history:[];
+      if(id){
+        el.dataset.playerId=String(id);
+        el.dataset.id=String(id);
+        const face=el.querySelector('.face');
+        const u=img(p);
+        if(face&&u){face.src=u;face.dataset.pid=String(id);face.style.visibility='visible'}
+      }
+      const mode=document.querySelector(`[data-stat-bar="${CSS.escape(String(m.id))}"]`)?.dataset.mode||'otb';
+      renderPlayerStat(el,mode);
+    });
+
+    const note=root.parentElement.querySelector('.note');
+    if(note)note.textContent='🟢 Pelaajien viimeiset 5 ottelua ladattu · OTB = boxin ulkopuolelta · paina pelaajaa avataksesi tarkat laukaus- ja raakadatat.';
+    m.__nlHydrated=true;
+    window.dispatchEvent(new CustomEvent('otb-history-ready',{detail:{matchId:m.id}}));
+  }catch(e){
+    console.warn('NL static hydrate',e);
+    const note=root.parentElement.querySelector('.note');
+    if(note)note.textContent='🟡 Ennakoitu kokoonpano näkyy. Viimeisten 5 ottelun dataa ei saatu ladattua juuri nyt.';
+  }finally{
+    m.__nlHydrating=false;
+  }
+}
+
 function renderStaticNLMatch(m){
   const pred=predictedNLFor(m);
   let inner='';
@@ -752,17 +922,58 @@ function renderStaticNLMatch(m){
     for(const q of place(hs,true,pred.homeFormation))inner+=card(q.p,m.home_team?.id||'',m.id,q.x,q.y);
     for(const q of place(as,false,pred.awayFormation))inner+=card(q.p,m.away_team?.id||'',m.id,q.x,q.y);
   }else{
-    inner='<div class="status" style="padding:20px;text-align:center">Ottelun oikeaa PitchAPI match ID:tä ei löytynyt vielä. Pelaajien oikeat kuvat, viimeiset 5 ottelua ja laukaisutilastot aktivoituvat heti kun PitchAPI palauttaa tämän ottelun.</div>';
+    inner='<div class="status" style="padding:20px;text-align:center">Ennakoitua kokoonpanoa ei ole vielä lisätty tähän otteluun.</div>';
   }
-  return `<section class="match">
+  return `<section class="match nl-static-match" data-nl-match="${esc(m.id)}">
     <div class="mh"><div class="mh-team"><div class="mh-team-text"><div class="teams">${esc(m.home_team?.name||'Kotijoukkue')}</div><div class="lg">${esc(m.league?.name||'')}</div></div></div>
     <div class="tm">${localTime(m.time_utc)}</div>
     <div class="mh-team away"><div class="mh-team-text"><div class="teams">${esc(m.away_team?.name||'Vierasjoukkue')}</div></div></div></div>
-    <div class="pitch" id="p${m.id.replace(/[^a-zA-Z0-9_-]/g,'')}"><div class="goal g1"></div><div class="goal g2"></div><span class="corner tl"></span><span class="corner tr"></span><span class="corner bl"></span><span class="corner br"></span><span class="centerDot"></span><div class="players">${inner}</div></div>
-    <div class="note">${pred?'🟡 Ennakoitu kokoonpano · lähde on ulkoinen arvio, ei vielä PitchAPI:n virallinen/predicted lineup.':'ℹ️ UEFA:n ottelu näkyy, mutta PitchAPI:n oikeaa match ID:tä ei ole vielä saatavilla.'}</div>
+    <div class="player-stat-bar" data-stat-bar="${esc(m.id)}" data-mode="otb">
+      <div class="player-stat-caption">Pelaajien viimeiset 5 ottelua · valitse näytettävä tilasto</div>
+      <button class="player-stat-btn active" data-stat="otb">OTB / OTB kohti</button>
+      <button class="player-stat-btn" data-stat="shots">Laukaukset</button>
+      <button class="player-stat-btn" data-stat="cards">Kortit</button>
+      <button class="player-stat-btn" data-stat="fouls">Rikkeet</button>
+      <button class="player-stat-btn" data-stat="headers">Pääpallot</button>
+      <button class="player-stat-btn" data-stat="all">Kaikki laukaukset</button>
+      <span class="stat-mode-label">Viimeiset 5</span>
+    </div>
+    <div class="pitch" id="p${m.id.replace(/[^a-zA-Z0-9_-]/g,'')}">
+      <div class="goal g1"></div><div class="goal g2"></div>
+      <span class="corner tl"></span><span class="corner tr"></span><span class="corner bl"></span><span class="corner br"></span>
+      <span class="centerDot"></span><div class="players">${inner}</div>
+    </div>
+    <div class="note">${pred?'🟡 Ennakoitu kokoonpano · haetaan pelaajien kuvat ja viimeiset 5 ottelua taustalla…':'ℹ️ Ennakoitua kokoonpanoa ei ole vielä lisätty tähän otteluun.'}</div>
   </section>`;
 }
+
+function initStaticNLHydration(list){
+  const staticList=list.filter(m=>m.__nlStatic&&predictedNLFor(m));
+  if(!staticList.length)return;
+
+  const startVisible=()=>{
+    const observer='IntersectionObserver' in window?new IntersectionObserver(entries=>{
+      entries.forEach(e=>{
+        if(e.isIntersecting){
+          const id=e.target.dataset.nlMatch;
+          const m=staticList.find(x=>String(x.id)===String(id));
+          if(m)hydrateStaticNLMatch(m);
+          observer.unobserve(e.target);
+        }
+      });
+    },{rootMargin:'700px 0px'}):null;
+
+    staticList.forEach(m=>{
+      const el=document.querySelector(`[data-nl-match="${CSS.escape(String(m.id))}"]`);
+      if(!el)return;
+      if(observer)observer.observe(el);
+      else hydrateStaticNLMatch(m);
+    });
+  };
+  requestAnimationFrame(startVisible);
+}
 function render(){
+
   if(filter==='ALL'){
     $('#out').innerHTML='<div class="status select-league-prompt">👆 Valitse ylhäältä sarja nähdäksesi ottelut.</div>';
     return;
@@ -772,6 +983,11 @@ function render(){
   if(MAIN_SET.has(filter)){
     $('#out').innerHTML=list.map(m=>m.__nlStatic?renderStaticNLMatch(m):`<section class="match"><div class="mh"><div class="mh-team"><div class="mh-team-text"><div class="teams">${esc(m.home_team?.name||'Kotijoukkue')}</div><div class="lg">${esc(m.league?.name||'')}</div></div>${m.home_team?.image_url?`<img class="mh-logo" src="${esc(m.home_team.image_url)}" alt="">`:''}</div><div class="tm">${localTime(m.time_utc)}${m.status==='finished'?' · '+m.score_home+'–'+m.score_away:''}</div><div class="mh-team away">${m.away_team?.image_url?`<img class="mh-logo" src="${esc(m.away_team.image_url)}" alt="">`:''}<div class="mh-team-text"><div class="teams">${esc(m.away_team?.name||'Vierasjoukkue')}</div></div></div></div><div class="player-stat-bar" data-stat-bar="${esc(m.id)}" data-mode="otb"><div class="player-stat-caption">Pelaajien viimeiset 5 ottelua · valitse näytettävä tilasto</div><button class="player-stat-btn active" data-stat="otb">OTB / OTB kohti</button><button class="player-stat-btn" data-stat="shots">Laukaukset</button><button class="player-stat-btn" data-stat="cards">Kortit</button><button class="player-stat-btn" data-stat="fouls">Rikkeet</button><button class="player-stat-btn" data-stat="headers">Pääpallot</button><button class="player-stat-btn" data-stat="all">Kaikki laukaukset</button><span class="stat-mode-label">Viimeiset 5</span></div><div class="pitch" id="p${m.id.replace(/[^a-zA-Z0-9_-]/g,'')}">${m.home_team?.image_url?`<img class="pitch-team-logo home" src="${esc(m.home_team.image_url)}" alt="">`:''}${m.away_team?.image_url?`<img class="pitch-team-logo away" src="${esc(m.away_team.image_url)}" alt="">`:''}<div class="goal g1"></div><div class="goal g2"></div><span class="corner tl"></span><span class="corner tr"></span><span class="corner bl"></span><span class="corner br"></span><span class="centerDot"></span><div class="players"><div class="status">Ladataan kokoonpanoa…</div></div></div><div class="note">OUT = boxin ulkopuolelta · pelaajaa painamalla näet tarkat tilastot.</div></section>`).join('');
     list.filter(m=>!m.__nlStatic).forEach(m=>loadGame(m,false));
+    initStaticNLHydration(list);
+    list.filter(m=>m.__nlStatic).forEach(m=>{
+      const pitch=document.querySelector(`#p${m.id.replace(/[^a-zA-Z0-9_-]/g,'')}`);
+      if(pitch)pitch.querySelectorAll('.p').forEach(el=>el.onclick=()=>openPlayer(el.dataset.playerId||'',el.dataset.playerName||el.querySelector('.name')?.textContent||'?',el.dataset.team,m.league?.name,m.time_utc));
+    });
     if(lineupRefreshTimer)clearInterval(lineupRefreshTimer);
     lineupRefreshTimer=setInterval(()=>{if(document.visibilityState==='hidden')return;list.filter(m=>!m.__nlStatic&&m.status!=='finished').forEach(m=>loadGame(m,true));},300000);
   }else{
