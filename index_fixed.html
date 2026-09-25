@@ -455,7 +455,7 @@ html,body{overflow-x:hidden}
 .predicted-static .nums{font-size:10px!important;color:#ffd84a!important;text-align:center;font-weight:900;line-height:1.25;min-width:105px}
 .predicted-static .pred-mini{color:#d8e7ea;font-size:9px}
 </style>
-</head><body>
+<style id="v29-no-hang">.lineup-status.predicted{min-height:28px}.predicted-static{pointer-events:auto;cursor:pointer}</style></head><body>
 
 <div style="margin:8px 0;padding:8px 10px;border-radius:9px;background:rgba(16,43,44,.75);font-size:12px;opacity:.85">
   OTB Match Center · julkinen web-versio
@@ -551,26 +551,24 @@ function today(){let d=new Date();return new Date(d-d.getTimezoneOffset()*60000)
 function esc(s){return String(s??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]))}
 function isPublicWorker(){return location.hostname.endsWith('.workers.dev')}
 function key(){return localStorage.getItem('otb_pitch_key')||''}
-async function api(path){const k=key();const headers={};if(k)headers['X-API-KEY']=k;const r=await fetch(API+path,{headers,cache:'no-store'});let d=null;try{d=await r.json()}catch{}if(!r.ok){const msg=d?.error?.message||d?.error?.code||('HTTP '+r.status); if(isPublicWorker() && (r.status===401 || r.status===403)) throw Error('Cloudflare-proxy ei saanut PitchAPI-avainta. Tarkista Cloudflaren PITCHAPI_KEY-secret.'); throw Error(msg)}if(d?.error)throw Error(d.error.message||d.error.code||'API-virhe');return d.data}
-function matchLabel(m){return `${m.home_team?.name||''} – ${m.away_team?.name||''}`}
-function localTime(utc){if(!utc)return '';return new Date(utc).toLocaleTimeString('fi-FI',{hour:'2-digit',minute:'2-digit'})}
-function setKeyUI(){if(isPublicWorker()){$('#setup').style.display='none';return}const k=key();$('#key').value=k;$('#setup').style.display=k?'none':'block';if(k)$('#keymsg').innerHTML='<span class="ok">API-avain tallennettu tähän selaimeen.</span>'}
-$('#save').onclick=()=>{const v=$('#key').value.trim();if(!v){$('#keymsg').textContent='Syötä API-avain.';return}localStorage.setItem('otb_pitch_key',v);setKeyUI();load()};
-$('#clear').onclick=()=>{localStorage.removeItem('otb_pitch_key');setKeyUI();$('#status').textContent='API-avain poistettu.';$('#out').innerHTML=''};
-async function loadLeagues(){
-  const d=await api('leagues');
-  const arr=d.leagues||[];
-  leagueMap={};
-  for(const wanted of MAIN_LEAGUES){
-    const x=arr.find(l=>(MAIN_PATTERNS[wanted]||[]).some(re=>re.test(l.name||'')));
-    if(x) leagueMap[wanted]=x;
-  }
-  for(const l of arr){
-    if(!l?.id||!l?.name) continue;
-    const already=Object.values(leagueMap).some(x=>String(x.id)===String(l.id));
-    if(!already) leagueMap[l.name]=l;
-  }
-  populateLeagueSelector();
+async function api(path,timeoutMs=9000){
+  const k=key(),headers={}; if(k)headers['X-API-KEY']=k;
+  const ctl=new AbortController(),timer=setTimeout(()=>ctl.abort(),timeoutMs);
+  try{
+    const r=await fetch(API+path,{headers,cache:'no-store',signal:ctl.signal});
+    let d=null; try{d=await r.json()}catch{}
+    if(!r.ok){
+      const msg=d?.error?.message||d?.error?.code||('HTTP '+r.status);
+      if(isPublicWorker()&&(r.status===401||r.status===403))
+        throw Error('Cloudflare-proxy ei saanut PitchAPI-avainta. Tarkista Cloudflaren PITCHAPI_KEY-secret.');
+      throw Error(msg);
+    }
+    if(d?.error)throw Error(d.error.message||d.error.code||'API-virhe');
+    return d.data;
+  }catch(e){
+    if(e?.name==='AbortError')throw Error('API-aikakatkaisu');
+    throw e;
+  }finally{clearTimeout(timer)}
 }
 
 /* Nations League: official fixture identification only. Never invent player data. */
@@ -691,7 +689,7 @@ const NL_FIXTURES={
 /* v26: researched predicted XIs for Nations League 25.09.2026.
    Fallback only: never presented as official. When PitchAPI starts returning
    a real match ID, the normal lineup endpoint takes over automatically. */
-const NL_PREDICTED_2026_09_25 = {
+const NL_PREDICTED = {
   'Georgia – Northern Ireland': {
     source:'Oddschecker / Sportsgambler',
     homeFormation:'3-5-1-1', awayFormation:'3-4-2-1',
@@ -740,11 +738,18 @@ const NL_PREDICTED_2026_09_25 = {
     home:['Balsa Popovic','Marko Vesovic','Milan Roganovic','Slobodan Rubezic','Risto Radunovic','Vasilije Adzic','Andrija Bulatovic','Stefan Loncar','Milutin Osmajic','Nikola Krstovic','Stevan Jovetic'],
     away:['Neophytos Michael','Andreas Shikkis','Christos Sielis','Konstantinos Laifis','Andreas Panagiotou','Loizos Loizou','Hector Kyprianou','Grigoris Kastanos','Marinos Tzionis','Ioannis Pittas','Marcus Edwards']
   }
+  ,'North Macedonia – Switzerland': {
+    source:'Tipico / Infobetting (päivitetty 25.09.2026)',
+    homeFormation:'3-4-1-2', awayFormation:'4-2-3-1',
+    home:['Stole Dimitrievski','Gjoko Zajkov','Visar Musliu','Aleksandar Stojchevski','Bojan Ilievski','Aleksandar Trajkovski','Enis Bardhi','Ezgjan Alioski','Eljif Elmas','Bojan Miovski','Elmin Rastoder'],
+    away:['Gregor Kobel','Martin Athekame','Nico Elvedi','Manuel Akanji','Ricardo Rodriguez','Remo Freuler','Ardon Jashari','Dan Ndoye','Fabian Rieder','Johan Manzambi','Zeki Amdouni']
+  }
+
 };
 
 function nlPredictedKey(home,away){ return `${home} – ${away}`; }
 function predictedNLFor(m){
-  return NL_PREDICTED_2026_09_25[nlPredictedKey(m?.home_team?.name,m?.away_team?.name)] || null;
+  return NL_PREDICTED[nlPredictedKey(m?.home_team?.name,m?.away_team?.name)] || null;
 }
 
 /* v27: hydrate predicted Nations League players from their recent real matches.
@@ -947,6 +952,42 @@ function populateLeagueSelector(){
     if(others.includes(old))otherSel.value=old;
   }
 }
+
+async function getExactNationsLeagueMatches(date,leagueName){
+  // PitchAPI supports upcoming league fixtures. Resolve the exact A/B/C league
+  // first; do not use the first generic "Nations League" entry.
+  try{
+    if(!Object.keys(leagueMap).length) await loadLeagues();
+  }catch(e){}
+  const lm=leagueMap[leagueName];
+  if(lm?.id){
+    try{
+      const d=await api(`leagues/${encodeURIComponent(lm.id)}/matches?status=upcoming`);
+      const arr=Array.isArray(d?.matches)?d.matches:[];
+      const exact=arr.filter(m=>(m?.date||localISO(m?.time_utc))===date);
+      if(exact.length)return exact.map(m=>({...m,league:{...(m.league||{}),name:leagueName}}));
+    }catch(e){console.warn('Exact NL league upcoming failed',leagueName,e)}
+    try{
+      const d=await api(`leagues/${encodeURIComponent(lm.id)}/matches?status=all`);
+      const arr=Array.isArray(d?.matches)?d.matches:[];
+      const exact=arr.filter(m=>(m?.date||localISO(m?.time_utc))===date);
+      if(exact.length)return exact.map(m=>({...m,league:{...(m.league||{}),name:leagueName}}));
+    }catch(e){console.warn('Exact NL league all failed',leagueName,e)}
+  }
+  // A day feed is the second real-ID source.
+  try{
+    const gd=await api(`date/${date}?status=all`);
+    const raw=Array.isArray(gd?.matches)?gd.matches:[];
+    const exact=raw.filter(m=>{
+      const md=m?.date||localISO(m?.time_utc);
+      const bucket=nlBucket(md,m?.home_team?.name,m?.away_team?.name);
+      return md===date && bucket===leagueName;
+    });
+    if(exact.length)return exact.map(m=>({...m,league:{...(m.league||{}),name:leagueName}}));
+  }catch(e){console.warn('NL date feed failed',e)}
+  return [];
+}
+
 async function load(){
   if(!key()&&!isPublicWorker()){setKeyUI();$('#status').textContent='Lisää ensin PitchAPI-avain.';return}
   $('#out').innerHTML=''; $('#status').textContent='Haetaan päivän ottelut…';
@@ -954,38 +995,11 @@ async function load(){
     const date=$('#date').value;
     let matches=[];
     if(isNLFilter(filter)){
-      // One fast source first: the day's provider feed. Do not block on the
-      // provider league catalogue. If it contains NL matches, use their real IDs.
-      try{
-        const gd=await api(`date/${date}?status=all`);
-        const raw=Array.isArray(gd?.matches)?gd.matches:[];
-        matches=raw.map(m=>{
-          const md=m?.date||localISO(m?.time_utc);
-          const bucket=nlBucket(md,m?.home_team?.name,m?.away_team?.name);
-          return md===date&&bucket===filter?{...m,league:{...(m.league||{}),name:filter}}:null;
-        }).filter(Boolean);
-      }catch(e){console.warn('NL date feed failed',e)}
-      // If provider does expose a generic NL competition, try it only when
-      // the day feed returned nothing. This keeps the normal path fast.
-      if(!matches.length){
-        try{
-          const d=await api('leagues');
-          const arr=d?.leagues||[];
-          const nl=arr.find(l=>/nations league/i.test(l?.name||''));
-          if(nl?.id){
-            const nd=await api(`leagues/${encodeURIComponent(nl.id)}/matches?status=all`);
-            matches=(nd?.matches||[]).map(m=>{
-              const md=m?.date||localISO(m?.time_utc);
-              const bucket=nlBucket(md,m?.home_team?.name,m?.away_team?.name);
-              return md===date&&bucket===filter?{...m,league:{...(m.league||{}),name:filter}}:null;
-            }).filter(Boolean);
-          }
-        }catch(e){console.warn('NL league fallback failed',e)}
-      }
-      // Last resort: show the official fixture list, but mark these as static.
-      // No player/lineup statistics are fabricated.
+      matches=await getExactNationsLeagueMatches(date,filter);
+      // Only if PitchAPI has no real match ID, show the UEFA fixture fallback.
+      // Crucially: no 90-day history scan and no endless player-data spinner.
       if(!matches.length) matches=staticNLMatches(date,filter);
-    }else{
+        }else{
       await loadLeagues();
       const lm=leagueMap[filter];
       if(filter!=='ALL'&&lm?.id){
@@ -1068,13 +1082,21 @@ function render(){
         };
         return `<section class="match">
           <div class="mh"><div class="mh-team"><div class="mh-team-text"><div class="teams">${esc(hKey)}</div><div class="lg">${esc(m.league?.name||filter)}</div></div></div><div class="tm">${localTime(m.time_utc)}</div><div class="mh-team away"><div class="mh-team-text"><div class="teams">${esc(aKey)}</div></div></div></div>
-          <div class="lineup-status predicted">${p?'🟡 Arvioitu avauskokoonpano':'🔵 Haetaan viimeisintä oikeaa kokoonpanoa'} · pelaajien kuvat ja viimeisten 5 ottelun data ladataan erikseen</div>
+          <div class="lineup-status predicted">${p?'🟡 Arvioitu avauskokoonpano':'🔵 UEFA:n vahvistama ottelu · PitchAPI match ID:tä odotetaan'} · ei jää roikkumaan taustahakuun</div>
           <div class="pitch" id="p${safeId}"><div class="goal g1"></div><div class="goal g2"></div><span class="corner tl"></span><span class="corner tr"></span><span class="corner bl"></span><span class="corner br"></span><span class="centerDot"></span><div class="players">${predCards(home,true,p?.homeFormation,hKey)}${predCards(away,false,p?.awayFormation,aKey)}</div></div>
-          <div class="note">⏳ Haetaan pelaajien oikeat viimeiset 5 ottelua, kuvat ja tilastot…</div>
+          <div class="note">🟡 Arvioitu kokoonpano. Pelaajatilastot aktivoituvat, kun ottelulle löytyy oikea PitchAPI match ID.</div>
         </section>`;
       }).join('');
-      // Hydrate each match independently so one slow source cannot block the others.
-      list.filter(m=>m.__nlStatic).forEach(m=>hydrateStaticNLPitch(m).catch(()=>{}));
+      // Static UEFA fallback has no PitchAPI match ID. Do NOT start a huge
+      // historical scan here. It made the previous version spin indefinitely.
+      // Real player images/stats are loaded only when a real match ID exists.
+      list.filter(m=>m.__nlStatic).forEach(m=>{
+        const note=m.__predictedNL
+          ? '🟡 Arvioitu XI näytetään. Pelaajakuvat ja viimeisten 5 ottelun tilastot odottavat PitchAPI:n oikeaa match ID:tä.'
+          : 'ℹ️ UEFA:n ottelu näkyy, mutta PitchAPI ei vielä palauttanut tälle ottelulle match ID:tä.';
+        const sec=document.querySelector(`#p${m.id.replace(/[^a-zA-Z0-9_-]/g,'')}`)?.closest('.match');
+        if(sec){const n=sec.querySelector('.note');if(n)n.textContent=note;}
+      });
       if(lineupRefreshTimer)clearInterval(lineupRefreshTimer);
       lineupRefreshTimer=setInterval(()=>{if(document.visibilityState!=='hidden')load();},300000);
       return;
