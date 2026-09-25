@@ -432,6 +432,10 @@ html,body{overflow-x:hidden}
 .p .nums .high{font-size:18px!important;padding:0 4px!important}
 @media(max-width:600px){.p .nums,.p .player-stat-values{font-size:14px!important;min-height:32px!important}.p .nums .statlabel{font-size:10px!important}.p .nums .statvals{font-size:14px!important}.p .nums .high{font-size:15px!important}}
 </style>
+
+<style id="nl-v23-css">
+.nl-data-limited{border:1px solid #8b7b3d!important;background:rgba(62,55,18,.28)!important}
+</style>
 </head><body>
 
 <div style="margin:8px 0;padding:8px 10px;border-radius:9px;background:rgba(16,43,44,.75);font-size:12px;opacity:.85">
@@ -528,7 +532,7 @@ function today(){let d=new Date();return new Date(d-d.getTimezoneOffset()*60000)
 function esc(s){return String(s??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]))}
 function isPublicWorker(){return location.hostname.endsWith('.workers.dev')}
 function key(){return localStorage.getItem('otb_pitch_key')||''}
-async function api(path){const k=key();const headers={};if(k)headers['X-API-KEY']=k;const r=await fetch(API+path,{headers,cache:'no-store'});let d=null;try{d=await r.json()}catch{}if(!r.ok){const msg=d?.error?.message||d?.error?.code||('HTTP '+r.status); if(isPublicWorker() && (r.status===401 || r.status===403)) throw Error('Cloudflare-proxy ei saanut PitchAPI-avainta. Tarkista Cloudflaren PITCHAPI_KEY-secret.'); throw Error(msg)}if(d?.error)throw Error(d.error.message||d.error.code||'API-virhe');return d.data}
+async function api(path,opts={}){const k=key();const headers={};if(k)headers['X-API-KEY']=k;const controller=new AbortController();const timer=setTimeout(()=>controller.abort(),opts.timeout||8000);try{const r=await fetch(API+path,{headers,cache:'no-store',signal:controller.signal});let d=null;try{d=await r.json()}catch{}if(!r.ok){const msg=d?.error?.message||d?.error?.code||('HTTP '+r.status); if(isPublicWorker() && (r.status===401 || r.status===403)) throw Error('Cloudflare-proxy ei saanut PitchAPI-avainta. Tarkista Cloudflaren PITCHAPI_KEY-secret.'); throw Error(msg)}if(d?.error)throw Error(d.error.message||d.error.code||'API-virhe');return d.data}catch(e){if(e?.name==='AbortError')throw Error('Pyyntö aikakatkaistiin (8 s).');throw e}finally{clearTimeout(timer)}}
 function matchLabel(m){return `${m.home_team?.name||''} – ${m.away_team?.name||''}`}
 function localTime(utc){if(!utc)return '';return new Date(utc).toLocaleTimeString('fi-FI',{hour:'2-digit',minute:'2-digit'})}
 function setKeyUI(){if(isPublicWorker()){$('#setup').style.display='none';return}const k=key();$('#key').value=k;$('#setup').style.display=k?'none':'block';if(k)$('#keymsg').innerHTML='<span class="ok">API-avain tallennettu tähän selaimeen.</span>'}
@@ -624,57 +628,79 @@ async function load(){
   $('#out').innerHTML='';
   $('#status').textContent='Haetaan päivän ottelut…';
   try{
-    await loadLeagues();
     const date=$('#date').value;
-    let matches=[];
     const isNL=/^Nations League [ABC]$/.test(filter);
-    const lm=leagueMap[filter];
 
+    // Nations League: do NOT wait for the full league catalogue first.
+    // PitchAPI may not expose NL as a league, so one date request is the
+    // fastest and least error-prone test for real match IDs.
     if(isNL){
-      // 1) Use the provider's league endpoint if the Nations League exists
-      // in its league catalogue.
-      if(lm?.id){
-        try{
-          const d=await api(`leagues/${encodeURIComponent(lm.id)}/matches?status=all`);
-          const source=Array.isArray(d?.matches)?d.matches:[];
-          matches=source.filter(m=>{
-            const md=m?.date||String(m?.time_utc||'').slice(0,10);
-            return md===date;
-          });
-        }catch(e){}
+      let matches=[];
+      try{
+        const gd=await api(`date/${date}?status=all`,{timeout:8000});
+        const all=Array.isArray(gd?.matches)?gd.matches:[];
+        matches=all.map(m=>{
+          const bucket=nlPairForDate(date,m?.home_team?.name,m?.away_team?.name);
+          const providerName=String(m?.league?.name||m?.competition?.name||'');
+          if(isNationsLeagueMatch(m) && bucket===filter) return {...m,league:{...(m.league||{}),name:filter}};
+          // Some providers use a generic competition label; the official
+          // fixture pair/date is used only to classify an already-returned
+          // PitchAPI match. No fake player data is created.
+          if(bucket===filter && m?.id) return {...m,league:{...(m.league||{}),name:filter}};
+          return null;
+        }).filter(Boolean);
+      }catch(e){
+        console.warn('Nations League date lookup:',e);
       }
 
-      // 2) Important fallback: PitchAPI's global date catalogue may contain
-      // Nations League games even when /leagues does not expose the competition.
-      if(!matches.length){
-        try{
-          const gd=await api(`date/${date}?status=all`);
-          const all=Array.isArray(gd?.matches)?gd.matches:[];
-          matches=all.map(m=>{
-            if(!isNationsLeagueMatch(m)) return null;
-            const bucket=nlPairForDate(date,m?.home_team?.name,m?.away_team?.name);
-            if(bucket && bucket===filter) return {...m,league:{...(m.league||{}),name:filter}};
-            return null;
-          }).filter(Boolean);
-        }catch(e){}
+      // If PitchAPI really returned the fixture, use its real match ID and
+      // the normal lineup/history/player-stat pipeline.
+      if(matches.length){
+        games=matches.map(m=>({...m,league:{...(m.league||{}),name:filter}}));
+        games=await Promise.all(games.map(async m=>{
+          const fetchTeam=async(t)=>{
+            if(!t?.id||t.image_url)return t;
+            try{const d=await api(`teams/${encodeURIComponent(t.id)}`,{timeout:5000});const q=d?.team||d;return {...t,...(q&&typeof q==='object'?q:{}),image_url:q?.image_url||q?.logo_url||q?.logo?.url||t.image_url||''};}catch(e){return t}
+          };
+          return {...m,home_team:await fetchTeam(m.home_team),away_team:await fetchTeam(m.away_team)};
+        }));
+        games.sort((a,b)=>new Date(a.time_utc)-new Date(b.time_utc));
+        $('#status').textContent=`${games.length} ottelua · PitchAPI`;
+        render();
+        return;
       }
 
-      // 3) Final schedule fallback for the currently known 2026 matchdays.
-      // This creates no fake stats: it only keeps the date/teams visible if
-      // the provider returns a matching fixture without a usable competition name.
-      if(!matches.length && NL_FIXTURES[date]){
-        const rows=NL_FIXTURES[date].filter(x=>x[2]===filter);
-        try{
-          const gd=await api(`date/${date}?status=all`);
-          const all=Array.isArray(gd?.matches)?gd.matches:[];
-          for(const row of rows){
-            const h=normTeamName(row[0]), a=normTeamName(row[1]);
-            const found=all.find(m=>normTeamName(m?.home_team?.name)===h && normTeamName(m?.away_team?.name)===a);
-            if(found) matches.push({...found,league:{...(found.league||{}),name:filter}});
-          }
-        }catch(e){}
+      // Honest fixture fallback: show the UEFA-confirmed fixture list so the
+      // date/competition navigation works, but NEVER invent match IDs or
+      // player statistics. Such cards are explicitly marked data-limited.
+      const rows=(NL_FIXTURES[date]||[]).filter(x=>x[2]===filter);
+      if(rows.length){
+        games=rows.map((x,i)=>({
+          id:`nl-fixture-${date}-${filter.replace(/[^A-Z]/gi,'').toLowerCase()}-${i}`,
+          date,
+          time_utc:null,
+          status:'not_started',
+          score_home:null,score_away:null,
+          home_team:{name:x[0]},away_team:{name:x[1]},
+          league:{name:filter},
+          __nlFixtureOnly:true
+        }));
+        $('#status').innerHTML=`<div class="status">⚠️ ${games.length} Nations League -ottelua löytyi virallisesta otteluohjelmasta, mutta PitchAPI ei palauttanut niille otteludataa. Otteluita ei piiloteta eikä pelaajatilastoja keksitä.</div>`;
+        render();
+        return;
       }
-    }else if(filter!=='ALL'&&lm?.id){
+
+      games=[];
+      $('#status').textContent='Tälle päivälle ei ole tunnettuja Nations League -otteluita.';
+      render();
+      return;
+    }
+
+    // Original working logic for all non-Nations-League competitions.
+    await loadLeagues();
+    let matches=[];
+    const lm=leagueMap[filter];
+    if(filter!=='ALL'&&lm?.id){
       let d=null;
       try{d=await api(`leagues/${encodeURIComponent(lm.id)}/matches?status=all`)}catch(e){d=null}
       const source=Array.isArray(d?.matches)?d.matches:[];
@@ -695,10 +721,9 @@ async function load(){
     }
 
     games=matches.map(m=>{
-      const target=isNL?filter:ALLOWED.find(n=>String(leagueMap[n]?.id)===String(m?.league?.id));
+      const target=ALLOWED.find(n=>String(leagueMap[n]?.id)===String(m?.league?.id));
       return {...m,league:{...(m.league||{}),name:target||filter||m.league?.name}};
     });
-
     games=await Promise.all(games.map(async m=>{
       const fetchTeam=async(t)=>{
         if(!t?.id||t.image_url)return t;
@@ -711,18 +736,12 @@ async function load(){
       return {...m,home_team:await fetchTeam(m.home_team),away_team:await fetchTeam(m.away_team)};
     }));
     games.sort((a,b)=>new Date(a.time_utc)-new Date(b.time_utc));
-
-    if(isNL && !games.length){
-      $('#status').innerHTML='<div class="status">Nations League: tämän päivän otteluita ei saatu PitchAPI:n otteludatasta.</div>';
-    }else{
-      $('#status').textContent=`${games.length} ottelua · PitchAPI`;
-    }
+    $('#status').textContent=`${games.length} ottelua · PitchAPI`;
     render();
   }catch(e){
     $('#status').innerHTML=`<div class="err">${esc(e.message)}<br><small>Julkisessa versiossa API-avain tulee Cloudflare Workerista — sitä ei tarvitse syöttää tähän selaimeen.</small></div>`;
   }
 }
-
 async function loadLeagueDateIndex(leagueName){
   const box=$('#v20Days');
   if(!box)return;
@@ -730,12 +749,11 @@ async function loadLeagueDateIndex(leagueName){
   try{
     const lm=leagueMap[leagueName];
     let dates=[];
-    if(lm?.id){
+    if(/^Nations League [ABC]$/.test(leagueName)){
+      dates=Object.keys(NL_FIXTURES).filter(d=>(NL_FIXTURES[d]||[]).some(x=>x[2]===leagueName));
+    }else if(lm?.id){
       const d=await api(`leagues/${encodeURIComponent(lm.id)}/matches?status=all`);
       dates=[...new Set((d.matches||[]).map(m=>m.date||String(m.time_utc||'').slice(0,10)).filter(Boolean))];
-    }
-    if(!dates.length && /^Nations League [ABC]$/.test(leagueName)){
-      dates=Object.keys(NL_FIXTURES).filter(d=>(NL_FIXTURES[d]||[]).some(x=>x[2]===leagueName));
     }
     window.__leagueDates=dates.filter(x=>x>=today()).sort();
     renderLeagueDates(document.querySelector('#date')?.value||today());
@@ -775,10 +793,17 @@ function render(){
   const list=games.filter(m=>m.league?.name===filter);
   if(!list.length){$('#out').innerHTML='<div class="status">Ei otteluita tällä päivällä tässä sarjassa.</div>';return}
   if(MAIN_SET.has(filter)){
-    $('#out').innerHTML=list.map(m=>`<section class="match"><div class="mh"><div class="mh-team"><div class="mh-team-text"><div class="teams">${esc(m.home_team?.name||'Kotijoukkue')}</div><div class="lg">${esc(m.league?.name||'')}</div></div>${m.home_team?.image_url?`<img class="mh-logo" src="${esc(m.home_team.image_url)}" alt="">`:''}</div><div class="tm">${localTime(m.time_utc)}${m.status==='finished'?' · '+m.score_home+'–'+m.score_away:''}</div><div class="mh-team away">${m.away_team?.image_url?`<img class="mh-logo" src="${esc(m.away_team.image_url)}" alt="">`:''}<div class="mh-team-text"><div class="teams">${esc(m.away_team?.name||'Vierasjoukkue')}</div></div></div></div><div class="player-stat-bar" data-stat-bar="${esc(m.id)}" data-mode="otb"><div class="player-stat-caption">Pelaajien viimeiset 5 ottelua · valitse näytettävä tilasto</div><button class="player-stat-btn active" data-stat="otb">OTB / OTB kohti</button><button class="player-stat-btn" data-stat="shots">Laukaukset</button><button class="player-stat-btn" data-stat="cards">Kortit</button><button class="player-stat-btn" data-stat="fouls">Rikkeet</button><button class="player-stat-btn" data-stat="headers">Pääpallot</button><button class="player-stat-btn" data-stat="all">Kaikki laukaukset</button><span class="stat-mode-label">Viimeiset 5</span></div><div class="pitch" id="p${m.id.replace(/[^a-zA-Z0-9_-]/g,'')}">${m.home_team?.image_url?`<img class="pitch-team-logo home" src="${esc(m.home_team.image_url)}" alt="">`:''}${m.away_team?.image_url?`<img class="pitch-team-logo away" src="${esc(m.away_team.image_url)}" alt="">`:''}<div class="goal g1"></div><div class="goal g2"></div><span class="corner tl"></span><span class="corner tr"></span><span class="corner bl"></span><span class="corner br"></span><span class="centerDot"></span><div class="players"><div class="status">Ladataan kokoonpanoa…</div></div></div><div class="note">OUT = boxin ulkopuolelta · pelaajaa painamalla näet tarkat tilastot.</div></section>`).join('');
-    list.forEach(m=>loadGame(m,false));
+    $('#out').innerHTML=list.map(m=>`<section class="match ${m.__nlFixtureOnly?"nl-data-limited":""}"><div class="mh"><div class="mh-team"><div class="mh-team-text"><div class="teams">${esc(m.home_team?.name||'Kotijoukkue')}</div><div class="lg">${esc(m.league?.name||'')}</div></div>${m.home_team?.image_url?`<img class="mh-logo" src="${esc(m.home_team.image_url)}" alt="">`:''}</div><div class="tm">${localTime(m.time_utc)}${m.status==='finished'?' · '+m.score_home+'–'+m.score_away:''}</div><div class="mh-team away">${m.away_team?.image_url?`<img class="mh-logo" src="${esc(m.away_team.image_url)}" alt="">`:''}<div class="mh-team-text"><div class="teams">${esc(m.away_team?.name||'Vierasjoukkue')}</div></div></div></div><div class="player-stat-bar" data-stat-bar="${esc(m.id)}" data-mode="otb"><div class="player-stat-caption">Pelaajien viimeiset 5 ottelua · valitse näytettävä tilasto</div><button class="player-stat-btn active" data-stat="otb">OTB / OTB kohti</button><button class="player-stat-btn" data-stat="shots">Laukaukset</button><button class="player-stat-btn" data-stat="cards">Kortit</button><button class="player-stat-btn" data-stat="fouls">Rikkeet</button><button class="player-stat-btn" data-stat="headers">Pääpallot</button><button class="player-stat-btn" data-stat="all">Kaikki laukaukset</button><span class="stat-mode-label">Viimeiset 5</span></div><div class="pitch" id="p${m.id.replace(/[^a-zA-Z0-9_-]/g,'')}">${m.home_team?.image_url?`<img class="pitch-team-logo home" src="${esc(m.home_team.image_url)}" alt="">`:''}${m.away_team?.image_url?`<img class="pitch-team-logo away" src="${esc(m.away_team.image_url)}" alt="">`:''}<div class="goal g1"></div><div class="goal g2"></div><span class="corner tl"></span><span class="corner tr"></span><span class="corner bl"></span><span class="corner br"></span><span class="centerDot"></span><div class="players"><div class="status">Ladataan kokoonpanoa…</div></div></div><div class="note">OUT = boxin ulkopuolelta · pelaajaa painamalla näet tarkat tilastot.</div></section>`).join('');
+    list.filter(m=>!m.__nlFixtureOnly).forEach(m=>loadGame(m,false));
+    list.filter(m=>m.__nlFixtureOnly).forEach(m=>{
+      const pitch=document.querySelector(`#p${m.id.replace(/[^a-zA-Z0-9_-]/g,'')}`);
+      if(pitch){
+        const box=pitch.querySelector('.players');
+        if(box) box.innerHTML='<div class="lineup-status predicted">ℹ️ PitchAPI ei palauttanut tälle Nations League -ottelulle match ID:tä. Pelaajien avauskokoonpanoja ja OTB-tilastoja ei näytetä keksittyinä.</div>';
+      }
+    });
     if(lineupRefreshTimer)clearInterval(lineupRefreshTimer);
-    lineupRefreshTimer=setInterval(()=>{if(document.visibilityState==='hidden')return;list.filter(m=>m.status!=='finished').forEach(m=>loadGame(m,true));},300000);
+    lineupRefreshTimer=setInterval(()=>{if(document.visibilityState==='hidden')return;list.filter(m=>m.status!=='finished'&&!m.__nlFixtureOnly).forEach(m=>loadGame(m,true));},300000);
   }else{
     $('#out').innerHTML=list.map(m=>`<section class="other-match match-analysis-card" data-other-match="${esc(m.id)}"><div class="ma-head"><div class="ma-teams"><div class="ma-team">${m.home_team?.image_url?`<img class="ma-logo" src="${esc(m.home_team.image_url)}" alt="">`:''}<span>${esc(m.home_team?.name||'')}</span></div><div class="ma-vs">VS</div><div class="ma-team away"><span>${esc(m.away_team?.name||'')}</span>${m.away_team?.image_url?`<img class="ma-logo" src="${esc(m.away_team.image_url)}" alt="">`:''}</div></div><div class="ma-time">${localTime(m.time_utc)}${m.status==='finished'?' · '+m.score_home+'–'+m.score_away:''}</div></div><div class="ma-body"><div class="other-analysis"><div class="status">Lasketaan joukkueiden tilastofaktoja…</div></div></div><div class="ma-foot">📊 Perustuu PitchAPI:n viimeisiin otteluihin, joukkueiden tilastoihin ja H2H-kohtaamisiin. Ennuste on tilastollinen arvio, ei varma tulos.</div></section>`).join('');
     list.forEach(loadOtherGame);
