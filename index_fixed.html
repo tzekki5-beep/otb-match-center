@@ -524,13 +524,9 @@ body.home-mode header,body.home-mode main,body.home-mode #drawer{display:none!im
 </head><body class="home-mode">
 <div id="sideEyeHome" aria-label="Side Eye Analytics etusivu">
   <div class="seh-bg"></div><div class="seh-overlay"></div>
-  <div class="seh-grid">
-    <div class="seh-hotspot football" aria-hidden="true">
-      <button class="seh-button" id="openFootball" type="button" aria-label="Avaa jalkapallon Match Center"><span class="seh-icon">⚽</span><span><span class="seh-label">JALKAPALLO</span><span class="seh-sub">MATCH CENTER</span></span></button>
-    </div>
-    <div class="seh-hotspot nhl" aria-hidden="true">
-      <button class="seh-button" id="openNhl" type="button" aria-label="Avaa NHL Match Center"><span class="seh-icon">🏒</span><span><span class="seh-label">NHL</span><span class="seh-sub">MATCH CENTER</span></span></button>
-    </div>
+  <div class="seh-grid seh-big-entry-grid" aria-label="Match Center -sisäänkäynnit">
+    <button class="seh-big-hit football" id="openFootball" type="button" aria-label="Avaa Jalkapallo Match Center"></button>
+    <button class="seh-big-hit nhl" id="openNhl" type="button" aria-label="Avaa NHL Match Center"></button>
   </div>
   <section id="nhlHomePanel" class="seh-nhl-panel" aria-label="NHL Match Center">
     <div class="seh-nhl-inner">
@@ -801,7 +797,7 @@ async function load(){
   if(!key()&&!isPublicWorker()){setKeyUI();$('#status').textContent='Lisää ensin PitchAPI-avain.';return}
   $('#out').innerHTML='';$('#status').textContent='Haetaan päivän ottelut…';
   try{
-    await loadLeagues();
+    if(!Object.keys(leagueMap).length) await loadLeagues();
     // loadLeagues() rebuilds the league buttons. Restore the current state
     // immediately so a rebuild can never visually resurrect the old league.
     document.querySelectorAll('.league-tab').forEach(x=>x.classList.toggle('active',x.dataset.league===filter));
@@ -2586,9 +2582,9 @@ $$('.f').forEach(b=>b.onclick=()=>{$$('.f').forEach(x=>x.classList.remove('activ
     if(other && [...other.options].some(o=>o.value===name)) other.value=name;
     clearMatchState();
     if(name==='ALL') return;
-    // Do not await the optional date-index request. The match loader is the
-    // single source of truth and starts immediately for the current date.
-    try{ if(typeof loadLeagueDateIndex==='function') Promise.resolve(loadLeagueDateIndex(name)).catch(()=>{}); }catch(e){}
+    // League selection is deliberately a single state transition. Do not
+    // wait for the optional date-index request: it used to race the match load
+    // and could leave the previous league active after switching back.
     Promise.resolve(typeof load==='function'?load():null).catch(e=>{
       const out=get('out');
       if(out) out.innerHTML='<div class="err">Otteluita ei voitu ladata: '+(typeof esc==='function'?esc(e.message):e.message)+'</div>';
@@ -2614,6 +2610,29 @@ $$('.f').forEach(b=>b.onclick=()=>{$$('.f').forEach(x=>x.classList.remove('activ
       if(typeof load==='function') load();
     };
   }
+})();
+</script>
+
+<style id="sea-home-final-cleanup">
+/* Etusivu: vain isot kuvapaneelit toimivat sisäänmenoina. */
+body.home-mode #topDateNavigator{display:none!important}
+.seh-big-entry-grid{position:absolute;inset:0;z-index:5;display:block;pointer-events:none}
+.seh-big-hit{position:absolute;bottom:0;height:34%;width:50%;border:0;background:transparent!important;box-shadow:none!important;cursor:pointer;pointer-events:auto;padding:0;margin:0}
+.seh-big-hit.football{left:0}
+.seh-big-hit.nhl{right:0}
+.seh-big-hit:focus-visible{outline:3px solid rgba(80,180,255,.95);outline-offset:-8px;border-radius:22px}
+/* Piilota vanhat pienet sisäänmenot vaikka vanha markup jäisi DOMiin. */
+.seh-hotspot .seh-button{display:none!important}
+</style>
+<script id="sea-home-final-cleanup-js">
+(function(){
+  // Never show the running date navigator on the landing page.
+  function syncHomeCalendar(){
+    const nav=document.getElementById('topDateNavigator');
+    if(nav) nav.style.display=document.body.classList.contains('home-mode')?'none':'';
+  }
+  new MutationObserver(syncHomeCalendar).observe(document.body,{attributes:true,attributeFilter:['class']});
+  document.addEventListener('DOMContentLoaded',syncHomeCalendar);
 })();
 </script>
 </body></html>
