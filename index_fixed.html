@@ -74,6 +74,14 @@
 .teamtotal b{font-size:14px;margin-right:3px}
 @media(min-width:700px){.rankgrid{grid-template-columns:1fr 1fr}}
 
+
+/* Side Eye v5: running date navigator at the top of Football Match Center */
+.top-date-nav-wrap{background:#07191b;border:1px solid #31565c;border-radius:0 0 12px 12px;padding:10px 12px;margin:0 0 8px;overflow:hidden}
+.top-date-title{font-weight:800;color:#f2f7ff;font-size:15px;margin:0 0 8px}
+.top-date-days{display:flex;gap:7px;overflow-x:auto;overflow-y:hidden;padding:1px 0 4px;scrollbar-width:thin}
+.top-date-days::-webkit-scrollbar{height:7px}.top-date-days::-webkit-scrollbar-thumb{background:#315b68;border-radius:10px}
+.top-date-day{flex:0 0 78px;min-height:48px;padding:7px 6px;border-radius:9px;border:1px solid #41646b;background:#102e30;color:#eaf4f7;cursor:pointer;text-align:center;font-weight:800;line-height:1.05}
+.top-date-day small{display:block;font-size:11px;margin-top:5px;color:#d3e1e6;font-weight:700}.top-date-day:hover{background:#174044}.top-date-day.active{background:#3d8ed1;border-color:#67b7ff;box-shadow:0 0 0 1px rgba(103,183,255,.22) inset}
 </style>
 <style id="v20-enhancements">
 .v20-days-row{display:grid;grid-template-columns:repeat(7,1fr);gap:5px}
@@ -587,6 +595,11 @@ body.home-mode header,body.home-mode main,body.home-mode #drawer{display:none!im
     <div class="v20-title">⚽ Joukkueiden vertailu</div>
     <div id="v20Teams"><div class="v20-empty">Valitse ottelu nähdäksesi vertailun.</div></div>
   </div>
+</div>
+
+<div id="topDateNavigator" class="top-date-nav-wrap">
+  <div class="top-date-title">📅 Ottelupäivät</div>
+  <div id="topDateDays" class="top-date-days" aria-label="Ottelupäivät"></div>
 </div>
 
 <header><h1>⚽ OTB Match Center</h1><div class="sub">Päivän ottelut · oikeat avauskokoonpanot · viimeiset 5 · boxin ulkopuoliset laukaukset · boxin ulkopuolelta kohti</div>
@@ -2148,7 +2161,7 @@ async function loadOtherGame(m){
   }catch(e){box.innerHTML=`<div class="err">Otteluanalyysiä ei saatu: ${esc(e.message)}</div>`}
 }
 
-$('#date').value=today();if(isPublicWorker())$('#setup').style.display='none';$('#refresh').onclick=load;
+$('#date').value=today();renderTopDateNavigator($('#date').value);if(isPublicWorker())$('#setup').style.display='none';$('#refresh').onclick=load;
   document.addEventListener('click',e=>{
     const statBtn=e.target.closest('.player-stat-btn');
     if(statBtn){
@@ -2259,6 +2272,33 @@ $('#date').value=today();if(isPublicWorker())$('#setup').style.display='none';$(
 
   $("v20Search")?.addEventListener("input",refresh);
   window.addEventListener("otb-history-ready",()=>setTimeout(refresh,50));
+
+  // Top running date navigator for the main Football Match Center.
+  function renderTopDateNavigator(active){
+    const box=document.getElementById('topDateDays');
+    if(!box)return;
+    const activeIso=active||document.querySelector('#date')?.value||today();
+    const base=new Date(activeIso+'T12:00:00');
+    box.innerHTML='';
+    for(let i=-3;i<=30;i++){
+      const d=new Date(base); d.setDate(base.getDate()+i);
+      const iso=isoLocalTop(d);
+      const label=i===0?'Tänään':d.toLocaleDateString('fi-FI',{weekday:'short'});
+      const date=d.toLocaleDateString('fi-FI',{day:'2-digit',month:'2-digit'});
+      const b=document.createElement('button');
+      b.type='button'; b.className='top-date-day'+(iso===activeIso?' active':'');
+      b.innerHTML=`${label}<small>${date}</small>`;
+      b.onclick=()=>{ const el=document.getElementById('date'); if(!el)return; el.value=iso; el.dispatchEvent(new Event('change',{bubbles:true})); el.dispatchEvent(new Event('input',{bubbles:true})); renderTopDateNavigator(iso); };
+      box.appendChild(b);
+      if(iso===activeIso) setTimeout(()=>b.scrollIntoView({behavior:'smooth',block:'nearest',inline:'center'}),0);
+    }
+  }
+  function isoLocalTop(d){
+    const x=new Date(d); x.setHours(12,0,0,0);
+    return new Date(x-x.getTimezoneOffset()*60000).toISOString().slice(0,10);
+  }
+  document.getElementById('date')?.addEventListener('change',e=>renderTopDateNavigator(e.target.value));
+  document.addEventListener('DOMContentLoaded',()=>renderTopDateNavigator(document.getElementById('date')?.value||today()));
 
   // Seven-day date navigator: 3 days back + today + 3 days forward.
   function isoLocal(d){
