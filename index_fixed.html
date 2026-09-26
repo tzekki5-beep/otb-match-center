@@ -776,10 +776,12 @@ function populateLeagueSelector(){
   sel.innerHTML='<option value="">⚽ Kaikki sarjat</option><optgroup label="⭐ Pelaaja-analyysi">'+main.map(n=>`<option value="${esc(n)}">${esc(n)}</option>`).join('')+'</optgroup><optgroup label="📊 Otteluanalyysi">'+others.map(n=>`<option value="${esc(n)}">${esc(n)}</option>`).join('')+'</optgroup>';
   if([...sel.options].some(o=>o.value===current))sel.value=current;
   const tabs=document.getElementById('mainLeagueTabs');
-  if(tabs){tabs.innerHTML=main.map((n,i)=>{
-    const label=n==='Premier League'?'🇬🇧 PL':n==='LaLiga'?'🇪🇸 LaLiga':n==='Serie A'?'🇮🇹 Serie A':n==='Bundesliga'?'🇩🇪 Bundesliga':n==='Ligue 1'?'🇫🇷 Ligue 1':n==='Champions League'?'🏆 UCL':n==='Europa League'?'🏆 UEL':n==='Conference League'?'🏆 UECL':n==='Nations League A'?'🌍 NL A':n==='Nations League B'?'🌍 NL B':'🌍 NL C';
-    return `<button class="league-tab" data-league="${esc(n)}">${label}</button>`;
-  }).join('');}
+  if(tabs){
+    tabs.innerHTML=main.map((n,i)=>{
+      const label=n==='Premier League'?'🇬🇧 PL':n==='LaLiga'?'🇪🇸 LaLiga':n==='Serie A'?'🇮🇹 Serie A':n==='Bundesliga'?'🇩🇪 Bundesliga':n==='Ligue 1'?'🇫🇷 Ligue 1':n==='Champions League'?'🏆 UCL':n==='Europa League'?'🏆 UEL':n==='Conference League'?'🏆 UECL':n==='Nations League A'?'🌍 NL A':n==='Nations League B'?'🌍 NL B':'🌍 NL C';
+      return `<button type="button" class="league-tab${n===filter?' active':''}" data-league="${esc(n)}">${label}</button>`;
+    }).join('');
+  }
   const otherSel=document.getElementById('otherLeagueSelect');
   if(otherSel){const old=otherSel.value;otherSel.innerHTML='<option value="">Valitse otteluanalyysin sarja…</option>'+others.map(n=>`<option value="${esc(n)}">${esc(n)}</option>`).join('');if(others.includes(old))otherSel.value=old;}
 }
@@ -790,8 +792,11 @@ async function load(){
   $('#out').innerHTML='';$('#status').textContent='Haetaan päivän ottelut…';
   try{
     await loadLeagues();
-    // If the user changed the date while an older request was still running,
-    // abandon the old response so it cannot paint yesterday's league/match back.
+    // loadLeagues() rebuilds the league buttons. Restore the current state
+    // immediately so a rebuild can never visually resurrect the old league.
+    document.querySelectorAll('.league-tab').forEach(x=>x.classList.toggle('active',x.dataset.league===filter));
+    // If the user changed the date/league while this request was running,
+    // abandon the old response so it cannot paint stale matches back.
     if(myLoad!==loadGeneration)return;
     const date=$('#date').value;
     const requestDate=date;
@@ -2178,6 +2183,9 @@ async function loadOtherGame(m){
 }
 
 $('#date').value=today();renderTopDateNavigator($('#date').value);if(isPublicWorker())$('#setup').style.display='none';$('#refresh').onclick=load;
+  // Single delegated UI handler: league buttons must never trigger the
+  // selection logic twice. The previous versions had both delegated and
+  // direct handlers, which could start overlapping loads after date changes.
   document.addEventListener('click',e=>{
     const statBtn=e.target.closest('.player-stat-btn');
     if(statBtn){
@@ -2187,9 +2195,11 @@ $('#date').value=today();renderTopDateNavigator($('#date').value);if(isPublicWor
     }
     const tab=e.target.closest('.league-tab');
     if(tab){
-      document.querySelectorAll('.league-tab').forEach(x=>x.classList.remove('active'));
-      tab.classList.add('active');
-      window.otbSelectLeague(tab.dataset.league);
+      e.preventDefault();
+      e.stopPropagation();
+      const name=tab.dataset.league||'ALL';
+      if(name===filter && tab.classList.contains('active')) return;
+      window.otbSelectLeague(name);
       return;
     }
   });
@@ -2539,15 +2549,9 @@ $$('.f').forEach(b=>b.onclick=()=>{$$('.f').forEach(x=>x.classList.remove('activ
     if(tabs && !tabs.children.length){
       tabs.innerHTML=leagues.map(([v,l])=>`<button class="league-tab" data-league="${v}">${l}</button>`).join('');
     }
-    if(tabs){
-      tabs.querySelectorAll('.league-tab').forEach(b=>{
-        if(b.dataset.bound)return;
-        b.dataset.bound='1';
-        b.addEventListener('click',()=>{
-          if(typeof window.otbSelectLeague==='function') window.otbSelectLeague(b.dataset.league);
-        });
-      });
-    }
+    // League clicks are handled once by the single delegated handler above.
+    // Do not attach per-button listeners here: populateLeagueSelector() can
+    // rebuild these buttons during an async load.
   }
   document.addEventListener('DOMContentLoaded',ensure);
   setTimeout(ensure,50); setTimeout(ensure,500); setTimeout(ensure,1500);
@@ -2575,6 +2579,9 @@ $$('.f').forEach(b=>b.onclick=()=>{$$('.f').forEach(x=>x.classList.remove('activ
   // used to leave the old match view on screen and could make later clicks look stuck.
   window.otbSelectLeague=function(leagueName){
     const name=leagueName||'ALL';
+    // Treat every league click as a new UI state. This prevents a previous
+    // league (for example NL B) from remaining visually active when the new
+    // league has zero matches or is still loading.
     filter=name;
     document.querySelectorAll('.league-tab').forEach(x=>x.classList.toggle('active',x.dataset.league===name));
     const other=get('otherLeagueSelect');
@@ -2590,7 +2597,8 @@ $$('.f').forEach(b=>b.onclick=()=>{$$('.f').forEach(x=>x.classList.remove('activ
       }
     }catch(e){}
 
-    // Start the actual match load immediately; no await before it.
+    // Start one load for this selection. load() owns request cancellation via
+    // loadGeneration and verifies date + league before painting the result.
     Promise.resolve(typeof load==='function'?load():null).catch(e=>{
       const out=get('out');
       if(out) out.innerHTML='<div class="err">Otteluita ei voitu ladata: '+(typeof esc==='function'?esc(e.message):e.message)+'</div>';
