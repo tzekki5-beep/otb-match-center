@@ -434,17 +434,15 @@ html,body{overflow-x:hidden}
 </style>
 
 <style id="otb-v39-clean-player-hover">
-/* V39 clean visual pass — player positioning remains exactly V38. */
+/* V39 hover — no outline, no movement, no change to pitch positioning. */
 .p{
-  /* visual-only properties; original V38 position/transform/width stay untouched */
-  transition:filter .15s ease,box-shadow .15s ease!important;
+  transition:filter .15s ease!important;
 }
 .p:hover{
-  /* outline does not participate in layout and cannot move/reflow the card */
-  outline:1px solid rgba(77,163,255,.65)!important;
-  outline-offset:1px;
+  outline:none!important;
+  box-shadow:none!important;
   transform:translate(-50%,-50%)!important;
-  filter:drop-shadow(0 4px 10px rgba(0,0,0,.42))!important;
+  filter:brightness(1.08)!important;
 }
 </style>
 
