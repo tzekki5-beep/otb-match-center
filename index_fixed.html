@@ -558,6 +558,21 @@ body.home-mode header,body.home-mode main,body.home-mode #drawer{display:none!im
 @media(max-width:600px){.nhl-rink-wrap{padding:8px}.nhl-rink{height:900px;border-radius:32px}.nhl-rink .center-circle{width:130px;height:130px}.nhl-rink .zone-circle{width:86px;height:86px}.nhl-rink .goal-crease{width:132px;height:88px}.nhl-rink .slot{width:82px}.nhl-rink .slot .nhl-face{width:40px;height:40px}.nhl-rink .slot .nhl-name{font-size:8px;max-width:82px}.nhl-rink .slot .nhl-role,.nhl-rink .slot .nhl-mini{font-size:7px}.nhl-rink .slot.home.d1{left:35%}.nhl-rink .slot.home.d2{left:65%}.nhl-rink .slot.away.d1{left:35%}.nhl-rink .slot.away.d2{left:65%}}
 </style>
 
+
+<style id="nhl-final-layout-fix">
+/* FINAL NHL toolbar: only chains 1-4 + power plays */
+.nhl-rink-toolbar{align-items:center!important;gap:8px!important}
+.nhl-rink-toolbar .nhl-rink-tab{display:inline-flex!important}
+/* Keep both goalies directly in front of their own net */
+.nhl-rink .slot.home.goalie{top:10%!important;left:50%!important;transform:translate(-50%,-50%)!important}
+.nhl-rink .slot.away.goalie{bottom:10%!important;left:50%!important;transform:translate(-50%,50%)!important}
+.nhl-rink .slot.goalie .nhl-face{width:58px!important;height:58px!important}
+.nhl-rink .slot.goalie .nhl-name{font-size:12px!important}
+@media(max-width:700px){
+  .nhl-rink-caption{width:100%;margin-left:0!important;margin-top:2px}
+  .nhl-rink{height:980px!important}
+}
+</style>
 </head><body class="home-mode">
 <div id="sideEyeHome" aria-label="Side Eye Analytics etusivu">
   <div class="seh-bg"></div><div class="seh-overlay"></div>
@@ -580,12 +595,12 @@ body.home-mode header,body.home-mode main,body.home-mode #drawer{display:none!im
 
       <div class="nhl-rink-wrap" id="nhlRinkModule">
         <div class="nhl-rink-toolbar">
-          <button class="nhl-rink-tab active" type="button">Ketju 1</button>
-          <button class="nhl-rink-tab" type="button">Ketju 2</button>
-          <button class="nhl-rink-tab" type="button">Ketju 3</button>
-          <button class="nhl-rink-tab" type="button">Ketju 4</button>
-          <button class="nhl-rink-tab" type="button">YV 1</button>
-          <button class="nhl-rink-tab" type="button">YV 2</button>
+          <button class="nhl-rink-tab active" type="button" data-nhl-unit="1">Ketju 1</button>
+          <button class="nhl-rink-tab" type="button" data-nhl-unit="2">Ketju 2</button>
+          <button class="nhl-rink-tab" type="button" data-nhl-unit="3">Ketju 3</button>
+          <button class="nhl-rink-tab" type="button" data-nhl-unit="4">Ketju 4</button>
+          <button class="nhl-rink-tab" type="button" data-nhl-unit="pp1">YV 1</button>
+          <button class="nhl-rink-tab" type="button" data-nhl-unit="pp2">YV 2</button>
           <span class="nhl-rink-caption">Kaukalon suunta sama kuin jalkapallokentässä</span>
         </div>
         <div class="nhl-rink" aria-label="NHL kokoonpano kaukalossa">
@@ -2719,6 +2734,18 @@ body.home-mode #topDateNavigator{display:none!important}
   }
   new MutationObserver(syncHomeCalendar).observe(document.body,{attributes:true,attributeFilter:['class']});
   document.addEventListener('DOMContentLoaded',syncHomeCalendar);
+})();
+</script>
+
+<script id="nhl-final-tabs">
+(()=>{
+  document.querySelectorAll('.nhl-rink-toolbar').forEach(bar=>{
+    bar.querySelectorAll('.nhl-rink-tab').forEach(btn=>btn.addEventListener('click',()=>{
+      bar.querySelectorAll('.nhl-rink-tab').forEach(b=>b.classList.remove('active'));
+      btn.classList.add('active');
+      bar.dataset.activeUnit=btn.dataset.nhlUnit||'';
+    }));
+  });
 })();
 </script>
 </body></html>
