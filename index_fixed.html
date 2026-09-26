@@ -607,6 +607,22 @@ body.home-mode header,body.home-mode main,body.home-mode #drawer{display:none!im
 @media(max-width:600px){.nhl-live-head{align-items:flex-start}.nhl-live-title{font-size:15px}.nhl-games{grid-template-columns:1fr 1fr}.nhl-game-teams{font-size:12px}}
 @media(max-width:430px){.nhl-games{grid-template-columns:1fr}}
 </style>
+
+<style id="nhl-final-cleanup-v3">
+/* Final visual cleanup */
+.nhl-rink .slot.home.goalie {
+  top:5%!important; left:50%!important;
+  transform:translate(-50%,-50%)!important;
+}
+.nhl-rink .slot.away.goalie {
+  bottom:5%!important; left:50%!important;
+  transform:translate(-50%,50%)!important;
+}
+.nhl-rink-caption,
+.nhl-side-note,
+.seh-nhl-note { display:none!important; }
+@media(max-width:700px){ .nhl-rink-caption{display:none!important;} }
+</style>
 </head><body class="home-mode">
 <div id="sideEyeHome" aria-label="Side Eye Analytics etusivu">
   <div class="seh-bg"></div><div class="seh-overlay"></div>
@@ -647,7 +663,6 @@ body.home-mode header,body.home-mode main,body.home-mode #drawer{display:none!im
           <button class="nhl-rink-tab" type="button" data-nhl-unit="4">Ketju 4</button>
           <button class="nhl-rink-tab" type="button" data-nhl-unit="pp1">YV 1</button>
           <button class="nhl-rink-tab" type="button" data-nhl-unit="pp2">YV 2</button>
-          <span class="nhl-rink-caption">Kaukalon suunta sama kuin jalkapallokentässä</span>
         </div>
         <div class="nhl-rink" aria-label="NHL kokoonpano kaukalossa">
           <span class="rink-line blue1"></span><span class="rink-line red-center"></span><span class="rink-line blue2"></span>
@@ -667,9 +682,7 @@ body.home-mode header,body.home-mode main,body.home-mode #drawer{display:none!im
           <div class="slot away f2"><div class="nhl-face"></div><span class="nhl-name">Hyökkääjä 2</span><span class="nhl-role">C</span><span class="nhl-mini">PTS — · SOG —</span></div>
           <div class="slot away f3"><div class="nhl-face"></div><span class="nhl-name">Hyökkääjä 3</span><span class="nhl-role">RW</span><span class="nhl-mini">PTS — · SOG —</span></div>
         </div>
-        <div class="nhl-side-note">NHL:n päivän ottelut ja saatavilla oleva kokoonpanodata haetaan automaattisesti. Pelaajakortit täyttyvät heti kun NHL julkaisee ottelukohtaisen datan.</div>
       </div>
-      <div class="seh-nhl-note">Otteluohjelma, otteludata ja pelaajadata päivittyvät automaattisesti NHL:n rajapinnasta.</div>
     </div>
   </section>
 </div>
