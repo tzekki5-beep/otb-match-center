@@ -2,7 +2,7 @@
 <html lang="fi">
 <head>
 <meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
-<meta name="theme-color" content="#071120"><title>OTB Match Center V34 – PitchAPI</title>
+<meta name="theme-color" content="#071120"><title>Side Eye Analytics – Match Center</title>
 <style>
 :root{--bg:#071120;--card:#0d1a2e;--line:#29405f;--txt:#edf4ff;--muted:#93a8c5;--accent:#4389c8;--good:#39c98b;--bad:#ff7385}
 *{box-sizing:border-box}body{margin:0;background:var(--bg);color:var(--txt);font-family:system-ui,-apple-system,Segoe UI,Roboto,sans-serif}header{padding:18px 15px 13px;background:#081323;position:sticky;top:0;z-index:5;border-bottom:1px solid var(--line)}h1{font-size:27px;margin:0}.sub{color:var(--muted);margin-top:4px;line-height:1.35}.controls{display:flex;gap:8px;flex-wrap:wrap;margin-top:14px}button,input[type=date],input[type=password]{font:inherit;background:#102039;color:var(--txt);border:1px solid #2b4565;border-radius:12px;padding:10px 13px}button.active{background:var(--accent)}main{max-width:1150px;margin:auto;padding:15px}.status{color:var(--muted);margin-bottom:12px}.err{background:#391722;color:#ffbcc6;border:1px solid #713544;padding:12px;border-radius:12px}.setup{background:#0d1a2e;border:1px solid #29405f;border-radius:16px;padding:15px;margin-bottom:14px}.setup input{width:100%;margin:8px 0}.setup .row{display:flex;gap:8px}.setup .row button{flex:1}.ok{color:var(--good)}
@@ -491,6 +491,18 @@ html,body{overflow-x:hidden}
 #sideEyeHome .seh-nhl-card b{font-size:18px}.seh-nhl-card small{display:block;color:#91aac0;margin-top:5px;line-height:1.4}
 #sideEyeHome .seh-nhl-note{margin-top:18px;padding:15px;border:1px dashed #315777;border-radius:12px;color:#9db5ca;background:#071522}
 body.home-mode{overflow:hidden}
+/* Side Eye navigation: both sports open as independent full-screen modules. */
+#sideEyeFootballPanel{display:none;position:fixed;inset:0;z-index:30;background:#071120;overflow:auto}
+#sideEyeFootballPanel .sef-inner{min-height:100%;padding:22px 18px 40px}
+#sideEyeFootballPanel .sef-topbar{width:min(1450px,100%);margin:0 auto 10px;display:flex;align-items:center;justify-content:flex-start}
+#sideEyeFootballPanel .sef-back{border:1px solid #42677e;background:#0b1d2b;color:#fff;border-radius:11px;padding:10px 14px;font-weight:900;cursor:pointer}
+body.football-mode{overflow:hidden}
+body.football-mode #sideEyeHome{display:none!important}
+body.football-mode #sideEyeFootballPanel{display:block!important}
+body.football-mode #sideEyeFootballPanel header,body.football-mode #sideEyeFootballPanel main{display:block!important}
+body.football-mode #sideEyeFootballPanel header{position:relative;top:auto}
+body.football-mode #sideEyeFootballPanel main{max-width:1450px}
+@media(max-width:600px){#sideEyeFootballPanel .sef-inner{padding:12px 8px 28px}}
 body.home-mode header,body.home-mode main,body.home-mode #drawer{display:none!important}
 @media(max-width:800px){#sideEyeHome{padding:0;min-height:100vh}#sideEyeHome .seh-grid{grid-template-columns:1fr;grid-template-rows:1fr 1fr;min-height:100vh}.seh-button{min-height:78px!important;padding:14px 18px!important}.seh-icon{font-size:32px!important}.seh-arrow{font-size:30px!important}.seh-label{font-size:23px!important}.seh-sub{font-size:9px!important}.seh-hotspot{padding:0 7% 7%!important}.seh-nhl-cards{grid-template-columns:1fr 1fr!important}}
 @media(max-width:480px){#sideEyeHome .seh-button{gap:10px!important;border-radius:14px!important}.seh-label{font-size:18px!important}.seh-icon{font-size:27px!important}.seh-arrow{font-size:27px!important}.seh-nhl-cards{grid-template-columns:1fr!important}}
@@ -522,6 +534,12 @@ body.home-mode header,body.home-mode main,body.home-mode #drawer{display:none!im
   </section>
 </div>
 
+<section id="sideEyeFootballPanel" aria-label="Jalkapallon Match Center">
+  <div class="sef-inner">
+    <div class="sef-topbar"><button id="footballBack" class="sef-back" type="button">← Etusivulle</button></div>
+    <div id="footballMount"></div>
+  </div>
+</section>
 
 <div style="margin:8px 0;padding:8px 10px;border-radius:9px;background:rgba(16,43,44,.75);font-size:12px;opacity:.85">
   OTB Match Center · julkinen web-versio
@@ -2374,14 +2392,51 @@ $('#date').value=today();if(isPublicWorker())$('#setup').style.display='none';$(
 
 <script id="side-eye-home-js">
 (function(){
-  const home=document.getElementById('sideEyeHome'), nhl=document.getElementById('nhlHomePanel');
-  const openFootball=document.getElementById('openFootball'), openNhl=document.getElementById('openNhl'), nhlBack=document.getElementById('nhlBack');
-  function football(){document.body.classList.remove('home-mode');home.setAttribute('aria-hidden','true');window.scrollTo({top:0,behavior:'instant'});}
-  function showNhl(){nhl.style.display='block';openNhl?.setAttribute('aria-expanded','true');}
-  function back(){nhl.style.display='none';openNhl?.setAttribute('aria-expanded','false');}
-  openFootball?.addEventListener('click',football);
-  openNhl?.addEventListener('click',showNhl);
-  nhlBack?.addEventListener('click',back);
+  const home=document.getElementById('sideEyeHome');
+  const nhl=document.getElementById('nhlHomePanel');
+  const footballPanel=document.getElementById('sideEyeFootballPanel');
+  const footballMount=document.getElementById('footballMount');
+  const header=document.querySelector('body > header');
+  const main=document.querySelector('body > main');
+  const drawer=document.getElementById('drawer');
+  const openFootball=document.getElementById('openFootball');
+  const openNhl=document.getElementById('openNhl');
+  const nhlBack=document.getElementById('nhlBack');
+  const footballBack=document.getElementById('footballBack');
+
+  // Move the existing football application into its own full-screen module.
+  // This keeps all existing football functionality/data intact.
+  if(footballMount){
+    if(header) footballMount.appendChild(header);
+    if(main) footballMount.appendChild(main);
+    if(drawer) footballMount.appendChild(drawer);
+  }
+
+  function homeView(){
+    document.body.classList.remove('football-mode');
+    document.body.classList.add('home-mode');
+    nhl.style.display='none';
+    openFootball?.setAttribute('aria-expanded','false');
+    openNhl?.setAttribute('aria-expanded','false');
+    window.scrollTo({top:0,behavior:'instant'});
+  }
+  function footballView(){
+    nhl.style.display='none';
+    document.body.classList.remove('home-mode');
+    document.body.classList.add('football-mode');
+    openFootball?.setAttribute('aria-expanded','true');
+    window.scrollTo({top:0,behavior:'instant'});
+  }
+  function nhlView(){
+    document.body.classList.remove('home-mode','football-mode');
+    nhl.style.display='block';
+    openNhl?.setAttribute('aria-expanded','true');
+    window.scrollTo({top:0,behavior:'instant'});
+  }
+  openFootball?.addEventListener('click',footballView);
+  openNhl?.addEventListener('click',nhlView);
+  nhlBack?.addEventListener('click',homeView);
+  footballBack?.addEventListener('click',homeView);
 })();
 </script>
 </body></html>
