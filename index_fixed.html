@@ -635,12 +635,12 @@ tr:hover td{background:rgba(255,255,255,.018)!important}
 </style>
 
 <style id="otb-v39-card-hover-fix">
-/* V39 FIX: player cards must never move when hovered. */
-.p,
+/* V39 FIX 2: keep the pitch positioning transform on hover.
+   The translate(-50%,-50%) is required for absolute player placement;
+   hover must not add any movement. */
 .p:hover,
-.pitch .p,
 .pitch .p:hover{
-  transform:none!important;
+  transform:translate(-50%,-50%)!important;
 }
 </style>
 </head><body>
