@@ -2,7 +2,7 @@
 <html lang="fi">
 <head>
 <meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
-<meta name="theme-color" content="#071120"><title>Side Eye Analytics – Match Center</title>
+<meta name="theme-color" content="#071120"><title>OTB MATCH CENTER V20 — NHL Final Dashboard</title><meta name="otb-version" content="V20-NHL-FINAL-DASHBOARD">
 <style>
 :root{--bg:#071120;--card:#0d1a2e;--line:#29405f;--txt:#edf4ff;--muted:#93a8c5;--accent:#4389c8;--good:#39c98b;--bad:#ff7385}
 *{box-sizing:border-box}body{margin:0;background:var(--bg);color:var(--txt);font-family:system-ui,-apple-system,Segoe UI,Roboto,sans-serif}header{padding:18px 15px 13px;background:#081323;position:sticky;top:0;z-index:5;border-bottom:1px solid var(--line)}h1{font-size:27px;margin:0}.sub{color:var(--muted);margin-top:4px;line-height:1.35}.controls{display:flex;gap:8px;flex-wrap:wrap;margin-top:14px}button,input[type=date],input[type=password]{font:inherit;background:#102039;color:var(--txt);border:1px solid #2b4565;border-radius:12px;padding:10px 13px}button.active{background:var(--accent)}main{max-width:1150px;margin:auto;padding:15px}.status{color:var(--muted);margin-bottom:12px}.err{background:#391722;color:#ffbcc6;border:1px solid #713544;padding:12px;border-radius:12px}.setup{background:#0d1a2e;border:1px solid #29405f;border-radius:16px;padding:15px;margin-bottom:14px}.setup input{width:100%;margin:8px 0}.setup .row{display:flex;gap:8px}.setup .row button{flex:1}.ok{color:var(--good)}
@@ -896,6 +896,8 @@ body.nhl-mode .nhl-dash-team-abbr{font-size:11px!important;letter-spacing:1px!im
 body.nhl-mode .nhl-dash-center{display:flex!important;flex-direction:column!important;align-items:center!important;justify-content:center!important}
 body.nhl-mode .nhl-dash-brand{display:flex!important;align-items:center!important;justify-content:center!important;gap:8px!important;font-size:25px!important;white-space:nowrap!important}
 body.nhl-mode .nhl-brand-shield{width:34px!important;height:34px!important;object-fit:contain!important}
+body.nhl-mode .nhl-brand-text{display:inline-flex!important;align-items:center!important;justify-content:center!important;width:42px!important;height:42px!important;border:2px solid #f2f8ff!important;border-radius:8px!important;background:linear-gradient(135deg,#0d2f4b,#06131d)!important;color:#fff!important;font-size:13px!important;font-weight:1000!important;letter-spacing:1px!important;box-shadow:0 3px 10px #0008!important;transform:skewY(-6deg)!important}
+body.nhl-mode .nhl-brand-text::first-letter{font-size:13px!important}
 body.nhl-mode .nhl-dash-meta{font-size:12px!important;font-weight:1000!important;letter-spacing:.8px!important;margin-top:6px!important}
 body.nhl-mode .nhl-dash-score{font-size:11px!important;font-weight:1000!important;letter-spacing:.6px!important;margin-top:3px!important}
 body.nhl-mode .nhl-dash-venue{font-size:9px!important;color:#7899ad!important;font-weight:900!important;margin-top:4px!important;letter-spacing:.6px!important}
@@ -1041,7 +1043,7 @@ body.nhl-mode.nhl-match-open #nhlLivePanel{display:none!important}
       <div class="seh-nhl-title">NHL <span>MATCH CENTER</span></div>
       <div class="nhl-dashboard-head" id="nhlDashboardHead">
         <div class="nhl-dash-team home"><img id="nhlDashHomeLogo" class="nhl-dash-logo" alt=""><div><div id="nhlDashHomeName" class="nhl-dash-team-name">KOTIJOUKKUE</div><div id="nhlDashHomeAbbr" class="nhl-dash-team-abbr">—</div></div></div>
-        <div class="nhl-dash-center"><div class="nhl-dash-brand"><img class="nhl-brand-shield" src="https://assets.nhle.com/logos/nhl/svg/nhl.svg" alt="NHL"> <span>NHL MATCH CENTER</span></div><div id="nhlDashMeta" class="nhl-dash-meta">26.09.2026</div><div id="nhlDashScore" class="nhl-dash-score">VALITSE OTTELU</div><div id="nhlDashVenue" class="nhl-dash-venue"></div></div>
+        <div class="nhl-dash-center"><div class="nhl-dash-brand"><span class="nhl-brand-shield nhl-brand-text">NHL</span><span>NHL MATCH CENTER</span></div><div id="nhlDashMeta" class="nhl-dash-meta">26.09.2026</div><div id="nhlDashScore" class="nhl-dash-score">VALITSE OTTELU</div><div id="nhlDashVenue" class="nhl-dash-venue"></div></div>
         <div class="nhl-dash-team away"><div><div id="nhlDashAwayName" class="nhl-dash-team-name">VIERASJOUKKUE</div><div id="nhlDashAwayAbbr" class="nhl-dash-team-abbr">—</div></div><img id="nhlDashAwayLogo" class="nhl-dash-logo" alt=""></div>
       </div>
       <div class="seh-nhl-sub">Side Eye Analytics · NHL Match Center</div>
