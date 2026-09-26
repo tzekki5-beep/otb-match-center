@@ -855,6 +855,178 @@ body.nhl-mode .nhl-team-panel{display:block!important;width:auto!important;min-w
  .nhl-rink .slot{width:88px!important}.nhl-rink .slot.home.d1,.nhl-rink .slot.away.d1{left:32%!important}.nhl-rink .slot.home.d2,.nhl-rink .slot.away.d2{left:68%!important}.nhl-rink .slot.home.f1,.nhl-rink .slot.away.f1{left:22%!important}.nhl-rink .slot.home.f3,.nhl-rink .slot.away.f3{left:78%!important}
 }
 </style>
+
+<style id="otb-nhl-final-reference-v19">
+/* OTB NHL FINAL — visual reference locked to the supplied match-center mockup */
+body.nhl-mode{background:#020a12!important;color:#fff!important}
+body.nhl-mode #nhlHomePanel{background:
+  radial-gradient(circle at 18% 18%,rgba(255,180,0,.10),transparent 24%),
+  radial-gradient(circle at 82% 18%,rgba(255,50,70,.10),transparent 24%),
+  linear-gradient(180deg,#061421 0%,#020a12 58%,#02070d 100%)!important}
+body.nhl-mode #nhlHomePanel .seh-nhl-inner{max-width:1536px!important;padding:0 6px 24px!important;margin:0 auto!important}
+body.nhl-mode #nhlBack,
+body.nhl-mode .seh-nhl-title,
+body.nhl-mode .seh-nhl-sub,
+body.nhl-mode .seh-nhl-cards{display:none!important}
+
+/* Cinematic match header */
+body.nhl-mode .nhl-dashboard-head{
+  display:grid!important;
+  grid-template-columns:minmax(300px,1fr) 360px minmax(300px,1fr)!important;
+  min-height:126px!important;
+  margin:0 0 6px!important;
+  padding:8px 22px!important;
+  border:1px solid rgba(59,151,207,.42)!important;
+  border-radius:0 0 16px 16px!important;
+  background:
+    linear-gradient(90deg,rgba(4,16,27,.98),rgba(7,25,39,.94) 48%,rgba(4,16,27,.98))!important;
+  box-shadow:0 14px 36px rgba(0,0,0,.55)!important;
+}
+body.nhl-mode .nhl-dash-team{gap:16px!important}
+body.nhl-mode .nhl-dash-team.home{justify-content:flex-start!important;text-align:left!important}
+body.nhl-mode .nhl-dash-team.away{justify-content:flex-end!important;text-align:right!important}
+body.nhl-mode .nhl-dash-logo{
+  width:112px!important;height:112px!important;
+  object-fit:contain!important;padding:0!important;
+  background:transparent!important;border-radius:0!important;
+  filter:drop-shadow(0 5px 9px rgba(0,0,0,.7))!important
+}
+body.nhl-mode .nhl-dash-team-name{font-size:27px!important;line-height:1.02!important;font-weight:1000!important;text-transform:uppercase!important;letter-spacing:.5px!important}
+body.nhl-mode .nhl-dash-team-abbr{font-size:11px!important;letter-spacing:1px!important}
+body.nhl-mode .nhl-dash-center{display:flex!important;flex-direction:column!important;align-items:center!important;justify-content:center!important}
+body.nhl-mode .nhl-dash-brand{display:flex!important;align-items:center!important;justify-content:center!important;gap:8px!important;font-size:25px!important;white-space:nowrap!important}
+body.nhl-mode .nhl-brand-shield{width:34px!important;height:34px!important;object-fit:contain!important}
+body.nhl-mode .nhl-dash-meta{font-size:12px!important;font-weight:1000!important;letter-spacing:.8px!important;margin-top:6px!important}
+body.nhl-mode .nhl-dash-score{font-size:11px!important;font-weight:1000!important;letter-spacing:.6px!important;margin-top:3px!important}
+body.nhl-mode .nhl-dash-venue{font-size:9px!important;color:#7899ad!important;font-weight:900!important;margin-top:4px!important;letter-spacing:.6px!important}
+
+/* Selected match: picker becomes a compact strip above the dashboard */
+body.nhl-mode #nhlLivePanel{margin:0 0 7px!important;background:transparent!important;border:0!important;padding:0!important}
+body.nhl-mode #nhlLivePanel .nhl-schedule-controls{margin:0 0 6px!important}
+body.nhl-mode #nhlGames{grid-template-columns:repeat(auto-fit,minmax(180px,1fr))!important;gap:6px!important}
+body.nhl-mode #nhlGames .nhl-game-card{min-height:62px!important;border-radius:9px!important}
+
+/* Chain buttons */
+body.nhl-mode .nhl-dash-tabs{gap:7px!important;margin:0 0 8px!important}
+body.nhl-mode .nhl-dash-tabs .nhl-rink-tab{
+  min-width:104px!important;padding:9px 16px!important;border-radius:9px!important;
+  font-size:13px!important;border-color:#285a78!important;background:#0a2538!important
+}
+body.nhl-mode .nhl-dash-tabs .nhl-rink-tab.active{background:#1d94d6!important;border-color:#65c7ff!important;box-shadow:0 0 18px rgba(34,157,225,.22)!important}
+
+/* Main three-column composition */
+body.nhl-mode .nhl-dashboard-grid{
+  grid-template-columns:350px minmax(680px,790px) 350px!important;
+  gap:12px!important;
+  justify-content:center!important;
+  align-items:start!important
+}
+body.nhl-mode .nhl-team-panel{
+  min-height:668px!important;
+  max-height:none!important;
+  overflow:visible!important;
+  padding:10px 12px!important;
+  border-radius:12px!important;
+  background:linear-gradient(180deg,rgba(4,24,37,.98),rgba(2,13,23,.98))!important;
+  border:1px solid #1a5778!important;
+  box-shadow:0 15px 32px rgba(0,0,0,.48)!important
+}
+body.nhl-mode .nhl-team-panel.home{border-top:2px solid #2b9fe5!important}
+body.nhl-mode .nhl-team-panel.away{border-top:2px solid #d44857!important}
+body.nhl-mode .nhl-panel-head{
+  min-height:72px!important;
+  margin-bottom:8px!important;
+  padding:5px 7px!important;
+  border-bottom:1px solid rgba(62,125,157,.26)!important
+}
+body.nhl-mode .nhl-panel-head img{width:58px!important;height:58px!important}
+body.nhl-mode .nhl-panel-head b{font-size:18px!important;text-transform:uppercase!important}
+body.nhl-mode .nhl-panel-head small{font-size:9px!important}
+body.nhl-mode .nhl-player-group-title{
+  font-size:13px!important;margin:9px 0 5px!important
+}
+body.nhl-mode .nhl-player-card{
+  grid-template-columns:54px 1fr!important;
+  min-height:62px!important;
+  margin-bottom:6px!important;
+  padding:6px 8px!important;
+  border-radius:10px!important;
+  background:linear-gradient(90deg,rgba(9,39,57,.94),rgba(5,24,37,.94))!important
+}
+body.nhl-mode .nhl-player-card img{width:48px!important;height:48px!important}
+body.nhl-mode .nhl-player-name{font-size:12px!important}
+body.nhl-mode .nhl-player-meta{font-size:10px!important}
+body.nhl-mode .nhl-player-num{font-size:10px!important}
+
+/* Rink exactly as a large centered hero */
+body.nhl-mode .nhl-rink-wrap{
+  padding:0!important;margin:0!important;background:transparent!important;border:0!important;
+  display:flex!important;justify-content:center!important;align-items:flex-start!important
+}
+body.nhl-mode .nhl-rink{
+  width:min(790px,100%)!important;
+  height:668px!important;
+  border-radius:54px!important;
+  border:5px solid #d9e1e5!important;
+  background:#eaf0f3!important;
+  box-shadow:inset 0 0 0 2px #a9b5ba,0 18px 45px rgba(0,0,0,.6)!important
+}
+body.nhl-mode .nhl-rink .nhl-zone-logo{opacity:.13!important;width:70%!important;height:43%!important}
+body.nhl-mode .nhl-rink .nhl-zone-badge{width:50px!important;height:50px!important}
+body.nhl-mode .nhl-rink .slot{width:112px!important}
+body.nhl-mode .nhl-rink .slot .nhl-face{width:52px!important;height:52px!important}
+body.nhl-mode .nhl-rink .slot.goalie .nhl-face{width:58px!important;height:58px!important}
+body.nhl-mode .nhl-rink .slot .nhl-name{font-size:11px!important;max-width:112px!important;padding:3px 7px!important}
+body.nhl-mode .nhl-rink .slot .nhl-role{font-size:9px!important}
+body.nhl-mode .nhl-rink .slot .nhl-mini{font-size:8px!important}
+
+/* Keep the positions like the supplied reference: top team above center, bottom team below */
+body.nhl-mode .nhl-rink .slot.home.goalie{top:8.5%!important;left:50%!important}
+body.nhl-mode .nhl-rink .slot.home.d1{top:18%!important;left:35%!important}
+body.nhl-mode .nhl-rink .slot.home.d2{top:18%!important;left:65%!important}
+body.nhl-mode .nhl-rink .slot.home.f1{top:31%!important;left:28%!important}
+body.nhl-mode .nhl-rink .slot.home.f2{top:34%!important;left:50%!important}
+body.nhl-mode .nhl-rink .slot.home.f3{top:31%!important;left:72%!important}
+body.nhl-mode .nhl-rink .slot.away.goalie{bottom:8.5%!important;left:50%!important}
+body.nhl-mode .nhl-rink .slot.away.d1{bottom:18%!important;left:35%!important}
+body.nhl-mode .nhl-rink .slot.away.d2{bottom:18%!important;left:65%!important}
+body.nhl-mode .nhl-rink .slot.away.f1{bottom:31%!important;left:28%!important}
+body.nhl-mode .nhl-rink .slot.away.f2{bottom:34%!important;left:50%!important}
+body.nhl-mode .nhl-rink .slot.away.f3{bottom:31%!important;left:72%!important}
+
+/* Bottom analytics strip */
+body.nhl-mode .nhl-bottom-dashboard{grid-template-columns:1fr 1.05fr 1fr!important;gap:8px!important;margin-top:8px!important}
+body.nhl-mode .nhl-bottom-box{
+  min-height:106px!important;padding:10px!important;border-radius:11px!important;
+  background:linear-gradient(180deg,rgba(5,24,37,.98),rgba(2,13,23,.98))!important;
+  border:1px solid #1a5778!important
+}
+body.nhl-mode .nhl-bottom-title{font-size:13px!important;margin-bottom:7px!important}
+body.nhl-mode .nhl-form-item{font-size:8px!important;padding:6px 3px!important}
+body.nhl-mode .nhl-form-item b{font-size:10px!important}
+
+/* Hide the selection strip after a game has been opened; the user can still reopen it */
+body.nhl-mode.nhl-match-open #nhlLivePanel{display:none!important}
+
+@media(max-width:1250px){
+ body.nhl-mode .nhl-dashboard-grid{grid-template-columns:290px minmax(540px,1fr) 290px!important}
+ body.nhl-mode .nhl-dash-team-name{font-size:22px!important}
+ body.nhl-mode .nhl-dash-logo{width:86px!important;height:86px!important}
+}
+@media(max-width:900px){
+ body.nhl-mode .nhl-dashboard-grid{grid-template-columns:1fr!important}
+ body.nhl-mode .nhl-rink{height:650px!important;width:min(760px,100%)!important}
+ body.nhl-mode .nhl-team-panel{min-height:0!important}
+}
+@media(max-width:600px){
+ body.nhl-mode .nhl-dashboard-head{grid-template-columns:1fr 1fr!important;min-height:78px!important}
+ body.nhl-mode .nhl-dash-center{display:none!important}
+ body.nhl-mode .nhl-dash-logo{width:58px!important;height:58px!important}
+ body.nhl-mode .nhl-dash-team-name{font-size:14px!important}
+ body.nhl-mode .nhl-rink{height:590px!important;border-radius:38px!important}
+}
+</style>
+
 </head><body class="home-mode">
 <div id="sideEyeHome" aria-label="Side Eye Analytics etusivu">
   <div class="seh-bg"></div><div class="seh-overlay"></div>
@@ -869,7 +1041,7 @@ body.nhl-mode .nhl-team-panel{display:block!important;width:auto!important;min-w
       <div class="seh-nhl-title">NHL <span>MATCH CENTER</span></div>
       <div class="nhl-dashboard-head" id="nhlDashboardHead">
         <div class="nhl-dash-team home"><img id="nhlDashHomeLogo" class="nhl-dash-logo" alt=""><div><div id="nhlDashHomeName" class="nhl-dash-team-name">KOTIJOUKKUE</div><div id="nhlDashHomeAbbr" class="nhl-dash-team-abbr">—</div></div></div>
-        <div class="nhl-dash-center"><div class="nhl-dash-brand">NHL MATCH CENTER</div><div id="nhlDashMeta" class="nhl-dash-meta">26.09.2026</div><div id="nhlDashScore" class="nhl-dash-score">VALITSE OTTELU</div></div>
+        <div class="nhl-dash-center"><div class="nhl-dash-brand"><img class="nhl-brand-shield" src="https://assets.nhle.com/logos/nhl/svg/nhl.svg" alt="NHL"> <span>NHL MATCH CENTER</span></div><div id="nhlDashMeta" class="nhl-dash-meta">26.09.2026</div><div id="nhlDashScore" class="nhl-dash-score">VALITSE OTTELU</div><div id="nhlDashVenue" class="nhl-dash-venue"></div></div>
         <div class="nhl-dash-team away"><div><div id="nhlDashAwayName" class="nhl-dash-team-name">VIERASJOUKKUE</div><div id="nhlDashAwayAbbr" class="nhl-dash-team-abbr">—</div></div><img id="nhlDashAwayLogo" class="nhl-dash-logo" alt=""></div>
       </div>
       <div class="seh-nhl-sub">Side Eye Analytics · NHL Match Center</div>
@@ -3198,7 +3370,7 @@ body.home-mode #topDateNavigator{display:none!important}
   function renderSide(side,data,profiles){const prefix=side==='home'?'home':'away';resetSide(prefix);const d=extractSide(data,side),g=d.goalies?.[0],ds=d.defense||[],fs=getUnitPlayers(data,side,live.unit,d),enrich=p=>profiles?.get(p?.playerId||p?.id)||p;applySlot(document.querySelector('.slot.'+prefix+'.goalie'),enrich(g),true);ds.slice(0,2).forEach((p,i)=>applySlot(document.querySelector('.slot.'+prefix+'.d'+(i+1)),enrich(p),false));fs.slice(0,3).forEach((p,i)=>applySlot(document.querySelector('.slot.'+prefix+'.f'+(i+1)),enrich(p),false))}
   function cardHtml(p,goalie=false){if(!p)return '';const n=playerName(p),pos=p?.positionCode||p?.position||'',id=p?.sweaterNumber||p?.jerseyNumber||'',st=p?.stats||p,meta=goalie?statText(p,true):`PTS ${st?.points??p?.points??'—'} · SOG ${st?.sog??st?.shots??p?.sog??'—'}`;return `<div class="nhl-player-card"><img src="${esc(p?.headshot||p?.image||'')}" alt=""><div><div class="nhl-player-name"><span class="nhl-player-num">${esc(id)}</span>${esc(n)}</div><div class="nhl-player-meta">${esc(pos)} · ${esc(meta)}</div></div></div>`}
   function renderPlayerPanel(side,data,profiles){const el=$(side==='home'?'nhlHomePlayers':'nhlAwayPlayers');if(!el)return;const d=extractSide(data,side),g=d.goalies?.[0],ds=(d.defense||[]).slice(0,2),fs=getUnitPlayers(data,side,live.unit,d).slice(0,3),enrich=p=>profiles?.get(p?.playerId||p?.id)||p,t=side==='home'?live.selected?.homeTeam:live.selected?.awayTeam,logo=teamLogo(t),name=teamName(t);el.innerHTML=`<div class="nhl-panel-head"><img src="${esc(logo||'')}" alt=""><div><b>${esc(name)}</b><small>${esc(teamAbbr(t))}</small></div></div><div class="nhl-player-group-title">${live.unit==='pp1'?'YV1':live.unit==='pp2'?'YV2':'Ketju '+live.unit}</div>${fs.map(p=>cardHtml(enrich(p))).join('')||'<div class="nhl-empty-note">Kokoonpanoa ei ole vielä julkaistu.</div>'}<div class="nhl-player-group-title">Puolustajat</div>${ds.map(p=>cardHtml(enrich(p))).join('')||'<div class="nhl-empty-note">—</div>'}<div class="nhl-player-group-title">Maalivahti</div>${cardHtml(enrich(g),true)||'<div class="nhl-empty-note">—</div>'}`}
-  function renderDashHeader(g){const h=teamName(g.homeTeam),a=teamName(g.awayTeam),hl=teamLogo(g.homeTeam),al=teamLogo(g.awayTeam),e=id=>document.getElementById(id);e('nhlDashHomeName').textContent=h;e('nhlDashAwayName').textContent=a;e('nhlDashHomeAbbr').textContent=teamAbbr(g.homeTeam);e('nhlDashAwayAbbr').textContent=teamAbbr(g.awayTeam);e('nhlDashHomeLogo').src=hl||'';e('nhlDashAwayLogo').src=al||'';e('nhlDashMeta').textContent=fmtTime(g.startTimeUTC)+(numGameType(g)===1?' · PRESEASON':' · RUNKOSARJA');const hs=g.homeTeam?.score,as=g.awayTeam?.score;e('nhlDashScore').textContent=(hs!=null&&as!=null)?`${as} – ${hs} · ${stateLabel(g)}`:'OTTELU · '+stateLabel(g)}
+  function renderDashHeader(g){const h=teamName(g.homeTeam),a=teamName(g.awayTeam),hl=teamLogo(g.homeTeam),al=teamLogo(g.awayTeam),e=id=>document.getElementById(id);e('nhlDashHomeName').textContent=h;e('nhlDashAwayName').textContent=a;e('nhlDashHomeAbbr').textContent=teamAbbr(g.homeTeam);e('nhlDashAwayAbbr').textContent=teamAbbr(g.awayTeam);e('nhlDashHomeLogo').src=hl||'';e('nhlDashAwayLogo').src=al||'';e('nhlDashMeta').textContent=(numGameType(g)===1?'PE ':'')+new Date(g.startTimeUTC).toLocaleDateString('fi-FI',{day:'2-digit',month:'2-digit',year:'numeric'})+' | '+fmtTime(g.startTimeUTC);e('nhlDashScore').textContent=(g.gameState?stateLabel(g):'OTTELU · ENNAKKO');const venue=g.venue?.default||g.venue?.name||g.venueName||'';const city=g.venue?.city?.default||g.venue?.city||'';e('nhlDashVenue').textContent=venue?(venue+(city?' · '+city:'')):''}
   function renderBottom(side){const el=$(side==='home'?'nhlHomeForm':'nhlAwayForm');if(!el)return;const t=side==='home'?live.selected?.homeTeam:live.selected?.awayTeam;el.innerHTML=`<div class="nhl-bottom-title">${esc(teamName(t))} · Viimeiset ottelut</div><div class="nhl-form-row"><div class="nhl-form-item">G1<b>—</b></div><div class="nhl-form-item">G2<b>—</b></div><div class="nhl-form-item">G3<b>—</b></div><div class="nhl-form-item">G4<b>—</b></div><div class="nhl-form-item">G5<b>—</b></div></div>`}
   function renderGameStats(){const box=$('nhlGameStats');if(!box)return;const h=live.selected?.homeTeam,a=live.selected?.awayTeam;box.innerHTML=`<div class="nhl-bottom-title">OTTELUTILASTOT</div><div class="nhl-stat-compare"><b>${esc(h?.score??'—')}</b><span>Tilanne</span><b>${esc(a?.score??'—')}</b><div class="nhl-bar"><i style="width:50%"></i></div><span>Maalit</span><div class="nhl-bar red"><i style="width:50%"></i></div><b>—</b><span>Laukaukset</span><b>—</b><div></div><span>Torjunnat</span><div></div></div>`}
   async function renderCurrentUnit(){if(!live.selected||!live.currentData)return false;renderSide('home',live.currentData,live.currentProfiles);renderSide('away',live.currentData,live.currentProfiles);renderPlayerPanel('home',live.currentData,live.currentProfiles);renderPlayerPanel('away',live.currentData,live.currentProfiles);return true}
@@ -3221,7 +3393,7 @@ body.home-mode #topDateNavigator{display:none!important}
       __rosterFallback:true
     };
   }
-  async function selectGame(id,force=false){const wanted=String(id??'');const g=live.allGames.find(x=>String(x.id??'')===wanted);if(!g){console.warn('NHL selectGame: game not found',id);return false;}live.selected=g;renderGames();$('nhlSelectedGame').textContent=`${teamName(g.awayTeam)} – ${teamName(g.homeTeam)} · ${numGameType(g)===1?'PRESEASON':'RUNKOSARJA'}`;$('nhlRinkModule')?.classList.add('nhl-loading');try{const cached=live.cache.get(g.id),isLive=['LIVE','CRIT','OFF','FINAL'].includes(String(g.gameState||'').toUpperCase()),fresh=!force&&cached&&(Date.now()-cached.ts)<live.refreshMs&&!isLive;let data=fresh?cached.data:null;if(!data){
+  async function selectGame(id,force=false){const wanted=String(id??'');const g=live.allGames.find(x=>String(x.id??'')===wanted);if(!g){console.warn('NHL selectGame: game not found',id);return false;}live.selected=g;document.body.classList.add('nhl-match-open');renderGames();$('nhlSelectedGame').textContent=`${teamName(g.awayTeam)} – ${teamName(g.homeTeam)} · ${numGameType(g)===1?'PRESEASON':'RUNKOSARJA'}`;$('nhlRinkModule')?.classList.add('nhl-loading');try{const cached=live.cache.get(g.id),isLive=['LIVE','CRIT','OFF','FINAL'].includes(String(g.gameState||'').toUpperCase()),fresh=!force&&cached&&(Date.now()-cached.ts)<live.refreshMs&&!isLive;let data=fresh?cached.data:null;if(!data){
         const [landing,box,pbp]=await Promise.all([
           api('/gamecenter/'+g.id+'/landing').catch(()=>null),
           api('/gamecenter/'+g.id+'/boxscore').catch(()=>null),
@@ -3273,4 +3445,15 @@ body.home-mode #topDateNavigator{display:none!important}
     loadNhl();setInterval(loadNhl,60000);
   });
 })();
-</script></body></html>
+</script>
+<script id="otb-nhl-final-reference-js">
+(function(){
+  const body=document.body;
+  document.addEventListener('click',function(ev){
+    const b=ev.target.closest('#nhlBack');
+    if(b) body.classList.remove('nhl-match-open');
+  });
+})();
+</script>
+
+</body></html>
