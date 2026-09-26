@@ -2201,7 +2201,9 @@ $('#date').value=today();renderTopDateNavigator($('#date').value);if(isPublicWor
       return;
     }
     window.otbSelectLeague(v);
-  });$('#date').onchange=()=>{if(filter!=='ALL')load();};$$('.f').forEach(b=>b.onclick=()=>{$$('.f').forEach(x=>x.classList.remove('active'));b.classList.add('active');filter=b.dataset.l;render()});setKeyUI(); loadLeagues().then(()=>{$('#out').innerHTML='<div class="status select-league-prompt">👆 Valitse ylhäältä sarja nähdäksesi ottelut.</div>';}).catch(e=>{$('#out').innerHTML='<div class="err">Sarjoja ei saatu ladattua: '+esc(e.message)+'</div>';});
+  });// Date changes are handled by the centralized handler in v20-enhancements-js.
+// The Refresh button below always reloads the current date + selected league.
+$$('.f').forEach(b=>b.onclick=()=>{$$('.f').forEach(x=>x.classList.remove('active'));b.classList.add('active');filter=b.dataset.l;render()});setKeyUI(); loadLeagues().then(()=>{$('#out').innerHTML='<div class="status select-league-prompt">👆 Valitse ylhäältä sarja nähdäksesi ottelut.</div>';}).catch(e=>{$('#out').innerHTML='<div class="err">Sarjoja ei saatu ladattua: '+esc(e.message)+'</div>';});
 </script>
 <script id="v20-enhancements-js">
 (function(){
@@ -2306,17 +2308,11 @@ $('#date').value=today();renderTopDateNavigator($('#date').value);if(isPublicWor
       b.onclick=()=>{
         const el=document.getElementById('date');
         if(!el)return;
+        // Keep the currently selected league when changing days. This lets the
+        // user move to a day with no matches and then back to a day with matches
+        // without having to select the league again or refresh the page.
         el.value=iso;
-        // Changing the day starts a clean Match Center state.
-        // Do not leave the previous league/match rendered underneath the new date.
-        try{ filter='ALL'; loadGeneration++; }catch(_e){}
-        document.querySelectorAll('.league-tab').forEach(x=>x.classList.remove('active'));
-        const other=document.getElementById('otherLeagueSelect'); if(other) other.value='';
-        const out=document.getElementById('out');
-        if(out) out.innerHTML='<div class="status select-league-prompt">👆 Valitse sarja nähdäksesi ottelut tälle päivälle.</div>';
         el.dispatchEvent(new Event('change',{bubbles:true}));
-        el.dispatchEvent(new Event('input',{bubbles:true}));
-        renderTopDateNavigator(iso);
       };
       box.appendChild(b);
       if(iso===activeIso) setTimeout(()=>b.scrollIntoView({behavior:'smooth',block:'nearest',inline:'center'}),0);
@@ -2327,13 +2323,18 @@ $('#date').value=today();renderTopDateNavigator($('#date').value);if(isPublicWor
     return new Date(x-x.getTimezoneOffset()*60000).toISOString().slice(0,10);
   }
   document.getElementById('date')?.addEventListener('change',e=>{
-    renderTopDateNavigator(e.target.value);
-    // Keep the old league/match result from remaining visible after a date change.
-    try{ filter='ALL'; loadGeneration++; }catch(_e){}
-    document.querySelectorAll('.league-tab').forEach(x=>x.classList.remove('active'));
-    const other=document.getElementById('otherLeagueSelect'); if(other) other.value='';
+    const iso=e.target.value||today();
+    renderTopDateNavigator(iso);
+    // A date change invalidates the previous request, but intentionally keeps
+    // the selected league so the new date is loaded immediately for that league.
+    loadGeneration++;
     const out=document.getElementById('out');
-    if(out) out.innerHTML='<div class="status select-league-prompt">👆 Valitse sarja nähdäksesi ottelut tälle päivälle.</div>';
+    if(out) out.innerHTML='<div class="status">Haetaan valitun sarjan otteluita…</div>';
+    if(filter!=='ALL'){
+      load();
+    }else{
+      out.innerHTML='<div class="status select-league-prompt">👆 Valitse sarja nähdäksesi ottelut tälle päivälle.</div>';
+    }
   });
   document.addEventListener('DOMContentLoaded',()=>renderTopDateNavigator(document.getElementById('date')?.value||today()));
 
