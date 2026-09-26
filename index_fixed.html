@@ -433,216 +433,21 @@ html,body{overflow-x:hidden}
 @media(max-width:600px){.p .nums,.p .player-stat-values{font-size:14px!important;min-height:32px!important}.p .nums .statlabel{font-size:10px!important}.p .nums .statvals{font-size:14px!important}.p .nums .high{font-size:15px!important}}
 </style>
 
-<style id="otb-v39-visual">
-/* =========================================================
-   OTB MATCH CENTER V39 — VISUAL LAYER
-   Data / API / JavaScript functionality intentionally untouched.
-   ========================================================= */
-
-:root{
-  --v39-bg:#071018;
-  --v39-panel:#0c1721;
-  --v39-panel2:#101e2a;
-  --v39-panel3:#132432;
-  --v39-border:rgba(255,255,255,.09);
-  --v39-border2:rgba(255,255,255,.14);
-  --v39-text:#edf4f8;
-  --v39-muted:#8ea2b1;
-  --v39-blue:#4da3ff;
-  --v39-green:#39d98a;
-  --v39-orange:#ffad4a;
-  --v39-red:#ff667a;
-  --v39-radius:14px;
-  --v39-shadow:0 14px 40px rgba(0,0,0,.24);
-}
-
-html{background:var(--v39-bg)!important}
-body{
-  background:
-    radial-gradient(circle at 20% -10%,rgba(77,163,255,.08),transparent 34%),
-    radial-gradient(circle at 90% 0%,rgba(57,217,138,.045),transparent 28%),
-    var(--v39-bg)!important;
-  color:var(--v39-text)!important;
-}
-
-/* General cards/panels */
-.card,.panel,.match,.match-card,.fixture,.game,.box,.section,.stat-card,
-.analysis,.player-card,.team-card,.drawer,.modal,.table-wrap{
-  border-color:var(--v39-border)!important;
-  box-shadow:var(--v39-shadow);
-}
-
-/* Top-level containers */
-header,.header,.topbar,.navbar,.nav,.toolbar,.controls{
-  border-color:var(--v39-border)!important;
-}
-
-/* Buttons and tabs */
-button,.btn,.tab,.league-tab,.date-tab,.filter-btn{
-  border:1px solid var(--v39-border)!important;
-  border-radius:10px!important;
-  transition:background .16s ease,border-color .16s ease,transform .16s ease,box-shadow .16s ease;
-}
-button:hover,.btn:hover,.tab:hover,.league-tab:hover,.date-tab:hover,.filter-btn:hover{
-  border-color:rgba(77,163,255,.42)!important;
-  box-shadow:0 6px 20px rgba(0,0,0,.18);
-}
-button:active,.btn:active,.tab:active,.league-tab:active,.date-tab:active,.filter-btn:active{
-  transform:translateY(1px);
-}
-
-/* Inputs/selects */
-input,select{
-  background:rgba(255,255,255,.035)!important;
-  border:1px solid var(--v39-border)!important;
-  color:var(--v39-text)!important;
-  border-radius:10px!important;
-}
-input:focus,select:focus{
-  outline:none!important;
-  border-color:rgba(77,163,255,.55)!important;
-  box-shadow:0 0 0 3px rgba(77,163,255,.09)!important;
-}
-
-/* Match cards — make them read as fixtures */
-.match-card,.match,.fixture,.game{
-  background:linear-gradient(145deg,rgba(16,30,42,.96),rgba(10,21,30,.96))!important;
-  border-radius:var(--v39-radius)!important;
-  overflow:hidden;
-}
-.match-card:hover,.match:hover,.fixture:hover,.game:hover{
-  border-color:rgba(77,163,255,.22)!important;
-}
-
-/* Common headings */
-h1,h2,h3,h4{
-  color:var(--v39-text)!important;
-  letter-spacing:-.015em;
-}
-small,.muted,.subtle,.secondary{
-  color:var(--v39-muted)!important;
-}
-
-/* Player cards */
+<style id="otb-v39-clean-player-hover">
+/* V39 clean visual pass — player positioning remains exactly V38. */
 .p{
-  border:1px solid rgba(255,255,255,.10)!important;
-  background:linear-gradient(145deg,rgba(19,36,50,.97),rgba(10,22,31,.97))!important;
-  border-radius:12px!important;
-  box-shadow:0 7px 20px rgba(0,0,0,.25)!important;
-  transition:border-color .15s ease,box-shadow .15s ease!important;
+  /* visual-only properties; original V38 position/transform/width stay untouched */
+  transition:filter .15s ease,box-shadow .15s ease!important;
 }
 .p:hover{
-  transform:none!important;
-  border-color:rgba(77,163,255,.48)!important;
-  box-shadow:0 10px 28px rgba(0,0,0,.34)!important;
-}
-.p img{
-  border-radius:50%!important;
-  border:2px solid rgba(255,255,255,.10)!important;
-  object-fit:cover;
-}
-.p .name,.p-name,.player-name{
-  color:#f2f7fa!important;
-  font-weight:700!important;
-}
-.p .meta,.p-meta,.player-meta{
-  color:#91a7b6!important;
-}
-
-/* Stat chips / compact numbers */
-.chip,.pill,.badge,.tag,.stat,.stat-pill,.metric{
-  border:1px solid rgba(255,255,255,.09)!important;
-  background:rgba(255,255,255,.045)!important;
-  border-radius:999px!important;
-}
-.badge.green,.pill.green,.tag.green,.stat.green{
-  border-color:rgba(57,217,138,.28)!important;
-  background:rgba(57,217,138,.09)!important;
-}
-.badge.orange,.pill.orange,.tag.orange,.stat.orange{
-  border-color:rgba(255,173,74,.28)!important;
-  background:rgba(255,173,74,.09)!important;
-}
-.badge.red,.pill.red,.tag.red,.stat.red{
-  border-color:rgba(255,102,122,.28)!important;
-  background:rgba(255,102,122,.09)!important;
-}
-
-/* Tables */
-table{
-  border-collapse:separate!important;
-  border-spacing:0!important;
-  overflow:hidden;
-  border:1px solid var(--v39-border)!important;
-  border-radius:12px!important;
-}
-th{
-  background:rgba(255,255,255,.045)!important;
-  color:#a9bac5!important;
-  font-size:.78rem!important;
-  text-transform:uppercase;
-  letter-spacing:.055em;
-}
-td{border-top:1px solid rgba(255,255,255,.055)!important}
-tr:hover td{background:rgba(255,255,255,.018)!important}
-
-/* Pitch */
-.pitch,.football-pitch,.field{
-  border:1px solid rgba(255,255,255,.12)!important;
-  border-radius:16px!important;
-  box-shadow:inset 0 0 45px rgba(0,0,0,.16),0 18px 45px rgba(0,0,0,.18)!important;
-}
-
-/* Drawers / overlays */
-.drawer,.modal,.player-drawer{
-  background:linear-gradient(160deg,#0e1c28,#09131c)!important;
-  border:1px solid var(--v39-border2)!important;
-  box-shadow:0 24px 70px rgba(0,0,0,.48)!important;
-}
-.drawer-header,.modal-header{
-  border-bottom:1px solid var(--v39-border)!important;
-}
-
-/* Analysis blocks */
-.analysis,.analysis-box,.match-analysis,.team-stats,.h2h,.history{
-  background:rgba(12,23,33,.78)!important;
-  border:1px solid var(--v39-border)!important;
-  border-radius:var(--v39-radius)!important;
-}
-
-/* Scrollbars */
-*{
-  scrollbar-width:thin;
-  scrollbar-color:rgba(142,162,177,.35) transparent;
-}
-*::-webkit-scrollbar{width:8px;height:8px}
-*::-webkit-scrollbar-track{background:transparent}
-*::-webkit-scrollbar-thumb{
-  background:rgba(142,162,177,.30);
-  border-radius:999px;
-}
-*::-webkit-scrollbar-thumb:hover{background:rgba(142,162,177,.48)}
-
-/* Responsive polish */
-@media (max-width:900px){
-  .match-card,.match,.fixture,.game{border-radius:12px!important}
-  .p{border-radius:10px!important}
-}
-@media (max-width:620px){
-  body{font-size:14px}
-  .p{box-shadow:0 5px 14px rgba(0,0,0,.22)!important}
-}
-</style>
-
-<style id="otb-v39-card-hover-fix">
-/* V39 FIX 2: keep the pitch positioning transform on hover.
-   The translate(-50%,-50%) is required for absolute player placement;
-   hover must not add any movement. */
-.p:hover,
-.pitch .p:hover{
+  /* outline does not participate in layout and cannot move/reflow the card */
+  outline:1px solid rgba(77,163,255,.65)!important;
+  outline-offset:1px;
   transform:translate(-50%,-50%)!important;
+  filter:drop-shadow(0 4px 10px rgba(0,0,0,.42))!important;
 }
 </style>
+
 </head><body>
 
 <div style="margin:8px 0;padding:8px 10px;border-radius:9px;background:rgba(16,43,44,.75);font-size:12px;opacity:.85">
@@ -2493,10 +2298,4 @@ $('#date').value=today();if(isPublicWorker())$('#setup').style.display='none';$(
 })();
 </script>
 <style id="v40-long-pitch">.pitch{min-height:1700px!important;height:1700px!important;overflow:visible!important}.pitch .players{height:1700px!important;min-height:1700px!important}@media(max-width:600px){.pitch{min-height:1350px!important;height:1350px!important}.pitch .players{height:1350px!important;min-height:1350px!important}}</style>
-
-<div id="otb-v39-mark" aria-hidden="true" style="
-position:fixed;right:10px;bottom:8px;z-index:9999;
-font:600 9px/1 system-ui,sans-serif;letter-spacing:.08em;
-color:rgba(142,162,177,.28);pointer-events:none;">V39</div>
-
 </body></html>
