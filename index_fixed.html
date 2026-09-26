@@ -782,12 +782,19 @@ function populateLeagueSelector(){
   const otherSel=document.getElementById('otherLeagueSelect');
   if(otherSel){const old=otherSel.value;otherSel.innerHTML='<option value="">Valitse otteluanalyysin sarja…</option>'+others.map(n=>`<option value="${esc(n)}">${esc(n)}</option>`).join('');if(others.includes(old))otherSel.value=old;}
 }
+let loadGeneration=0;
 async function load(){
+  const myLoad=++loadGeneration;
   if(!key()&&!isPublicWorker()){setKeyUI();$('#status').textContent='Lisää ensin PitchAPI-avain.';return}
   $('#out').innerHTML='';$('#status').textContent='Haetaan päivän ottelut…';
   try{
     await loadLeagues();
+    // If the user changed the date while an older request was still running,
+    // abandon the old response so it cannot paint yesterday's league/match back.
+    if(myLoad!==loadGeneration)return;
     const date=$('#date').value;
+    const requestDate=date;
+    let requestFilter=filter;
     let matches=[];
 
     if(NL_LEAGUES.includes(filter)){
@@ -839,6 +846,7 @@ async function load(){
       games=matches.map(m=>{const target=ALLOWED.find(n=>String(leagueMap[n]?.id)===String(m?.league?.id));return {...m,league:{...(m.league||{}),name:target||filter||m.league?.name}}});
     }
 
+    if(myLoad!==loadGeneration || $('#date').value!==requestDate || filter!==requestFilter)return;
     games=await Promise.all(games.map(async m=>{
       if(m.__nlStatic)return m;
       const fetchTeam=async(t)=>{
@@ -848,6 +856,7 @@ async function load(){
       };
       return {...m,home_team:await fetchTeam(m.home_team),away_team:await fetchTeam(m.away_team)};
     }));
+    if(myLoad!==loadGeneration || $('#date').value!==requestDate || filter!==requestFilter)return;
     games.sort((a,b)=>new Date(a.time_utc)-new Date(b.time_utc));
     $('#status').textContent=`${games.length} ottelua · ${games.some(m=>m.__nlStatic)?'UEFA-fixturevarmistus':'PitchAPI'}`;
     render();
@@ -2294,7 +2303,21 @@ $('#date').value=today();renderTopDateNavigator($('#date').value);if(isPublicWor
       const b=document.createElement('button');
       b.type='button'; b.className='top-date-day'+(iso===activeIso?' active':'');
       b.innerHTML=`${label}<small>${date}</small>`;
-      b.onclick=()=>{ const el=document.getElementById('date'); if(!el)return; el.value=iso; el.dispatchEvent(new Event('change',{bubbles:true})); el.dispatchEvent(new Event('input',{bubbles:true})); renderTopDateNavigator(iso); };
+      b.onclick=()=>{
+        const el=document.getElementById('date');
+        if(!el)return;
+        el.value=iso;
+        // Changing the day starts a clean Match Center state.
+        // Do not leave the previous league/match rendered underneath the new date.
+        try{ filter='ALL'; loadGeneration++; }catch(_e){}
+        document.querySelectorAll('.league-tab').forEach(x=>x.classList.remove('active'));
+        const other=document.getElementById('otherLeagueSelect'); if(other) other.value='';
+        const out=document.getElementById('out');
+        if(out) out.innerHTML='<div class="status select-league-prompt">👆 Valitse sarja nähdäksesi ottelut tälle päivälle.</div>';
+        el.dispatchEvent(new Event('change',{bubbles:true}));
+        el.dispatchEvent(new Event('input',{bubbles:true}));
+        renderTopDateNavigator(iso);
+      };
       box.appendChild(b);
       if(iso===activeIso) setTimeout(()=>b.scrollIntoView({behavior:'smooth',block:'nearest',inline:'center'}),0);
     }
@@ -2303,7 +2326,15 @@ $('#date').value=today();renderTopDateNavigator($('#date').value);if(isPublicWor
     const x=new Date(d); x.setHours(12,0,0,0);
     return new Date(x-x.getTimezoneOffset()*60000).toISOString().slice(0,10);
   }
-  document.getElementById('date')?.addEventListener('change',e=>renderTopDateNavigator(e.target.value));
+  document.getElementById('date')?.addEventListener('change',e=>{
+    renderTopDateNavigator(e.target.value);
+    // Keep the old league/match result from remaining visible after a date change.
+    try{ filter='ALL'; loadGeneration++; }catch(_e){}
+    document.querySelectorAll('.league-tab').forEach(x=>x.classList.remove('active'));
+    const other=document.getElementById('otherLeagueSelect'); if(other) other.value='';
+    const out=document.getElementById('out');
+    if(out) out.innerHTML='<div class="status select-league-prompt">👆 Valitse sarja nähdäksesi ottelut tälle päivälle.</div>';
+  });
   document.addEventListener('DOMContentLoaded',()=>renderTopDateNavigator(document.getElementById('date')?.value||today()));
 
   // Seven-day date navigator: 3 days back + today + 3 days forward.
