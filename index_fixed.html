@@ -552,6 +552,16 @@ const NL_FIXTURES=[
   ['2026-09-26','Nations League C','Slovakia','Moldova']
 ];
 const NL_PREDICTED={
+  'Czechia|Croatia':{
+    homeFormation:'3-4-2-1',awayFormation:'4-2-3-1',
+    home:['Matej Kovar','Martin Vitik','Ladislav Krejci','Robin Hranac','Vladimir Coufal','Alex Kral','Lukas Cerv','Michal Sadilek','Adam Karabec','Pavel Sulc','Adam Hlozek'],
+    away:['Dominik Livakovic','Josip Stanisic','Josip Sutalo','Marin Pongracic','Josko Gvardiol','Luka Modric','Mateo Kovacic','Nikola Vlasic','Petar Sucic','Martin Baturina','Igor Matanovic']
+  },
+  'England|Spain':{
+    homeFormation:'4-2-3-1',awayFormation:'4-3-3',
+    home:['Jordan Pickford','Jarell Quansah','Ezri Konsa','Marc Guehi','Myles Lewis-Skelly','Elliot Anderson','Alex Scott','Bukayo Saka','Jude Bellingham','Anthony Gordon','Harry Kane'],
+    away:['Unai Simon','Eric Garcia','Pau Cubarsi','Aymeric Laporte','Marc Cucurella','Rodri','Pedri','Lamine Yamal','Dani Olmo','Nico Williams','Mikel Oyarzabal']
+  },
   'North Macedonia|Switzerland':{
     homeFormation:'3-4-1-2',awayFormation:'4-2-3-1',
     home:['Stole Dimitrievski','Gjoko Zajkov','Visar Musliu','Aleksandar Stojchevski','Bojan Ilievski','Aleksandar Trajkovski','Enis Bardhi','Ezgjan Alioski','Eljif Elmas','Bojan Miovski','Elmin Rastoder'],
@@ -747,7 +757,7 @@ const nlTeamHistoryCache=new Map();
 const nlTeamHistoryPromiseCache=new Map();
 
 
-/* v35: SofaScore enrichment fallback for static Nations League fixtures.
+/* v36: SofaScore enrichment fallback for static Nations League fixtures.
    PitchAPI remains the primary source. SofaScore is used only when the
    fixture itself has no PitchAPI match ID yet, so predicted players can still
    be resolved to their real club, image and last five club matches. */
@@ -798,8 +808,8 @@ async function sofaFindPlayer(name){
   sofaPlayerSearchCache.set(ck,promise);
   return promise;
 }
-async function sofaPlayerEvents(playerId,cutoffTime){
-  const ck=String(playerId)+':'+String(cutoffTime||'');
+async function sofaPlayerEvents(playerId,cutoffTime,teamId){
+  const ck=String(playerId)+':'+String(teamId||'')+':'+String(cutoffTime||'');
   if(sofaEventsCache.has(ck))return sofaEventsCache.get(ck);
   const promise=(async()=>{
     try{
@@ -808,6 +818,7 @@ async function sofaPlayerEvents(playerId,cutoffTime){
       return (Array.isArray(d?.events)?d.events:[])
         .filter(e=>e?.status?.type==='finished'||e?.status?.code===100||e?.status?.description==='Ended')
         .filter(e=>!Number.isFinite(cut)||Number(e.startTimestamp||0)*1000<cut)
+        .filter(e=>!teamId || String(e?.homeTeam?.id||'')===String(teamId) || String(e?.awayTeam?.id||'')===String(teamId))
         .sort((a,b)=>Number(b.startTimestamp||0)-Number(a.startTimestamp||0))
         .slice(0,5);
     }catch(e){console.warn('Sofa player events',playerId,e);return[]}
@@ -859,7 +870,8 @@ async function sofaPlayerHistory(name,cutoffTime){
   const promise=(async()=>{
     const prof=await sofaFindPlayer(name);
     if(!prof?.id)return {profile:null,rows:[]};
-    const events=await sofaPlayerEvents(prof.id,cutoffTime);
+    const clubTeamId=prof?.team?.id||prof?.team?.team?.id||null;
+    const events=await sofaPlayerEvents(prof.id,cutoffTime,clubTeamId);
     const rows=[];
     for(const e of events){
       const lu=await sofaLineups(e.id);
@@ -1011,98 +1023,137 @@ async function hydrateStaticNLMatch(m){
   if(!pred)return;
   m.__nlHydrating=true;
   const root=document.querySelector(`#p${m.id.replace(/[^a-zA-Z0-9_-]/g,'')}`);
-  if(!root)return;
+  if(!root){m.__nlHydrating=false;return;}
   const status=root.querySelector('.players .status');
-  if(status)status.textContent='Haetaan pelaajien viimeisiä 5 ottelua…';
+  if(status)status.textContent='Haetaan pelaajien kuvia ja viimeisiä 5 seurajoukkueottelua…';
 
   try{
+    /*
+      Static Nations League fixtures use player-level club history first.
+      This is deliberate: the player's five recent matches should come from
+      the club competition where the player actually plays, not from the
+      national team's own five matches.
+    */
+    const names=[...pred.home,...pred.away];
+    const results=[];
+    let cursor=0;
+    async function worker(){
+      while(true){
+        const i=cursor++;
+        if(i>=names.length)return;
+        const name=names[i];
+        try{
+          results[i]={name,...await sofaPlayerHistory(name,m.time_utc)};
+        }catch(e){
+          results[i]={name,profile:null,rows:[]};
+        }
+      }
+    }
+    await Promise.all([worker(),worker(),worker(),worker(),worker(),worker()]);
+
+    const enriched=new Map();
+    results.forEach(r=>enriched.set(normName(r.name),r));
+
+    /*
+      If SofaScore could not resolve an individual player, fall back to the
+      existing PitchAPI national-team history logic for that player only.
+    */
     const [homeHist,awayHist]=await Promise.all([
       nlRecentTeamMatchesByName(m.home_team?.name||'',m.time_utc),
       nlRecentTeamMatchesByName(m.away_team?.name||'',m.time_utc)
     ]);
-
-    /* If the national team's own history cannot resolve the predicted
-       players, switch to player-level club history. This is the important
-       fallback: the player is not required to have a recent national-team
-       match in PitchAPI. */
-    if(homeHist.length<5 || awayHist.length<5){
-      const sofaGot=await hydrateStaticNLFromSofa(m,pred,root);
-      if(sofaGot>0){
-        const note=root.parentElement.querySelector('.note');
-        if(note)note.textContent=`🟢 Pelaajien kuvat ja viimeiset ${Math.min(5,sofaGot)} pelaajakohtaista ottelua ladattu · lähde: pelaajaprofiili + seurajoukkueen otteluhistoria.`;
-        m.__nlHydrated=true;
-        window.dispatchEvent(new CustomEvent('otb-history-ready',{detail:{matchId:m.id,source:'sofascore'}}));
-        return;
-      }
-    }
-
     const [homeRows,awayRows]=await Promise.all([
       buildTeamHistoryRows(homeHist),
       buildTeamHistoryRows(awayHist)
     ]);
 
-    const resolveSide=async(names,rows,hist,homeSide,formation,teamName)=>{
+    async function resolveSide(names,rows,hist,formation,teamName){
       const out=[];
       for(const name of names){
+        const s=enriched.get(normName(name));
+        if(s?.profile?.id || s?.rows?.length){
+          out.push({
+            name:s.profile?.name||name,
+            image_url:s.profile?.image_url||'',
+            player_id:s.profile?.id||null,
+            __history:Array.isArray(s.rows)?s.rows:[],
+            __sofaProfile:s.profile||null,
+            __sofa:true
+          });
+          continue;
+        }
+
         const q=nlFindPlayerInRows(rows,name);
-        const ref=q||{name};
         let vals=[];
-        try{vals=await buildHistoryRows(rows,ref)}
-        catch(e){vals=nlFallbackHistory(hist,ref)}
+        if(q){
+          try{vals=await buildHistoryRows(rows,q)}catch(e){vals=nlFallbackHistory(hist,q)}
+        }else{
+          vals=nlFallbackHistory(hist,{name});
+        }
         out.push({
           ...(q||{}),
           name:q?.player?.name||q?.name||name,
           image_url:q?.player?.image_url||q?.image_url||'',
           player_id:pid(q)||q?.player_id||null,
-          __history:vals
+          __history:vals,
+          __sofa:false
         });
       }
       return out;
-    };
+    }
 
     const [hs,as]=await Promise.all([
-      resolveSide(pred.home,homeRows,homeHist,true,pred.homeFormation,m.home_team?.name||''),
-      resolveSide(pred.away,awayRows,awayHist,false,pred.awayFormation,m.away_team?.name||'')
+      resolveSide(pred.home,homeRows,homeHist,pred.homeFormation,m.home_team?.name||''),
+      resolveSide(pred.away,awayRows,awayHist,pred.awayFormation,m.away_team?.name||'')
     ]);
 
     let inner='';
     for(const q of place(hs,true,pred.homeFormation)){
-      const p=q.p; inner+=card(p,m.home_team?.id||'',m.id,q.x,q.y);
+      inner+=card(q.p,m.home_team?.id||'',m.id,q.x,q.y);
     }
     for(const q of place(as,false,pred.awayFormation)){
-      const p=q.p; inner+=card(p,m.away_team?.id||'',m.id,q.x,q.y);
+      inner+=card(q.p,m.away_team?.id||'',m.id,q.x,q.y);
     }
-
     root.querySelector('.players').innerHTML=inner;
 
-    const all=[...root.querySelectorAll('.p')];
-    const byName=new Map();
-    [...hs,...as].forEach(p=>byName.set(normName(pName(p)),p));
-    all.forEach(el=>{
+    const byName=new Map([...hs,...as].map(p=>[normName(pName(p)),p]));
+    root.querySelectorAll('.p').forEach(el=>{
       const nm=normName(el.dataset.playerName||el.querySelector('.name')?.textContent||'');
       const p=byName.get(nm)||[...byName.values()].find(q=>nlNameMatch(q?.name||q?.player?.name||'',el.dataset.playerName||''));
       if(!p)return;
-      const id=pid(p);
+
       el._history=Array.isArray(p.__history)?p.__history:[];
-      if(id){
-        el.dataset.playerId=String(id);
-        el.dataset.id=String(id);
-        const face=el.querySelector('.face');
-        const u=img(p);
-        if(face&&u){face.src=u;face.dataset.pid=String(id);face.style.visibility='visible'}
+      el.__sofaProfile=p.__sofaProfile||null;
+      el.dataset.sofaPlayerId=p.player_id||'';
+      if(p.player_id){
+        el.dataset.playerId=String(p.player_id);
+        el.dataset.id=String(p.player_id);
       }
+
+      const face=el.querySelector('.face');
+      const u=p.image_url||img(p);
+      if(face&&u){
+        face.src=u;
+        face.style.visibility='visible';
+      }
+
       const mode=document.querySelector(`[data-stat-bar="${CSS.escape(String(m.id))}"]`)?.dataset.mode||'otb';
       renderPlayerStat(el,mode);
     });
 
+    const clubCount=[...hs,...as].filter(p=>p.__sofaProfile?.team?.name).length;
+    const historyCount=[...hs,...as].filter(p=>Array.isArray(p.__history)&&p.__history.length).length;
     const note=root.parentElement.querySelector('.note');
-    if(note)note.textContent='🟢 Pelaajien viimeiset 5 ottelua ladattu · OTB = boxin ulkopuolelta · paina pelaajaa avataksesi tarkat laukaus- ja raakadatat.';
+    if(note){
+      note.textContent=`🟢 Pelaajien kuvat + viimeiset ${Math.min(5,historyCount?5:0)} seurajoukkueottelua ladattu · ${clubCount} pelaajalle löytyi seuraprofiili · OTB = boxin ulkopuolelta.`;
+    }
+
     m.__nlHydrated=true;
-    window.dispatchEvent(new CustomEvent('otb-history-ready',{detail:{matchId:m.id}}));
+    window.dispatchEvent(new CustomEvent('otb-history-ready',{detail:{matchId:m.id,source:'club-player-history'}}));
   }catch(e){
     console.warn('NL static hydrate',e);
     const note=root.parentElement.querySelector('.note');
-    if(note)note.textContent='🟡 Ennakoitu kokoonpano näkyy. Viimeisten 5 ottelun dataa ei saatu ladattua juuri nyt.';
+    if(note)note.textContent='🟡 Ennakoitu kokoonpano näkyy. Pelaajakohtaista seurahistoriaa ei saatu ladattua juuri nyt.';
   }finally{
     m.__nlHydrating=false;
   }
