@@ -446,6 +446,24 @@ html,body{overflow-x:hidden}
 }
 </style>
 
+
+<style id="otb-v39-final-player-focus-fix">
+/* Final player-card hover/focus cleanup:
+   no rectangle, no outline, no focus ring, no movement. */
+.p:hover,
+.p:focus,
+.p:focus-visible,
+.pitch .p:hover,
+.pitch .p:focus,
+.pitch .p:focus-visible{
+  outline:none!important;
+  border-color:inherit!important;
+  box-shadow:none!important;
+  transform:translate(-50%,-50%)!important;
+  filter:none!important;
+}
+</style>
+
 </head><body>
 
 <div style="margin:8px 0;padding:8px 10px;border-radius:9px;background:rgba(16,43,44,.75);font-size:12px;opacity:.85">
