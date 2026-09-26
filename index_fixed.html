@@ -776,7 +776,7 @@ const nlTeamHistoryCache=new Map();
 const nlTeamHistoryPromiseCache=new Map();
 
 
-/* v37: SofaScore enrichment fallback for static Nations League fixtures.
+/* v38: SofaScore enrichment fallback for static Nations League fixtures.
    PitchAPI remains the primary source. SofaScore is used only when the
    fixture itself has no PitchAPI match ID yet, so predicted players can still
    be resolved to their real club, image and last five club matches. */
@@ -1221,6 +1221,55 @@ function renderStaticNLMatch(m){
   </section>`;
 }
 
+
+async function refreshStaticNLFixtures(){
+  if(document.visibilityState==='hidden')return;
+  if(!NL_LEAGUES.includes(filter))return;
+  const date=$('#date')?.value||today();
+  const pending=games.filter(m=>m.__nlStatic && m.status!=='finished');
+  if(!pending.length)return;
+
+  try{
+    /*
+      Check the authoritative PitchAPI date feed. We deliberately do this
+      separately from the normal 5-minute lineup refresh because a static
+      UEFA fallback has no real PitchAPI match id yet.
+    */
+    const d=await api(`date/${encodeURIComponent(date)}?status=all`);
+    const source=Array.isArray(d?.matches)?d.matches:[];
+
+    let changed=false;
+    games=games.map(m=>{
+      if(!m.__nlStatic)return m;
+      const real=source.find(r=>{
+        if(!r?.home_team?.name||!r?.away_team?.name)return false;
+        const sameHome=normNL(r.home_team.name)===normNL(m.home_team?.name);
+        const sameAway=normNL(r.away_team.name)===normNL(m.away_team?.name);
+        if(!sameHome||!sameAway)return false;
+        const bucket=nlBucket(date,r.home_team.name,r.away_team.name);
+        return !bucket || bucket===filter;
+      });
+      if(!real)return m;
+
+      changed=true;
+      return {
+        ...real,
+        league:{...(real.league||{}),name:filter},
+        __nlStatic:false,
+        __nlReplacedFromStatic:true
+      };
+    });
+
+    if(changed){
+      games.sort((a,b)=>new Date(a.time_utc)-new Date(b.time_utc));
+      $('#status').textContent=`${games.length} ottelua · PitchAPI · Nations League päivitetty`;
+      render();
+    }
+  }catch(e){
+    console.warn('Nations League automatic fixture refresh failed',e);
+  }
+}
+
 function initStaticNLHydration(list){
   const staticList=list.filter(m=>m.__nlStatic&&predictedNLFor(m));
   if(!staticList.length)return;
@@ -1285,7 +1334,23 @@ function render(){
       });
     });
     if(lineupRefreshTimer)clearInterval(lineupRefreshTimer);
-    lineupRefreshTimer=setInterval(()=>{if(document.visibilityState==='hidden')return;list.filter(m=>!m.__nlStatic&&m.status!=='finished').forEach(m=>loadGame(m,true));},300000);
+    lineupRefreshTimer=setInterval(async ()=>{
+      if(document.visibilityState==='hidden')return;
+      /*
+        First look for a real PitchAPI match ID for every UEFA fallback.
+        Once found, refreshStaticNLFixtures() replaces that card with the
+        real match and render() automatically starts the normal lineup
+        polling for it.
+      */
+      await refreshStaticNLFixtures();
+      const current=games.filter(m=>!m.__nlStatic&&m.status!=='finished');
+      current.forEach(m=>loadGame(m,true));
+    },300000);
+
+    /* Do one extra immediate check after rendering. This is cheap when there
+       are no static fixtures and means a newly-created PitchAPI match can
+       replace the fallback without waiting for the first 5-minute interval. */
+    setTimeout(()=>refreshStaticNLFixtures(),1500);
   }else{
     $('#out').innerHTML=list.map(m=>`<section class="other-match match-analysis-card" data-other-match="${esc(m.id)}"><div class="ma-head"><div class="ma-teams"><div class="ma-team">${m.home_team?.image_url?`<img class="ma-logo" src="${esc(m.home_team.image_url)}" alt="">`:''}<span>${esc(m.home_team?.name||'')}</span></div><div class="ma-vs">VS</div><div class="ma-team away"><span>${esc(m.away_team?.name||'')}</span>${m.away_team?.image_url?`<img class="ma-logo" src="${esc(m.away_team.image_url)}" alt="">`:''}</div></div><div class="ma-time">${localTime(m.time_utc)}${m.status==='finished'?' · '+m.score_home+'–'+m.score_away:''}</div></div><div class="ma-body"><div class="other-analysis"><div class="status">Lasketaan joukkueiden tilastofaktoja…</div></div></div><div class="ma-foot">📊 Perustuu PitchAPI:n viimeisiin otteluihin, joukkueiden tilastoihin ja H2H-kohtaamisiin. Ennuste on tilastollinen arvio, ei varma tulos.</div></section>`).join('');
     list.forEach(loadOtherGame);
@@ -1346,7 +1411,7 @@ function spreadX(n){
   return Array.from({length:n},(_,i)=>margin+(100-2*margin)*i/(n-1));
 }
 function place(starters,home,formation=''){
-  /* v37: never trust raw PitchAPI coordinates for the visual XI.  Different
+  /* v38: never trust raw PitchAPI coordinates for the visual XI.  Different
      feeds use different axes/orientations, which was putting keepers and
      defenders in the wrong zones.  The visual field is always positional:
      GK -> defenders -> midfield -> attackers. Home is TOP, away BOTTOM. */
@@ -1394,7 +1459,7 @@ function explicitPositionGroup(p){
   return null;
 }
 
-/* v37: definitive positional fallback. When PitchAPI omits usable position
+/* v38: definitive positional fallback. When PitchAPI omits usable position
    labels, assign the XI from the stated formation instead of dumping every
    unknown player into midfield. */
 function place(starters,home,formation=''){
