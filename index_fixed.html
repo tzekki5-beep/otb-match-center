@@ -623,6 +623,40 @@ body.home-mode header,body.home-mode main,body.home-mode #drawer{display:none!im
 .seh-nhl-note { display:none!important; }
 @media(max-width:700px){ .nhl-rink-caption{display:none!important;} }
 </style>
+
+<style id="nhl-clean-home-bottom">
+/* NHL-home: piilota vanhan jalkapallo-näkymän alla roikkuvat globaalit osiot */
+body.home-mode > #v20Enhancements,
+body.home-mode > #topDateNavigator,
+body.home-mode > #v22MatchAnalysis,
+body.home-mode > #globalPublicBar,
+body.home-mode > div[style*="OTB Match Center"],
+body.home-mode > .v20-wrap,
+body.home-mode > .top-date-nav-wrap { display:none !important; }
+</style>
+
+<style id="nhl-team-watermark-and-card-fix">
+/* NHL team identity: large transparent team logos in each end zone. */
+.nhl-rink .nhl-zone-logo{
+  position:absolute;z-index:1;pointer-events:none;left:50%;width:58%;height:38%;
+  transform:translateX(-50%);background-repeat:no-repeat;background-position:center;background-size:contain;
+  opacity:.085;filter:grayscale(1) contrast(.9) brightness(.7);
+}
+.nhl-rink .nhl-zone-logo.home{top:1.5%;}
+.nhl-rink .nhl-zone-logo.away{bottom:1.5%;}
+.nhl-rink .nhl-zone-logo::after{content:"";position:absolute;inset:0;background:radial-gradient(ellipse at center,transparent 35%,rgba(233,238,241,.22) 78%,rgba(233,238,241,.42) 100%);}
+.nhl-rink .nhl-zone-badge{position:absolute;z-index:2;pointer-events:none;width:48px;height:48px;object-fit:contain;opacity:.82;filter:drop-shadow(0 2px 4px rgba(0,0,0,.28));}
+.nhl-rink .nhl-zone-badge.home{left:12px;top:12px;}
+.nhl-rink .nhl-zone-badge.away{right:12px;bottom:12px;}
+.nhl-rink .slot{z-index:4;}
+.nhl-rink .slot .nhl-face{background-position:center;background-repeat:no-repeat;background-size:cover;}
+.nhl-rink .slot .nhl-mini{min-height:10px;}
+@media(max-width:600px){
+  .nhl-rink .nhl-zone-logo{width:70%;height:34%;opacity:.075}
+  .nhl-rink .nhl-zone-badge{width:36px;height:36px;}
+  .nhl-rink .nhl-zone-badge.home{left:8px;top:8px}.nhl-rink .nhl-zone-badge.away{right:8px;bottom:8px}
+}
+</style>
 </head><body class="home-mode">
 <div id="sideEyeHome" aria-label="Side Eye Analytics etusivu">
   <div class="seh-bg"></div><div class="seh-overlay"></div>
@@ -669,6 +703,8 @@ body.home-mode header,body.home-mode main,body.home-mode #drawer{display:none!im
           <span class="center-circle"></span><span class="center-dot"></span>
           <span class="zone-circle zc1"></span><span class="zone-circle zc2"></span><span class="zone-circle zc3"></span><span class="zone-circle zc4"></span>
           <span class="goal-crease gc-top"></span><span class="goal-crease gc-bottom"></span><span class="goal goal-top"></span><span class="goal goal-bottom"></span>
+          <div class="nhl-zone-logo home" aria-hidden="true"></div><div class="nhl-zone-logo away" aria-hidden="true"></div>
+          <img class="nhl-zone-badge home" alt="" aria-hidden="true"><img class="nhl-zone-badge away" alt="" aria-hidden="true">
           <div class="slot home goalie"><div class="nhl-face"></div><span class="nhl-name">Maalivahti</span><span class="nhl-role">MV</span><span class="nhl-mini">SV% —</span></div>
           <div class="slot home d1"><div class="nhl-face"></div><span class="nhl-name">Puolustaja 1</span><span class="nhl-role">P</span><span class="nhl-mini">PTS — · ATOI —</span></div>
           <div class="slot home d2"><div class="nhl-face"></div><span class="nhl-name">Puolustaja 2</span><span class="nhl-role">P</span><span class="nhl-mini">PTS — · ATOI —</span></div>
@@ -694,7 +730,7 @@ body.home-mode header,body.home-mode main,body.home-mode #drawer{display:none!im
   </div>
 </section>
 
-<div style="margin:8px 0;padding:8px 10px;border-radius:9px;background:rgba(16,43,44,.75);font-size:12px;opacity:.85">
+<div id="globalPublicBar" style="margin:8px 0;padding:8px 10px;border-radius:9px;background:rgba(16,43,44,.75);font-size:12px;opacity:.85">
   OTB Match Center · julkinen web-versio
 </div>
 
@@ -2818,6 +2854,18 @@ body.home-mode #topDateNavigator{display:none!important}
   const stateLabel=g=>{const s=(g.gameState||g.gameScheduleState||'').toUpperCase();return s==='LIVE'?'LIVE':s==='FINAL'?'LOPPU':s==='OFF'?'ALKAA PIAN':s==='CRIT'?'KÄYNNISSÄ':'ENNAKKO'};
   const teamName=t=>t?.name?.default||t?.commonName?.default||t?.abbrev||'—';
   const teamAbbr=t=>t?.abbrev||'';
+  const teamLogo=t=>t?.logo||t?.teamLogo||t?.logoUrl||t?.image||((t?.abbrev)?`https://assets.nhle.com/logos/nhl/svg/${encodeURIComponent(t.abbrev)}_light.svg`:'');
+  function setTeamIdentity(g){
+    const homeLogo=teamLogo(g?.homeTeam), awayLogo=teamLogo(g?.awayTeam);
+    const hm=document.querySelector('.nhl-zone-logo.home'), am=document.querySelector('.nhl-zone-logo.away');
+    const hb=document.querySelector('.nhl-zone-badge.home'), ab=document.querySelector('.nhl-zone-badge.away');
+    if(hm) hm.style.backgroundImage=homeLogo?`url("${homeLogo}")`:'';
+    if(am) am.style.backgroundImage=awayLogo?`url("${awayLogo}")`:'';
+    if(hb) hb.src=homeLogo||'';
+    if(ab) ab.src=awayLogo||'';
+    if(hb) hb.style.display=homeLogo?'block':'none';
+    if(ab) ab.style.display=awayLogo?'block':'none';
+  }
 
   function renderGames(){
     const el=$('nhlGames'); if(!el)return;
@@ -2836,8 +2884,11 @@ body.home-mode #topDateNavigator{display:none!important}
 
   function playerName(p){return p?.name?.default || [p?.firstName?.default,p?.lastName?.default].filter(Boolean).join(' ') || p?.fullName || 'Pelaaja'}
   function statText(p,goalie=false){
-    if(goalie){const sv=p?.savePctg??p?.savePercentage; return `SV% ${sv!=null?(Number(sv)*100).toFixed(1):'—'}`}
-    const pts=p?.points??'—',sog=p?.sog??p?.shots??'—';
+    if(goalie){const sv=p?.savePctg??p?.savePercentage??p?.stats?.savePctg??p?.stats?.savePercentage; return `SV% ${sv!=null?(Number(sv)<=1?Number(sv)*100:Number(sv)).toFixed(1):'—'}`}
+    const st=p?.stats||p;
+    const pts=st?.points??p?.points??'—', sog=st?.sog??st?.shots??p?.sog??p?.shots??'—';
+    const g=st?.goals??p?.goals, a=st?.assists??p?.assists;
+    if(g!=null||a!=null) return `PTS ${pts} · G ${g??'—'} · A ${a??'—'}`;
     return `PTS ${pts} · SOG ${sog}`;
   }
   function makePlayer(p,role){
