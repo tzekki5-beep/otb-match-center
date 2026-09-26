@@ -549,13 +549,13 @@ body.home-mode header,body.home-mode main,body.home-mode #drawer{display:none!im
 .nhl-rink .slot.home .nhl-face{border-color:#287fbd}.nhl-rink .slot.away .nhl-face{border-color:#c84b56}
 .nhl-rink .slot.home.goalie{top:8%;left:50%}.nhl-rink .slot.away.goalie{bottom:8%;left:50%}
 .nhl-rink .slot.home.d1{top:18%;left:38%}.nhl-rink .slot.home.d2{top:18%;left:62%}
-.nhl-rink .slot.home.f1{top:36%;left:25%}.nhl-rink .slot.home.f2{top:38%;left:50%}.nhl-rink .slot.home.f3{top:36%;left:75%}
+.nhl-rink .slot.home.f1{top:30%;left:25%}.nhl-rink .slot.home.f2{top:32%;left:50%}.nhl-rink .slot.home.f3{top:30%;left:75%}
 .nhl-rink .slot.away.d1{bottom:18%;left:38%}.nhl-rink .slot.away.d2{bottom:18%;left:62%}
 .nhl-rink .slot.away.f1{bottom:30%;left:25%}.nhl-rink .slot.away.f2{bottom:32%;left:50%}.nhl-rink .slot.away.f3{bottom:30%;left:75%}
 .nhl-team-label{position:absolute;z-index:4;left:50%;transform:translateX(-50%);background:#071522dd;border:1px solid #315777;border-radius:8px;padding:5px 9px;color:#fff;font-weight:1000;font-size:11px;white-space:nowrap}
 .nhl-team-label.top{top:2.2%}.nhl-team-label.bottom{bottom:2.2%}
 .nhl-side-note{max-width:760px;margin:10px auto 0;color:#91aac0;font-size:11px;text-align:center}
-@media(max-width:600px){.nhl-rink-wrap{padding:8px}.nhl-rink{height:900px;border-radius:32px}.nhl-rink .center-circle{width:130px;height:130px}.nhl-rink .zone-circle{width:86px;height:86px}.nhl-rink .goal-crease{width:132px;height:88px}.nhl-rink .slot{width:82px}.nhl-rink .slot .nhl-face{width:40px;height:40px}.nhl-rink .slot .nhl-name{font-size:8px;max-width:82px}.nhl-rink .slot .nhl-role,.nhl-rink .slot .nhl-mini{font-size:7px}.nhl-rink .slot.home.d1{left:35%}.nhl-rink .slot.home.d2{left:65%}.nhl-rink .slot.away.d1{left:35%}.nhl-rink .slot.away.d2{left:65%}.nhl-rink .slot.home.f1{top:36%!important}.nhl-rink .slot.home.f2{top:38%!important}.nhl-rink .slot.home.f3{top:36%!important}}
+@media(max-width:600px){.nhl-rink-wrap{padding:8px}.nhl-rink{height:900px;border-radius:32px}.nhl-rink .center-circle{width:130px;height:130px}.nhl-rink .zone-circle{width:86px;height:86px}.nhl-rink .goal-crease{width:132px;height:88px}.nhl-rink .slot{width:82px}.nhl-rink .slot .nhl-face{width:40px;height:40px}.nhl-rink .slot .nhl-name{font-size:8px;max-width:82px}.nhl-rink .slot .nhl-role,.nhl-rink .slot .nhl-mini{font-size:7px}.nhl-rink .slot.home.d1{left:35%}.nhl-rink .slot.home.d2{left:65%}.nhl-rink .slot.away.d1{left:35%}.nhl-rink .slot.away.d2{left:65%}.nhl-rink .slot.home.f1{top:30%!important}.nhl-rink .slot.home.f2{top:32%!important}.nhl-rink .slot.home.f3{top:30%!important}}
 </style>
 
 
@@ -2949,10 +2949,26 @@ body.home-mode #topDateNavigator{display:none!important}
   });
 })();
 </script>
+<style id="nhl-rink-v9-symmetric">
+/* v9: ylä- ja alapuoli ovat tarkat peilikuvat */
+.nhl-rink .slot.home.goalie{top:10%!important;bottom:auto!important;left:50%!important}
+.nhl-rink .slot.away.goalie{bottom:10%!important;top:auto!important;left:50%!important}
+.nhl-rink .slot.home.d1{top:18%!important;bottom:auto!important;left:38%!important}
+.nhl-rink .slot.home.d2{top:18%!important;bottom:auto!important;left:62%!important}
+.nhl-rink .slot.away.d1{bottom:18%!important;top:auto!important;left:38%!important}
+.nhl-rink .slot.away.d2{bottom:18%!important;top:auto!important;left:62%!important}
+.nhl-rink .slot.home.f1{top:30%!important;bottom:auto!important;left:25%!important}
+.nhl-rink .slot.home.f2{top:32%!important;bottom:auto!important;left:50%!important}
+.nhl-rink .slot.home.f3{top:30%!important;bottom:auto!important;left:75%!important}
+.nhl-rink .slot.away.f1{bottom:30%!important;top:auto!important;left:25%!important}
+.nhl-rink .slot.away.f2{bottom:32%!important;top:auto!important;left:50%!important}
+.nhl-rink .slot.away.f3{bottom:30%!important;top:auto!important;left:75%!important}
+</style>
+
 <script id="nhl-live-data-v1">
 (()=>{
   const NHL='https://api-web.nhle.com/v1';
-  const live={games:[],selected:null,cache:new Map(),unit:'1'};
+  const live={games:[],selected:null,cache:new Map(),unit:'1',refreshMs:60000};
   const $=id=>document.getElementById(id);
   const esc=v=>String(v??'').replace(/[&<>\"']/g,m=>({'&':'&amp;','<':'&lt;','>':'&gt;','\"':'&quot;',"'":'&#39;'}[m]));
   const api=async path=>{const r=await fetch(NHL+path,{cache:'no-store'});if(!r.ok)throw new Error('NHL API '+r.status);return r.json()};
@@ -3006,18 +3022,28 @@ body.home-mode #topDateNavigator{display:none!important}
   }
   function extractSide(data,side){
     const pb=data?.playerByGameStats?.[side+'Team']||data?.playerByGameStats?.[side]||{};
-    let forwards=pb.forwards||pb.forwardsPlayers||[];
-    let defense=pb.defense||pb.defensemen||pb.defensemenPlayers||[];
-    let goalies=pb.goalies||pb.goaltenders||[];
-    const spots=data?.rosterSpots||data?.roster||data?.rosters||[];
-    if(Array.isArray(spots)){
-      const team=side==='home'?data?.homeTeam?.abbrev:data?.awayTeam?.abbrev;
-      const own=spots.filter(x=>(x.teamAbbrev||x.team?.abbrev||x.team)==team);
-      if(own.length){
-        forwards=forwards.length?forwards:own.filter(x=>['C','L','R','LW','RW'].includes(x.positionCode||x.position));
-        defense=defense.length?defense:own.filter(x=>['D','LD','RD'].includes(x.positionCode||x.position));
-        goalies=goalies.length?goalies:own.filter(x=>(x.positionCode||x.position)==='G');
-      }
+    let forwards=Array.isArray(pb.forwards)?pb.forwards:[];
+    let defense=Array.isArray(pb.defense)?pb.defense:(Array.isArray(pb.defensemen)?pb.defensemen:[]);
+    let goalies=Array.isArray(pb.goalies)?pb.goalies:(Array.isArray(pb.goaltenders)?pb.goaltenders:[]);
+    const homeAbbr=data?.homeTeam?.abbrev, awayAbbr=data?.awayTeam?.abbrev;
+    const team=side==='home'?homeAbbr:awayAbbr;
+    const rawSpots=Array.isArray(data?.rosterSpots)?data.rosterSpots:
+      Array.isArray(data?.roster)?data.roster:
+      (data?.rosterSpots?.[side+'Team']||[]);
+    const own=Array.isArray(rawSpots)?rawSpots.filter(x=>{
+      const ab=x?.teamAbbrev||x?.team?.abbrev;
+      return ab===team || x?.teamId===data?.[side+'Team']?.id;
+    }):[];
+    if(own.length){
+      const conv=own.map(x=>({
+        playerId:x.playerId??x.id, id:x.playerId??x.id,
+        name:playerName(x), firstName:x.firstName, lastName:x.lastName,
+        sweaterNumber:x.sweaterNumber, positionCode:x.positionCode||x.position,
+        headshot:x.headshot||''
+      }));
+      if(!forwards.length) forwards=conv.filter(x=>['C','L','R','LW','RW'].includes(x.positionCode));
+      if(!defense.length) defense=conv.filter(x=>['D','LD','RD'].includes(x.positionCode));
+      if(!goalies.length) goalies=conv.filter(x=>x.positionCode==='G');
     }
     return {forwards,defense,goalies};
   }
@@ -3104,17 +3130,24 @@ body.home-mode #topDateNavigator{display:none!important}
     $('nhlSelectedGame').innerHTML=`<strong>${esc(teamAbbr(g.awayTeam))} @ ${esc(teamAbbr(g.homeTeam))}</strong> · ${esc(teamName(g.awayTeam))} – ${esc(teamName(g.homeTeam))} · ${esc(fmtTime(g.startTimeUTC))} <span style="color:#78bce8">· ${esc(stateLabel(g))}</span>`;
     $('nhlRinkModule')?.classList.add('nhl-loading');
     try{
-      let data=live.cache.get(g.id);
+      const cached=live.cache.get(g.id);
+      const fresh=cached && (Date.now()-cached.ts)<live.refreshMs && ((g.gameState||'').toUpperCase()==='OFF');
+      let data=fresh?cached.data:null;
       if(!data){
-        const [landing,box]=await Promise.all([api('/gamecenter/'+g.id+'/landing').catch(()=>null),api('/gamecenter/'+g.id+'/boxscore').catch(()=>null)]);
-        data={...(landing||{}),...(box||{})}; live.cache.set(g.id,data);
+        const [landing,box,pbp]=await Promise.all([
+          api('/gamecenter/'+g.id+'/landing').catch(()=>null),
+          api('/gamecenter/'+g.id+'/boxscore').catch(()=>null),
+          api('/gamecenter/'+g.id+'/play-by-play').catch(()=>null)
+        ]);
+        data={...(landing||{}),...(box||{}),...(pbp||{})};
+        live.cache.set(g.id,{data,ts:Date.now()});
       }
       const sides=['home','away'];
       const raw=sides.flatMap(side=>{const d=extractSide(data,side);return [...(d.forwards||[]),...(d.defense||[]),...(d.goalies||[])]});
       const profiles=await hydrateProfiles(raw);
       renderSide('home',data,profiles); renderSide('away',data,profiles);
       renderDashHeader(g); setTeamIdentity(g); renderPlayerPanel('home',data,profiles); renderPlayerPanel('away',data,profiles); renderBottom('home',data); renderBottom('away',data); renderGameStats(data);
-      $('nhlDataStatus').textContent=`NHL API · ${live.games.length} ottelua · kokoonpanodata haetaan automaattisesti kun NHL julkaisee sen`;
+      $('nhlDataStatus').textContent=`NHL API · ${live.games.length} ottelua · kokoonpano päivitetään automaattisesti`;
       $('nhlRinkModule')?.classList.remove('nhl-loading'); $('nhlRinkModule')?.classList.add('nhl-loaded');
     }catch(e){
       $('nhlDataStatus').textContent='NHL API ei vastannut juuri nyt – yritä Päivitä-painiketta.'; $('nhlRinkModule')?.classList.remove('nhl-loading');
@@ -3141,7 +3174,7 @@ body.home-mode #topDateNavigator{display:none!important}
     document.querySelectorAll('.nhl-rink-tab').forEach(btn=>btn.addEventListener('click',async()=>{live.unit=btn.dataset.nhlUnit||'1'; if(live.selected) await selectGame(live.selected.id)}));
     loadNhl();
     // Refresh schedule/game state periodically without requiring a page reload.
-    setInterval(()=>loadNhl(),120000);
+    setInterval(()=>loadNhl(),60000);
   });
 })();
 </script></body></html>
