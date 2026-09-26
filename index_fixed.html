@@ -1031,9 +1031,9 @@ const MAIN_PATTERNS={
   'Champions League':[/champions league/i],
   'Europa League':[/europa league/i],
   'Conference League':[/conference league/i],
-  'Nations League A':[/nations league.*\\bA\\b/i,/uefa nations.*\\bA\\b/i],
-  'Nations League B':[/nations league.*\\bB\\b/i,/uefa nations.*\\bB\\b/i],
-  'Nations League C':[/nations league.*\\bC\\b/i,/uefa nations.*\\bC\\b/i]
+  'Nations League A':[/nations league.*\bA\b/i,/uefa nations.*\bA\b/i],
+  'Nations League B':[/nations league.*\bB\b/i,/uefa nations.*\bB\b/i],
+  'Nations League C':[/nations league.*\bC\b/i,/uefa nations.*\bC\b/i]
 };
 const MAIN_SET=new Set(MAIN_LEAGUES);
 const ALLOWED=MAIN_LEAGUES;
@@ -1064,7 +1064,34 @@ const NL_FIXTURES=[
   ['2026-09-26','Nations League C','Bulgaria','Luxembourg'],
   ['2026-09-26','Nations League C','Iceland','Estonia'],
   ['2026-09-26','Nations League C','Albania','Belarus'],
-  ['2026-09-26','Nations League C','Slovakia','Moldova']
+  ['2026-09-26','Nations League C','Slovakia','Moldova'],
+
+  ['2026-09-27','Nations League A','Serbia','Netherlands'],
+  ['2026-09-27','Nations League A','Denmark','Wales'],
+  ['2026-09-27','Nations League A','Germany','Greece'],
+  ['2026-09-27','Nations League A','Norway','Portugal'],
+  ['2026-09-27','Nations League B','Austria','Kosovo'],
+  ['2026-09-27','Nations League B','Israel','Republic of Ireland'],
+  ['2026-09-28','Nations League A','Belgium','France'],
+  ['2026-09-28','Nations League A','Türkiye','Italy'],
+  ['2026-09-28','Nations League B','Northern Ireland','Hungary'],
+  ['2026-09-28','Nations League B','Romania','Bosnia and Herzegovina'],
+  ['2026-09-28','Nations League B','Sweden','Poland'],
+  ['2026-09-28','Nations League C','Armenia','Montenegro'],
+  ['2026-09-28','Nations League C','Latvia','Cyprus'],
+  ['2026-09-29','Nations League C','Finland','Belarus'],
+  ['2026-09-29','Nations League C','San Marino','Albania'],
+  ['2026-09-29','Nations League C','Slovakia','Kazakhstan'],
+  ['2026-09-29','Nations League C','Moldova','Faroe Islands'],
+  ['2026-09-29','Nations League C','Bulgaria','Estonia'],
+  ['2026-09-29','Nations League C','Luxembourg','Iceland'],
+  ['2026-09-29','Nations League B','Scotland','Switzerland'],
+  ['2026-09-29','Nations League B','Slovenia','North Macedonia'],
+  ['2026-09-30','Nations League B','Georgia','Ukraine'],
+  ['2026-09-30','Nations League C','Armenia','Montenegro'],
+  ['2026-09-30','Nations League C','Latvia','Cyprus'],
+  ['2026-10-01','Nations League B','Republic of Ireland','Austria'],
+  ['2026-10-01','Nations League C','Azerbaijan','Liechtenstein']
 ];
 const NL_PREDICTED={
   'Czechia|Croatia':{
@@ -1140,8 +1167,8 @@ function setKeyUI(){if(isPublicWorker()){$('#setup').style.display='none';return
 $('#save').onclick=()=>{const v=$('#key').value.trim();if(!v){$('#keymsg').textContent='Syötä API-avain.';return}localStorage.setItem('otb_pitch_key',v);setKeyUI();load()};
 $('#clear').onclick=()=>{localStorage.removeItem('otb_pitch_key');setKeyUI();$('#status').textContent='API-avain poistettu.';$('#out').innerHTML=''};
 async function loadLeagues(){
-  const d=await api('leagues');
-  const arr=d.leagues||[];
+  let arr=[];
+  try{const d=await api('leagues');arr=Array.isArray(d?.leagues)?d.leagues:[];}catch(e){console.warn('PitchAPI leagues failed; using local league catalogue',e)}
   window.__pitchLeagues=arr;
   leagueMap={};
   for(const wanted of MAIN_LEAGUES){
@@ -1262,7 +1289,7 @@ async function load(){
     }));
     if(myLoad!==loadGeneration || $('#date').value!==requestDate || filter!==requestFilter)return;
     games.sort((a,b)=>new Date(a.time_utc)-new Date(b.time_utc));
-    $('#status').textContent=`${games.length} ottelua · ${games.some(m=>m.__nlStatic)?'UEFA-fixturevarmistus':'PitchAPI'}`;
+    $('#status').textContent=`${games.length} ottelua · ${games.some(m=>m.__nlStatic)?'UEFA-otteluohjelma + PitchAPI':'PitchAPI'}`;
     render();
   }catch(e){
     $('#status').innerHTML=`<div class="err">${esc(e.message)}<br><small>Julkisessa versiossa API-avain tulee Cloudflare Workerista — sitä ei tarvitse syöttää tähän selaimeen.</small></div>`;
@@ -3087,7 +3114,7 @@ body.home-mode #topDateNavigator{display:none!important}
  .nhl-rink .slot.away.f1{bottom:36%!important}.nhl-rink .slot.away.f2{bottom:38%!important}.nhl-rink .slot.away.f3{bottom:36%!important}
 }
 </style>
-<script id="nhl-live-data-v3">
+<script id="nhl-live-data-v4-fixed-v15">
 (()=>{
   const NHL='https://api-web.nhle.com/v1';
   const live={games:[],allGames:[],selected:null,cache:new Map(),unit:'1',scheduleRange:'today',refreshMs:60000,currentData:null,currentProfiles:new Map()};
@@ -3160,8 +3187,29 @@ body.home-mode #topDateNavigator{display:none!important}
   function renderGameStats(){const box=$('nhlGameStats');if(!box)return;const h=live.selected?.homeTeam,a=live.selected?.awayTeam;box.innerHTML=`<div class="nhl-bottom-title">OTTELUTILASTOT</div><div class="nhl-stat-compare"><b>${esc(h?.score??'—')}</b><span>Tilanne</span><b>${esc(a?.score??'—')}</b><div class="nhl-bar"><i style="width:50%"></i></div><span>Maalit</span><div class="nhl-bar red"><i style="width:50%"></i></div><b>—</b><span>Laukaukset</span><b>—</b><div></div><span>Torjunnat</span><div></div></div>`}
   async function renderCurrentUnit(){if(!live.selected||!live.currentData)return false;renderSide('home',live.currentData,live.currentProfiles);renderSide('away',live.currentData,live.currentProfiles);renderPlayerPanel('home',live.currentData,live.currentProfiles);renderPlayerPanel('away',live.currentData,live.currentProfiles);return true}
   async function selectGame(id,force=false){const g=live.allGames.find(x=>Number(x.id)===Number(id));if(!g)return;live.selected=g;renderGames();$('nhlSelectedGame').textContent=`${teamName(g.awayTeam)} – ${teamName(g.homeTeam)} · ${numGameType(g)===1?'PRESEASON':'RUNKOSARJA'}`;$('nhlRinkModule')?.classList.add('nhl-loading');try{const cached=live.cache.get(g.id),isLive=['LIVE','CRIT','OFF','FINAL'].includes(String(g.gameState||'').toUpperCase()),fresh=!force&&cached&&(Date.now()-cached.ts)<live.refreshMs&&!isLive;let data=fresh?cached.data:null;if(!data){const [landing,box,pbp]=await Promise.all([api('/gamecenter/'+g.id+'/landing').catch(()=>null),api('/gamecenter/'+g.id+'/boxscore').catch(()=>null),api('/gamecenter/'+g.id+'/play-by-play').catch(()=>null)]);data={...(landing||{}),...(box||{}),...(pbp||{})};live.cache.set(g.id,{data,ts:Date.now()})}const raw=['home','away'].flatMap(side=>{const d=extractSide(data,side);return [...(d.forwards||[]),...(d.defense||[]),...(d.goalies||[])]});const profiles=await hydrateProfiles(raw);live.currentData=data;live.currentProfiles=profiles;renderSide('home',data,profiles);renderSide('away',data,profiles);renderDashHeader(g);setTeamIdentity(g);renderPlayerPanel('home',data,profiles);renderPlayerPanel('away',data,profiles);renderBottom('home');renderBottom('away');renderGameStats();$('nhlRinkModule')?.classList.remove('nhl-loading');return true}catch(e){console.warn('NHL selectGame',e);$('nhlRinkModule')?.classList.remove('nhl-loading');return false}}
-  async function getGamesForDate(k){const maps=new Map();const pull=async path=>{try{const j=await api(path);for(const g of (Array.isArray(j?.games)?j.games:[])){const n=normalizeGame(g,k);if(n?.id)maps.set(String(n.id),n)}}catch(e){console.warn('NHL schedule source',path,e)}};await Promise.all([pull('/score/'+k),pull('/schedule/'+k)]);return [...maps.values()]}
-  async function loadNhl(){try{setStatus('Haetaan NHL-otteluita ja preseasonia…');const base=new Date();const keys=[...Array(16)].map((_,i)=>dateKey(addDays(base,i)));const past=[dateKey(addDays(base,-1))];const results=await Promise.all([...past,...keys].map(getGamesForDate));const all=new Map();results.flat().forEach(g=>{if(g?.id)all.set(String(g.id),g)});live.allGames=[...all.values()].filter(g=>{const t=inferredGameType(g);return t===1||t===2}).map(g=>({...g,gameType:inferredGameType(g)})).sort((a,b)=>new Date(a.startTimeUTC)-new Date(b.startTimeUTC));const today=localDate();live.games=live.allGames.filter(g=>g.dateKey===today);renderGames();setStatus(`${live.games.length} tämän päivän peliä · preseason mukana`);if(live.selected){const stillThere=live.allGames.find(x=>Number(x.id)===Number(live.selected.id));if(stillThere){live.selected=stillThere;await selectGame(stillThere.id,false)}}else if(live.games.length){await selectGame(live.games[0].id,true)}}catch(e){console.warn('NHL load',e);setStatus('Otteluohjelman haku epäonnistui — yritä Päivitä.')}}
+  async function getGamesForDate(k){const maps=new Map();const pull=async path=>{try{const j=await api(path);const arr=Array.isArray(j?.games)?j.games:(Array.isArray(j?.gameWeek)?j.gameWeek.flatMap(x=>x.games||[]):[]);for(const g of arr){const n=normalizeGame(g,k);if(n?.id)maps.set(String(n.id),n)}}catch(e){console.warn('NHL schedule source',path,e)}};
+    // NHL publishes its schedule by North-American calendar date. A game such as
+    // Edmonton–Calgary at 21:00 local on Sep 26 is Sep 27 in Finland. Pull both
+    // the Helsinki date and the previous NA date so Finnish "TÄNÄÄN" never misses it.
+    const prevNA=dateKey(addDays(new Date(k+'T12:00:00Z'),-1));
+    await Promise.all([pull('/score/'+k),pull('/schedule/'+k),pull('/score/'+prevNA),pull('/schedule/'+prevNA)]);
+    return [...maps.values()]}
+  async function loadNhl(){try{setStatus('Haetaan NHL-otteluita, preseasonia ja runkosarjaa…');const base=new Date();const keys=[...Array(16)].map((_,i)=>dateKey(addDays(base,i)));const past=[dateKey(addDays(base,-1))];const results=await Promise.all([...past,...keys].map(getGamesForDate));const all=new Map();results.flat().forEach(g=>{if(g?.id)all.set(String(g.id),g)});live.allGames=[...all.values()].filter(g=>{const t=inferredGameType(g);return t===1||t===2}).map(g=>({...g,gameType:inferredGameType(g)})).sort((a,b)=>new Date(a.startTimeUTC)-new Date(b.startTimeUTC));addKnownFinnishPreseasonFallback();const today=localDate();live.games=live.allGames.filter(g=>g.dateKey===today);renderGames();setStatus(`${live.games.length} tämän päivän peliä · preseason mukana`);if(live.selected){const stillThere=live.allGames.find(x=>Number(x.id)===Number(live.selected.id));if(stillThere){live.selected=stillThere;await selectGame(stillThere.id,false)}}else if(live.games.length){await selectGame(live.games[0].id,true)}}catch(e){console.warn('NHL load',e);setStatus('Otteluohjelman haku epäonnistui — yritä Päivitä.')}}
+  function addKnownFinnishPreseasonFallback(){
+    const today=localDate();
+    if(today!=='2026-09-27')return;
+    const known=[
+      ['2026-09-27T01:00:00Z','EDM','CGY','Edmonton Oilers','Calgary Flames'],
+      ['2026-09-27T02:00:00Z','VGK','SJS','Vegas Golden Knights','San Jose Sharks']
+    ];
+    for(const [utc,a,h,an,hn] of known){
+      const id='otb-fallback-'+a+h+'-20260927';
+      if(!live.allGames.some(g=>String(g.id)===id))live.allGames.push({id,startTimeUTC:utc,dateKey:today,gameType:1,gameState:'FUT',awayTeam:{abbrev:a,name:{default:an}},homeTeam:{abbrev:h,name:{default:hn}},__fallback:true});
+    }
+    live.allGames.sort((a,b)=>new Date(a.startTimeUTC)-new Date(b.startTimeUTC));
+    live.games=live.allGames.filter(g=>g.dateKey===today);
+  }
+
   document.addEventListener('DOMContentLoaded',()=>{
     $('nhlRefresh')?.addEventListener('click',()=>loadNhl());
     document.querySelectorAll('.nhl-schedule-tab').forEach(btn=>btn.addEventListener('click',()=>{document.querySelectorAll('.nhl-schedule-tab').forEach(b=>b.classList.remove('active'));btn.classList.add('active');live.scheduleRange=btn.dataset.scheduleRange||'today';renderGames()}));
