@@ -587,7 +587,26 @@ function staticNLMatches(date,league){
   }));
 }
 function predictedNLFor(m){
-  return NL_PREDICTED[`${m.home_team?.name}|${m.away_team?.name}`]||null;
+  const direct=NL_PREDICTED[`${m.home_team?.name}|${m.away_team?.name}`];
+  if(direct)return direct;
+  const aliases={
+    'czech republic':'czechia',
+    'republic of czechia':'czechia',
+    'turkey':'türkiye',
+    'türkiye':'türkiye',
+    'north macedonia':'north macedonia',
+    'croatia':'croatia',
+    'england':'england',
+    'spain':'spain',
+    'switzerland':'switzerland'
+  };
+  const a=aliases[normNL(m.home_team?.name||'')]||normNL(m.home_team?.name||'');
+  const b=aliases[normNL(m.away_team?.name||'')]||normNL(m.away_team?.name||'');
+  for(const [k,v] of Object.entries(NL_PREDICTED)){
+    const [kh,ka]=k.split('|').map(normNL);
+    if(kh===a&&ka===b)return v;
+  }
+  return null;
 }
 function nlDatesForLeague(){
   return NL_DATES.slice();
@@ -757,7 +776,7 @@ const nlTeamHistoryCache=new Map();
 const nlTeamHistoryPromiseCache=new Map();
 
 
-/* v36: SofaScore enrichment fallback for static Nations League fixtures.
+/* v37: SofaScore enrichment fallback for static Nations League fixtures.
    PitchAPI remains the primary source. SofaScore is used only when the
    fixture itself has no PitchAPI match ID yet, so predicted players can still
    be resolved to their real club, image and last five club matches. */
@@ -1141,6 +1160,15 @@ async function hydrateStaticNLMatch(m){
       renderPlayerStat(el,mode);
     });
 
+    const pitch=root;
+    if(pitch && !pitch.__nlClickBound){
+      pitch.__nlClickBound=true;
+      pitch.addEventListener('click',ev=>{
+        const el=ev.target.closest('.p');
+        if(el && pitch.contains(el))openStaticNLPlayer(el,m);
+      });
+    }
+
     const clubCount=[...hs,...as].filter(p=>p.__sofaProfile?.team?.name).length;
     const historyCount=[...hs,...as].filter(p=>Array.isArray(p.__history)&&p.__history.length).length;
     const note=root.parentElement.querySelector('.note');
@@ -1243,7 +1271,18 @@ function render(){
     initStaticNLHydration(list);
     list.filter(m=>m.__nlStatic).forEach(m=>{
       const pitch=document.querySelector(`#p${m.id.replace(/[^a-zA-Z0-9_-]/g,'')}`);
-      if(pitch)pitch.querySelectorAll('.p').forEach(el=>el.onclick=()=>{if(el.dataset.sofaPlayerId)openStaticNLPlayer(el,m);else openPlayer(el.dataset.playerId||'',el.dataset.playerName||el.querySelector('.name')?.textContent||'?',el.dataset.team,m.league?.name,m.time_utc)});
+      if(!pitch)return;
+      if(pitch.__nlClickBound)return;
+      pitch.__nlClickBound=true;
+      pitch.addEventListener('click',ev=>{
+        const el=ev.target.closest('.p');
+        if(!el || !pitch.contains(el))return;
+        /*
+          Always use the static-NL player drawer here. The player cards are
+          rebuilt after hydration, so direct onclick handlers would disappear.
+        */
+        openStaticNLPlayer(el,m);
+      });
     });
     if(lineupRefreshTimer)clearInterval(lineupRefreshTimer);
     lineupRefreshTimer=setInterval(()=>{if(document.visibilityState==='hidden')return;list.filter(m=>!m.__nlStatic&&m.status!=='finished').forEach(m=>loadGame(m,true));},300000);
@@ -1307,7 +1346,7 @@ function spreadX(n){
   return Array.from({length:n},(_,i)=>margin+(100-2*margin)*i/(n-1));
 }
 function place(starters,home,formation=''){
-  /* v36: never trust raw PitchAPI coordinates for the visual XI.  Different
+  /* v37: never trust raw PitchAPI coordinates for the visual XI.  Different
      feeds use different axes/orientations, which was putting keepers and
      defenders in the wrong zones.  The visual field is always positional:
      GK -> defenders -> midfield -> attackers. Home is TOP, away BOTTOM. */
