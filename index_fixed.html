@@ -521,6 +521,43 @@ body.home-mode header,body.home-mode main,body.home-mode #drawer{display:none!im
 @media(max-width:800px){#sideEyeHome{padding:0;min-height:100vh}#sideEyeHome .seh-grid{grid-template-columns:1fr;grid-template-rows:1fr 1fr;min-height:100vh}.seh-button{min-height:78px!important;padding:14px 18px!important}.seh-icon{font-size:32px!important}.seh-arrow{display:none!important}.seh-label{font-size:23px!important}.seh-sub{font-size:9px!important}.seh-hotspot{padding:0 7% 7%!important}.seh-nhl-cards{grid-template-columns:1fr 1fr!important}}
 @media(max-width:480px){#sideEyeHome .seh-button{gap:10px!important;border-radius:14px!important}.seh-label{font-size:18px!important}.seh-icon{font-size:27px!important}.seh-arrow{display:none!important}.seh-nhl-cards{grid-template-columns:1fr!important}}
 </style>
+
+<style id="nhl-rink-layout-v1">
+/* NHL: pystysuuntainen kaukalo, sama lukusuunta kuin jalkapallokentässä */
+.nhl-rink-wrap{margin-top:24px;background:#071522;border:1px solid #214a69;border-radius:16px;padding:14px;box-shadow:0 18px 45px #0008}
+.nhl-rink-toolbar{display:flex;gap:7px;flex-wrap:wrap;margin-bottom:12px;align-items:center}
+.nhl-rink-tab{border:1px solid #315777;background:#102b40;color:#dcecff;border-radius:9px;padding:8px 11px;font-weight:900;cursor:pointer}
+.nhl-rink-tab.active{background:#2b82c9;border-color:#70b9f2}
+.nhl-rink-caption{margin-left:auto;color:#91aac0;font-size:11px;font-weight:800}
+.nhl-rink{position:relative;width:min(760px,100%);height:1120px;margin:0 auto;border-radius:42px;background:#e9eef1;border:5px solid #d6dde1;overflow:hidden;box-shadow:inset 0 0 0 2px #aab6bc,0 16px 35px #0007}
+.nhl-rink .rink-line{position:absolute;left:0;right:0;height:3px;z-index:0}
+.nhl-rink .blue1{top:24%;background:#2c68a3}.nhl-rink .blue2{bottom:24%;background:#2c68a3}
+.nhl-rink .red-center{top:50%;height:4px;background:#c43b45;transform:translateY(-50%)}
+.nhl-rink .center-circle{position:absolute;left:50%;top:50%;width:170px;height:170px;border:3px solid #c43b45;border-radius:50%;transform:translate(-50%,-50%);z-index:0}
+.nhl-rink .center-dot{position:absolute;left:50%;top:50%;width:12px;height:12px;border-radius:50%;background:#c43b45;transform:translate(-50%,-50%);z-index:1}
+.nhl-rink .zone-circle{position:absolute;width:112px;height:112px;border:3px solid #c43b45;border-radius:50%;z-index:0}
+.nhl-rink .zc1{top:10%;left:18%}.nhl-rink .zc2{top:10%;right:18%}.nhl-rink .zc3{bottom:10%;left:18%}.nhl-rink .zc4{bottom:10%;right:18%}
+.nhl-rink .goal-crease{position:absolute;left:50%;width:170px;height:110px;border:3px solid #2c68a3;background:#dce5ea;transform:translateX(-50%);z-index:0}
+.nhl-rink .gc-top{top:-2px;border-radius:0 0 85px 85px;border-top:0}.nhl-rink .gc-bottom{bottom:-2px;border-radius:85px 85px 0 0;border-bottom:0}
+.nhl-rink .goal{position:absolute;left:50%;width:58px;height:12px;border:3px solid #c43b45;background:#fff;transform:translateX(-50%);z-index:1}
+.nhl-rink .goal-top{top:0}.nhl-rink .goal-bottom{bottom:0}
+.nhl-rink .slot{position:absolute;z-index:3;transform:translate(-50%,-50%);width:108px;text-align:center;cursor:pointer}
+.nhl-rink .slot .nhl-face{width:50px;height:50px;border-radius:50%;object-fit:cover;background:#cfd9de;border:3px solid #fff;display:block;margin:0 auto 3px;box-shadow:0 2px 6px #0007}
+.nhl-rink .slot .nhl-name{display:inline-block;max-width:106px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;background:#06141b;color:#fff;border-radius:5px;padding:3px 5px;font-size:10px;font-weight:900}
+.nhl-rink .slot .nhl-role{display:block;color:#334b58;font-size:8px;font-weight:900;margin-top:2px;text-transform:uppercase}
+.nhl-rink .slot .nhl-mini{display:block;color:#263c48;font-size:8px;font-weight:900;margin-top:2px;white-space:nowrap}
+.nhl-rink .slot.home .nhl-face{border-color:#287fbd}.nhl-rink .slot.away .nhl-face{border-color:#c84b56}
+.nhl-rink .slot.home.goalie{top:7%}.nhl-rink .slot.away.goalie{bottom:7%}
+.nhl-rink .slot.home.d1{top:18%;left:38%}.nhl-rink .slot.home.d2{top:18%;left:62%}
+.nhl-rink .slot.home.f1{top:30%;left:25%}.nhl-rink .slot.home.f2{top:32%;left:50%}.nhl-rink .slot.home.f3{top:30%;left:75%}
+.nhl-rink .slot.away.d1{bottom:18%;left:38%}.nhl-rink .slot.away.d2{bottom:18%;left:62%}
+.nhl-rink .slot.away.f1{bottom:30%;left:25%}.nhl-rink .slot.away.f2{bottom:32%;left:50%}.nhl-rink .slot.away.f3{bottom:30%;left:75%}
+.nhl-team-label{position:absolute;z-index:4;left:50%;transform:translateX(-50%);background:#071522dd;border:1px solid #315777;border-radius:8px;padding:5px 9px;color:#fff;font-weight:1000;font-size:11px;white-space:nowrap}
+.nhl-team-label.top{top:2.2%}.nhl-team-label.bottom{bottom:2.2%}
+.nhl-side-note{max-width:760px;margin:10px auto 0;color:#91aac0;font-size:11px;text-align:center}
+@media(max-width:600px){.nhl-rink-wrap{padding:8px}.nhl-rink{height:900px;border-radius:32px}.nhl-rink .center-circle{width:130px;height:130px}.nhl-rink .zone-circle{width:86px;height:86px}.nhl-rink .goal-crease{width:132px;height:88px}.nhl-rink .slot{width:82px}.nhl-rink .slot .nhl-face{width:40px;height:40px}.nhl-rink .slot .nhl-name{font-size:8px;max-width:82px}.nhl-rink .slot .nhl-role,.nhl-rink .slot .nhl-mini{font-size:7px}.nhl-rink .slot.home.d1{left:35%}.nhl-rink .slot.home.d2{left:65%}.nhl-rink .slot.away.d1{left:35%}.nhl-rink .slot.away.d2{left:65%}}
+</style>
+
 </head><body class="home-mode">
 <div id="sideEyeHome" aria-label="Side Eye Analytics etusivu">
   <div class="seh-bg"></div><div class="seh-overlay"></div>
@@ -540,7 +577,37 @@ body.home-mode header,body.home-mode main,body.home-mode #drawer{display:none!im
         <div class="seh-nhl-card"><b>⚡ Ylivoima</b><small>YV1/YV2, jääaika ja pistepotentiaali.</small></div>
         <div class="seh-nhl-card"><b>📊 Pelaajadata</b><small>Laukaukset, pisteet, viimeiset pelit ja trendit.</small></div>
       </div>
-      <div class="seh-nhl-note">NHL-keskuksen varsinainen data- ja ottelunäkymä rakennetaan seuraavaksi tähän samaan moduuliin.</div>
+
+      <div class="nhl-rink-wrap" id="nhlRinkModule">
+        <div class="nhl-rink-toolbar">
+          <button class="nhl-rink-tab active" type="button">5v5</button>
+          <button class="nhl-rink-tab" type="button">Ketju 1</button>
+          <button class="nhl-rink-tab" type="button">YV 1</button>
+          <button class="nhl-rink-tab" type="button">YV 2</button>
+          <span class="nhl-rink-caption">Kaukalon suunta sama kuin jalkapallokentässä</span>
+        </div>
+        <div class="nhl-rink" aria-label="NHL kokoonpano kaukalossa">
+          <span class="rink-line blue1"></span><span class="rink-line red-center"></span><span class="rink-line blue2"></span>
+          <span class="center-circle"></span><span class="center-dot"></span>
+          <span class="zone-circle zc1"></span><span class="zone-circle zc2"></span><span class="zone-circle zc3"></span><span class="zone-circle zc4"></span>
+          <span class="goal-crease gc-top"></span><span class="goal-crease gc-bottom"></span><span class="goal goal-top"></span><span class="goal goal-bottom"></span>
+          <span class="nhl-team-label top">KOTIJOUKKUE</span><span class="nhl-team-label bottom">VIERASJOUKKUE</span>
+          <div class="slot home goalie"><div class="nhl-face"></div><span class="nhl-name">Maalivahti</span><span class="nhl-role">MV</span><span class="nhl-mini">SV% —</span></div>
+          <div class="slot home d1"><div class="nhl-face"></div><span class="nhl-name">Puolustaja 1</span><span class="nhl-role">P</span><span class="nhl-mini">PTS — · ATOI —</span></div>
+          <div class="slot home d2"><div class="nhl-face"></div><span class="nhl-name">Puolustaja 2</span><span class="nhl-role">P</span><span class="nhl-mini">PTS — · ATOI —</span></div>
+          <div class="slot home f1"><div class="nhl-face"></div><span class="nhl-name">Hyökkääjä 1</span><span class="nhl-role">LW</span><span class="nhl-mini">PTS — · SOG —</span></div>
+          <div class="slot home f2"><div class="nhl-face"></div><span class="nhl-name">Hyökkääjä 2</span><span class="nhl-role">C</span><span class="nhl-mini">PTS — · SOG —</span></div>
+          <div class="slot home f3"><div class="nhl-face"></div><span class="nhl-name">Hyökkääjä 3</span><span class="nhl-role">RW</span><span class="nhl-mini">PTS — · SOG —</span></div>
+          <div class="slot away goalie"><div class="nhl-face"></div><span class="nhl-name">Maalivahti</span><span class="nhl-role">MV</span><span class="nhl-mini">SV% —</span></div>
+          <div class="slot away d1"><div class="nhl-face"></div><span class="nhl-name">Puolustaja 1</span><span class="nhl-role">P</span><span class="nhl-mini">PTS — · ATOI —</span></div>
+          <div class="slot away d2"><div class="nhl-face"></div><span class="nhl-name">Puolustaja 2</span><span class="nhl-role">P</span><span class="nhl-mini">PTS — · ATOI —</span></div>
+          <div class="slot away f1"><div class="nhl-face"></div><span class="nhl-name">Hyökkääjä 1</span><span class="nhl-role">LW</span><span class="nhl-mini">PTS — · SOG —</span></div>
+          <div class="slot away f2"><div class="nhl-face"></div><span class="nhl-name">Hyökkääjä 2</span><span class="nhl-role">C</span><span class="nhl-mini">PTS — · SOG —</span></div>
+          <div class="slot away f3"><div class="nhl-face"></div><span class="nhl-name">Hyökkääjä 3</span><span class="nhl-role">RW</span><span class="nhl-mini">PTS — · SOG —</span></div>
+        </div>
+        <div class="nhl-side-note">Tämä on nyt visuaalinen NHL-kaukalopohja. Seuraavassa vaiheessa nämä paikat sidotaan automaattisesti vahvistettuun kokoonpanoon, ketjuihin, YV-yksiköihin ja pelaajadatoihin.</div>
+      </div>
+      <div class="seh-nhl-note">NHL-keskuksen otteludata rakennetaan tämän kaukalon ympärille.</div>
     </div>
   </section>
 </div>
@@ -950,36 +1017,14 @@ async function sofaFindPlayer(name){
   if(sofaPlayerSearchCache.has(ck))return sofaPlayerSearchCache.get(ck);
   const promise=(async()=>{
     try{
-      const queries=[name, name.replace(/\s+/g,' ').trim()];
-      const candidates=[];
-      const seen=new Set();
-      const collect=(node)=>{
-        if(!node)return;
-        if(Array.isArray(node)){for(const x of node)collect(x);return}
-        if(typeof node!=='object')return;
-        const entity=node.entity||node.player||null;
-        const x=entity&&typeof entity==='object'?{...node,...entity}:node;
-        const id=x?.id||x?.player?.id;
-        const nm=x?.name||x?.player?.name||x?.playerName;
-        if(id&&nm){
-          const k=String(id);
-          if(!seen.has(k)){seen.add(k);candidates.push({...x,id:String(id),name:String(nm)});}
-        }
-        for(const [k,v] of Object.entries(node)){
-          if(k==='team'||k==='homeTeam'||k==='awayTeam')continue;
-          if(v&&typeof v==='object')collect(v);
-        }
-      };
-      for(const q of queries){
-        try{
-          const d=await sofaApi('search/all?q='+encodeURIComponent(q));
-          collect(d?.results||d?.data||d);
-          if(candidates.some(x=>sofaNorm(x.name)===ck))break;
-        }catch(e){console.warn('Sofa search query',q,e)}
-      }
-      let q=candidates.find(x=>sofaNorm(x.name)===ck);
-      if(!q)q=candidates.find(x=>nlNameMatch(name,x.name));
-      if(!q)q=candidates.find(x=>String(x.type||x.entityType||'').toLowerCase().includes('player'));
+      const d=await sofaApi('search/all?q='+encodeURIComponent(name));
+      const arr=Array.isArray(d?.results)?d.results:Array.isArray(d?.data)?d.data:[];
+      const players=arr.map(r=>r?.entity||r).filter(x=>x&&x.id&&(
+        x.name||x.player?.name||x.team?.name
+      ));
+      let q=players.find(x=>sofaNorm(x.name||x.player?.name)===ck);
+      if(!q)q=players.find(x=>nlNameMatch(name,x.name||x.player?.name));
+      if(!q)q=players.find(x=>String(x.type||'').toLowerCase().includes('player'));
       if(!q)return null;
       const id=q.id||q.player?.id;
       if(!id)return null;
@@ -1001,18 +1046,14 @@ async function sofaPlayerEvents(playerId,cutoffTime,teamId){
   if(sofaEventsCache.has(ck))return sofaEventsCache.get(ck);
   const promise=(async()=>{
     try{
-      const pages=await Promise.all([0,1].map(async page=>{
-        try{return await sofaApi(`player/${encodeURIComponent(playerId)}/events/last/${page}`)}catch(e){return null}
-      }));
-      const all=pages.flatMap(d=>Array.isArray(d?.events)?d.events:[]);
-      const uniq=[...new Map(all.map(e=>[String(e?.id||e?.startTimestamp||Math.random()),e])).values()];
+      const d=await sofaApi(`player/${encodeURIComponent(playerId)}/events/last/0`);
       const cut=Date.parse(cutoffTime||'9999-12-31T23:59:59Z');
-      return uniq
+      return (Array.isArray(d?.events)?d.events:[])
         .filter(e=>e?.status?.type==='finished'||e?.status?.code===100||e?.status?.description==='Ended')
         .filter(e=>!Number.isFinite(cut)||Number(e.startTimestamp||0)*1000<cut)
         .filter(e=>!teamId || String(e?.homeTeam?.id||'')===String(teamId) || String(e?.awayTeam?.id||'')===String(teamId))
         .sort((a,b)=>Number(b.startTimestamp||0)-Number(a.startTimestamp||0))
-        .slice(0,12);
+        .slice(0,5);
     }catch(e){console.warn('Sofa player events',playerId,e);return[]}
   })();
   sofaEventsCache.set(ck,promise); return promise;
@@ -1229,8 +1270,6 @@ async function hydrateStaticNLMatch(m){
     const names=[...pred.home,...pred.away];
     const results=[];
     let cursor=0;
-    const progressNote=root.parentElement.querySelector('.note');
-    if(progressNote)progressNote.textContent='🟡 Kokoonpano näkyy · tunnistetaan pelaajat ja haetaan viimeiset 5 seurajoukkueottelua…';
     async function worker(){
       while(true){
         const i=cursor++;
@@ -1264,6 +1303,9 @@ async function hydrateStaticNLMatch(m){
     async function resolveSide(names,rows,hist,formation,teamName){
       const out=[];
       for(const name of names){
+        // Prefer the existing PitchAPI player/match data. This is important
+        // for national-team fixtures because the lineup name can exist even
+        // when the external club-history source cannot resolve the player.
         const q=nlFindPlayerInRows(rows,name);
         let vals=[];
         if(q){
@@ -1282,6 +1324,8 @@ async function hydrateStaticNLMatch(m){
           continue;
         }
 
+        // Fallback to the club history source only when PitchAPI did not
+        // produce usable rows. Keep any PitchAPI identity/image if available.
         const s=enriched.get(normName(name));
         if(s?.profile?.id || s?.rows?.length){
           out.push({
@@ -1360,7 +1404,7 @@ async function hydrateStaticNLMatch(m){
     const historyCount=[...hs,...as].filter(p=>Array.isArray(p.__history)&&p.__history.length).length;
     const note=root.parentElement.querySelector('.note');
     if(note){
-      note.textContent=historyCount?`🟢 Pelaajien kuvat + viimeiset 5 ottelua ladattu · ${clubCount} pelaajalle löytyi seuraprofiili · OTB = boxin ulkopuolelta.`:'🟡 Kokoonpano löytyi · pelaajadataa yritetään vielä automaattisella varahaulla.';
+      note.textContent=historyCount?`🟢 Pelaajien kuvat + viimeiset 5 ottelua ladattu · ${clubCount} pelaajalle löytyi seuraprofiili · OTB = boxin ulkopuolelta.`:'🟡 Kokoonpano löytyi, mutta pelaajakohtaista otteluhistoriaa ei saatu vielä lähteestä.';
     }
 
     m.__nlHydrated=true;
@@ -1530,13 +1574,9 @@ function render(){
         polling for it.
       */
       await refreshStaticNLFixtures();
-      const now=Date.now();
       const current=games.filter(m=>!m.__nlStatic&&m.status!=='finished');
-      current.filter(m=>{
-        const t=Date.parse(m.time_utc||'');
-        return !Number.isFinite(t)||t<=now+180*60*1000;
-      }).forEach(m=>loadGame(m,true));
-    },120000);
+      current.forEach(m=>loadGame(m,true));
+    },300000);
 
     /* Do one extra immediate check after rendering. This is cheap when there
        are no static fixtures and means a newly-created PitchAPI match can
@@ -1691,8 +1731,7 @@ function card(p,teamId,matchId,x,y){
   return `<div class="p${inj?' injury-player':''}" data-id="${esc(key)}" data-player-id="${esc(id||'')}" data-player-name="${esc(pName(p))}" data-team="${esc(teamId)}" data-match="${esc(matchId)}" data-injured="${inj?'1':'0'}" style="left:${x}%;top:${y}%"><img class="face" data-pid="${esc(id||'')}" src="${esc(u)}" onerror="imageFallback(this)"><div class="name">${esc(pName(p))}</div><span class="absence-marker" data-absence-marker title="Loukkaantunut / sivussa" style="display:${inj?'inline-flex':'none'}">✚</span><div class="nums otb" data-otb>–/– · –/– · –/– · –/– · –/–</div><div class="player-stat-values" data-player-stat-values></div><span data-ont style="display:none"></span></div>`;
 }
 async function getLineups(id,force=false){if(!force&&lineupCache.has(id))return lineupCache.get(id);if(force)lineupCache.delete(id);const d=await api(`matches/${id}/lineups`);lineupCache.set(id,d);return d}
-async function getMatchPlayers(id,force=false){
-  if(force)matchPlayersCache.delete(id);
+async function getMatchPlayers(id){
   if(matchPlayersCache.has(id))return matchPlayersCache.get(id);
   const d=await api(`matches/${id}/players`),map=new Map(),rows=Array.isArray(d)?d:(Array.isArray(d?.players)?d.players:Array.isArray(d?.items)?d.items:Array.isArray(d?.data)?d.data:[]);
   for(const row of rows){
@@ -1783,7 +1822,7 @@ function resolveLineupSides(d,m,pm){
 async function loadGame(m,force=false){
   const box=$('#p'+m.id.replace(/[^a-zA-Z0-9_-]/g,'')+' .players');if(!box)return;
   try{
-    const d=await getLineups(m.id,force),pm=await getMatchPlayers(m.id,force).catch(()=>new Map()),resolved=resolveLineupSides(d,m,pm),home=resolved.home,away=resolved.away;
+    const d=await getLineups(m.id,force),pm=await getMatchPlayers(m.id).catch(()=>new Map()),resolved=resolveLineupSides(d,m,pm),home=resolved.home,away=resolved.away;
     const hsOfficial=home.starters||[],asOfficial=away.starters||[],hsPred=lineupStarters(d,'home',home),asPred=lineupStarters(d,'away',away);
     const hsRaw=lineupOfficial(home,hsOfficial)?hsOfficial:hsPred,asRaw=lineupOfficial(away,asOfficial)?asOfficial:asPred;
     const hs0=cleanStartingXI(hsRaw),as0=cleanStartingXI(asRaw);
@@ -2061,21 +2100,13 @@ async function loadHistory(m,teamId,starters){
     const hist=await teamMatches(teamId,m.league.name,m.time_utc);
     const rows=await buildTeamHistoryRows(hist);
     const pitchId=`#p${m.id.replace(/[^a-zA-Z0-9_-]/g,'')}`;
-    let sofaCursor=0;
-    const sofaResults=new Map();
-    const needSofa=[];
-
-    // PitchAPI remains the primary source. Only unresolved players use the
-    // player-level fallback, so normal matches do not double their API load.
     await Promise.all(starters.map(async p=>{
       const key=playerKey(p);
       let vals=[];
       try{vals=await buildHistoryRows(rows,p)}catch(e){
         console.warn('player history',key,e);
-        vals=[];
+        vals=hist.map(g=>({otb:0,on:0,shotOn:0,all:0,headers:0,shots:[],fouls:0,cards:0,cardsObj:{yellow:0,red:0},opp:matchLabel(g),matchId:g.id,played:false}));
       }
-      const usable=Array.isArray(vals)&&vals.some(v=>v.played || v.all>0 || v.cards>0 || v.fouls>0 || v.headers>0);
-      if(!usable)needSofa.push({p,vals});
       const el=document.querySelector(`${pitchId} .p[data-id="${CSS.escape(key)}"]`);
       if(!el)return;
       el._history=vals;
@@ -2083,32 +2114,6 @@ async function loadHistory(m,teamId,starters){
       const marker=el.querySelector('[data-absence-marker]');
       if(marker) marker.style.display=explicitInjury?'inline-flex':'none';
       el.classList.toggle('injury-player',explicitInjury);
-      const mode=document.querySelector(`[data-stat-bar="${CSS.escape(String(m.id))}"]`)?.dataset.mode||'otb';
-      renderPlayerStat(el,mode);
-    }));
-
-    async function sofaWorker(){
-      while(true){
-        const i=sofaCursor++; if(i>=needSofa.length)return;
-        const {p}=needSofa[i];
-        try{
-          const sh=await sofaPlayerHistory(pName(p),m.time_utc);
-          if(sh?.rows?.length)sofaResults.set(playerKey(p),sh);
-        }catch(e){console.warn('player history fallback',pName(p),e)}
-      }
-    }
-    if(needSofa.length)await Promise.all([sofaWorker(),sofaWorker(),sofaWorker(),sofaWorker()]);
-
-    await Promise.all(starters.map(async p=>{
-      const key=playerKey(p),el=document.querySelector(`${pitchId} .p[data-id="${CSS.escape(key)}"]`);if(!el)return;
-      const sh=sofaResults.get(key);
-      if(sh?.rows?.length){
-        el._history=sh.rows;
-        el.__sofaProfile=sh.profile||null;
-        el.dataset.sofaPlayerId=sh.profile?.id||'';
-        const face=el.querySelector('.face');
-        if(face&&sh.profile?.image_url){face.src=sh.profile.image_url;face.style.visibility='visible'}
-      }
       const mode=document.querySelector(`[data-stat-bar="${CSS.escape(String(m.id))}"]`)?.dataset.mode||'otb';
       renderPlayerStat(el,mode);
       window.dispatchEvent(new CustomEvent('otb-history-ready',{detail:{matchId:m.id,playerId:String(pid(p)||key)}}));
