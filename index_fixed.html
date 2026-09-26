@@ -687,6 +687,43 @@ body.home-mode > .top-date-nav-wrap { display:none !important; }
 @media(max-width:560px){#nhlHomePanel .seh-nhl-inner{padding:8px 6px 24px!important}.nhl-dashboard-head{gap:5px;padding:8px}.nhl-dash-team{gap:6px}.nhl-dash-logo{width:40px;height:40px}.nhl-dash-team-name{font-size:12px}.nhl-dash-center{display:none}.nhl-dashboard-head{grid-template-columns:1fr 1fr}.nhl-dash-team.away{justify-content:flex-end}.nhl-team-panel{grid-template-columns:1fr}.nhl-rink{height:900px!important}.nhl-rink .slot .nhl-face{width:46px!important;height:46px!important}}
 </style>
 </style>
+<style id="nhl-dashboard-v6-final">
+/* Final NHL dashboard cleanup */
+body.nhl-mode #topDateNavigator,
+body.nhl-mode #globalPublicBar,
+body.nhl-mode #v20Enhancements,
+body.nhl-mode #v22MatchAnalysis,
+body.nhl-mode > header,
+body.nhl-mode > main,
+body.nhl-mode > #drawer,
+body.nhl-mode #sideEyeFootballPanel{display:none!important}
+body.nhl-mode #nhlHomePanel{display:block!important}
+#nhlDateMount{display:none!important}
+/* Compact NHL game picker inside the dashboard */
+body.nhl-mode #nhlLivePanel{display:block!important;margin:0 0 10px!important;background:rgba(4,18,29,.72)!important;border:1px solid #1d5474!important;border-radius:12px!important;padding:7px!important}
+body.nhl-mode #nhlLivePanel .nhl-live-head{display:none!important}
+body.nhl-mode #nhlGames{display:flex!important;gap:7px!important;overflow-x:auto!important;padding:2px!important;scrollbar-width:thin!important}
+body.nhl-mode #nhlGames .nhl-game-card{flex:0 0 170px!important;min-height:58px!important;margin:0!important;padding:7px 9px!important;border-radius:9px!important;background:rgba(9,36,52,.94)!important;border:1px solid #24536d!important;cursor:pointer!important}
+body.nhl-mode #nhlGames .nhl-game-card.active{border-color:#3f9ce0!important;background:rgba(20,69,99,.95)!important;box-shadow:0 0 0 1px rgba(63,156,224,.22) inset!important}
+body.nhl-mode #nhlGames .nhl-game-top{font-size:8px!important;color:#8eb6cd!important;display:flex!important;justify-content:space-between!important}
+body.nhl-mode #nhlGames .nhl-game-teams{font-size:12px!important;font-weight:1000!important;color:#fff!important;margin-top:3px!important}
+body.nhl-mode #nhlGames .nhl-game-time{font-size:9px!important;color:#8eb6cd!important;margin-top:2px!important}
+body.nhl-mode #nhlGames .nhl-game-state{display:none!important}
+body.nhl-mode #nhlSelectedGame{display:none!important}
+/* Make the side panels visually balanced with the rink */
+.nhl-team-panel{min-height:780px!important;max-height:1080px!important;overflow:auto!important}
+.nhl-rink-wrap{display:flex!important;justify-content:center!important;align-items:flex-start!important}
+.nhl-dashboard-head{min-height:96px!important}
+.nhl-dash-logo{background:rgba(255,255,255,.04);border-radius:12px;padding:3px}
+/* Keep the rink and both ends geometrically identical */
+.nhl-rink .home.d1,.nhl-rink .away.d1{left:35%!important}
+.nhl-rink .home.d2,.nhl-rink .away.d2{left:65%!important}
+.nhl-rink .home.f1,.nhl-rink .away.f1{left:30%!important}
+.nhl-rink .home.f2,.nhl-rink .away.f2{left:50%!important}
+.nhl-rink .home.f3,.nhl-rink .away.f3{left:70%!important}
+.nhl-rink .home.goalie,.nhl-rink .away.goalie{left:50%!important}
+@media(max-width:850px){.nhl-team-panel{min-height:0;max-height:none}}
+</style>
 </head><body class="home-mode">
 <div id="sideEyeHome" aria-label="Side Eye Analytics etusivu">
   <div class="seh-bg"></div><div class="seh-overlay"></div>
@@ -2884,7 +2921,7 @@ body.home-mode #topDateNavigator{display:none!important}
   });
 })();
 </script>
-\n<script id="nhl-live-data-v1">
+<script id="nhl-live-data-v1">
 (()=>{
   const NHL='https://api-web.nhle.com/v1';
   const live={games:[],selected:null,cache:new Map(),unit:'1'};
