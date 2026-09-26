@@ -1236,32 +1236,49 @@ async function hydrateStaticNLMatch(m){
     async function resolveSide(names,rows,hist,formation,teamName){
       const out=[];
       for(const name of names){
+        // Prefer the existing PitchAPI player/match data. This is important
+        // for national-team fixtures because the lineup name can exist even
+        // when the external club-history source cannot resolve the player.
+        const q=nlFindPlayerInRows(rows,name);
+        let vals=[];
+        if(q){
+          try{vals=await buildHistoryRows(rows,q)}catch(e){vals=[]}
+        }
+        const qHasData=Array.isArray(vals)&&vals.some(v=>v.played || v.all>0 || v.cards>0 || v.fouls>0 || v.headers>0);
+        if(q && qHasData){
+          out.push({
+            ...(q||{}),
+            name:q?.player?.name||q?.name||name,
+            image_url:q?.player?.image_url||q?.image_url||'',
+            player_id:pid(q)||q?.player_id||null,
+            __history:vals,
+            __sofa:false
+          });
+          continue;
+        }
+
+        // Fallback to the club history source only when PitchAPI did not
+        // produce usable rows. Keep any PitchAPI identity/image if available.
         const s=enriched.get(normName(name));
         if(s?.profile?.id || s?.rows?.length){
           out.push({
-            name:s.profile?.name||name,
-            image_url:s.profile?.image_url||'',
-            player_id:s.profile?.id||null,
-            __history:Array.isArray(s.rows)?s.rows:[],
+            ...(q||{}),
+            name:s.profile?.name||q?.player?.name||q?.name||name,
+            image_url:s.profile?.image_url||q?.player?.image_url||q?.image_url||'',
+            player_id:s.profile?.id||pid(q)||q?.player_id||null,
+            __history:Array.isArray(s.rows)&&s.rows.length?s.rows:(vals||[]),
             __sofaProfile:s.profile||null,
             __sofa:true
           });
           continue;
         }
 
-        const q=nlFindPlayerInRows(rows,name);
-        let vals=[];
-        if(q){
-          try{vals=await buildHistoryRows(rows,q)}catch(e){vals=nlFallbackHistory(hist,q)}
-        }else{
-          vals=nlFallbackHistory(hist,{name});
-        }
         out.push({
           ...(q||{}),
           name:q?.player?.name||q?.name||name,
           image_url:q?.player?.image_url||q?.image_url||'',
           player_id:pid(q)||q?.player_id||null,
-          __history:vals,
+          __history:vals.length?vals:nlFallbackHistory(hist,q||{name}),
           __sofa:false
         });
       }
@@ -1320,7 +1337,7 @@ async function hydrateStaticNLMatch(m){
     const historyCount=[...hs,...as].filter(p=>Array.isArray(p.__history)&&p.__history.length).length;
     const note=root.parentElement.querySelector('.note');
     if(note){
-      note.textContent=`🟢 Pelaajien kuvat + viimeiset ${Math.min(5,historyCount?5:0)} seurajoukkueottelua ladattu · ${clubCount} pelaajalle löytyi seuraprofiili · OTB = boxin ulkopuolelta.`;
+      note.textContent=historyCount?`🟢 Pelaajien kuvat + viimeiset 5 ottelua ladattu · ${clubCount} pelaajalle löytyi seuraprofiili · OTB = boxin ulkopuolelta.`:'🟡 Kokoonpano löytyi, mutta pelaajakohtaista otteluhistoriaa ei saatu vielä lähteestä.';
     }
 
     m.__nlHydrated=true;
@@ -1351,12 +1368,12 @@ function renderStaticNLMatch(m){
     <div class="mh-team away"><div class="mh-team-text"><div class="teams">${esc(m.away_team?.name||'Vierasjoukkue')}</div></div></div></div>
     <div class="player-stat-bar" data-stat-bar="${esc(m.id)}" data-mode="otb">
       <div class="player-stat-caption">Pelaajien viimeiset 5 ottelua · valitse näytettävä tilasto</div>
-      <button class="player-stat-btn active" data-stat="otb">OTB / OTB kohti</button>
-      <button class="player-stat-btn" data-stat="shots">Laukaukset</button>
-      <button class="player-stat-btn" data-stat="cards">Kortit</button>
-      <button class="player-stat-btn" data-stat="fouls">Rikkeet</button>
-      <button class="player-stat-btn" data-stat="headers">Pääpallot</button>
-      <button class="player-stat-btn" data-stat="all">Kaikki laukaukset</button>
+      <button type="button" class="player-stat-btn active" data-stat="otb" onclick="window.otbSetStatModeFromButton(this)">OTB / OTB kohti</button>
+      <button type="button" class="player-stat-btn" data-stat="shots" onclick="window.otbSetStatModeFromButton(this)">Laukaukset</button>
+      <button type="button" class="player-stat-btn" data-stat="cards" onclick="window.otbSetStatModeFromButton(this)">Kortit</button>
+      <button type="button" class="player-stat-btn" data-stat="fouls" onclick="window.otbSetStatModeFromButton(this)">Rikkeet</button>
+      <button type="button" class="player-stat-btn" data-stat="headers" onclick="window.otbSetStatModeFromButton(this)">Pääpallot</button>
+      <button type="button" class="player-stat-btn" data-stat="all" onclick="window.otbSetStatModeFromButton(this)">Kaikki laukaukset</button>
       <span class="stat-mode-label">Viimeiset 5</span>
     </div>
     <div class="pitch" id="p${m.id.replace(/[^a-zA-Z0-9_-]/g,'')}">
@@ -1462,7 +1479,7 @@ function render(){
   const list=games.filter(m=>m.league?.name===filter);
   if(!list.length){$('#out').innerHTML='<div class="status">Ei otteluita tällä päivällä tässä sarjassa.</div>';return}
   if(MAIN_SET.has(filter)){
-    $('#out').innerHTML=list.map(m=>m.__nlStatic?renderStaticNLMatch(m):`<section class="match"><div class="mh"><div class="mh-team"><div class="mh-team-text"><div class="teams">${esc(m.home_team?.name||'Kotijoukkue')}</div><div class="lg">${esc(m.league?.name||'')}</div></div>${m.home_team?.image_url?`<img class="mh-logo" src="${esc(m.home_team.image_url)}" alt="">`:''}</div><div class="tm">${localTime(m.time_utc)}${m.status==='finished'?' · '+m.score_home+'–'+m.score_away:''}</div><div class="mh-team away">${m.away_team?.image_url?`<img class="mh-logo" src="${esc(m.away_team.image_url)}" alt="">`:''}<div class="mh-team-text"><div class="teams">${esc(m.away_team?.name||'Vierasjoukkue')}</div></div></div></div><div class="player-stat-bar" data-stat-bar="${esc(m.id)}" data-mode="otb"><div class="player-stat-caption">Pelaajien viimeiset 5 ottelua · valitse näytettävä tilasto</div><button class="player-stat-btn active" data-stat="otb">OTB / OTB kohti</button><button class="player-stat-btn" data-stat="shots">Laukaukset</button><button class="player-stat-btn" data-stat="cards">Kortit</button><button class="player-stat-btn" data-stat="fouls">Rikkeet</button><button class="player-stat-btn" data-stat="headers">Pääpallot</button><button class="player-stat-btn" data-stat="all">Kaikki laukaukset</button><span class="stat-mode-label">Viimeiset 5</span></div><div class="pitch" id="p${m.id.replace(/[^a-zA-Z0-9_-]/g,'')}">${m.home_team?.image_url?`<img class="pitch-team-logo home" src="${esc(m.home_team.image_url)}" alt="">`:''}${m.away_team?.image_url?`<img class="pitch-team-logo away" src="${esc(m.away_team.image_url)}" alt="">`:''}<div class="goal g1"></div><div class="goal g2"></div><span class="corner tl"></span><span class="corner tr"></span><span class="corner bl"></span><span class="corner br"></span><span class="centerDot"></span><div class="players"><div class="status">Ladataan kokoonpanoa…</div></div></div><div class="note">OUT = boxin ulkopuolelta · pelaajaa painamalla näet tarkat tilastot.</div></section>`).join('');
+    $('#out').innerHTML=list.map(m=>m.__nlStatic?renderStaticNLMatch(m):`<section class="match"><div class="mh"><div class="mh-team"><div class="mh-team-text"><div class="teams">${esc(m.home_team?.name||'Kotijoukkue')}</div><div class="lg">${esc(m.league?.name||'')}</div></div>${m.home_team?.image_url?`<img class="mh-logo" src="${esc(m.home_team.image_url)}" alt="">`:''}</div><div class="tm">${localTime(m.time_utc)}${m.status==='finished'?' · '+m.score_home+'–'+m.score_away:''}</div><div class="mh-team away">${m.away_team?.image_url?`<img class="mh-logo" src="${esc(m.away_team.image_url)}" alt="">`:''}<div class="mh-team-text"><div class="teams">${esc(m.away_team?.name||'Vierasjoukkue')}</div></div></div></div><div class="player-stat-bar" data-stat-bar="${esc(m.id)}" data-mode="otb"><div class="player-stat-caption">Pelaajien viimeiset 5 ottelua · valitse näytettävä tilasto</div><button type="button" class="player-stat-btn active" data-stat="otb" onclick="window.otbSetStatModeFromButton(this)">OTB / OTB kohti</button><button type="button" class="player-stat-btn" data-stat="shots" onclick="window.otbSetStatModeFromButton(this)">Laukaukset</button><button type="button" class="player-stat-btn" data-stat="cards" onclick="window.otbSetStatModeFromButton(this)">Kortit</button><button type="button" class="player-stat-btn" data-stat="fouls" onclick="window.otbSetStatModeFromButton(this)">Rikkeet</button><button type="button" class="player-stat-btn" data-stat="headers" onclick="window.otbSetStatModeFromButton(this)">Pääpallot</button><button type="button" class="player-stat-btn" data-stat="all" onclick="window.otbSetStatModeFromButton(this)">Kaikki laukaukset</button><span class="stat-mode-label">Viimeiset 5</span></div><div class="pitch" id="p${m.id.replace(/[^a-zA-Z0-9_-]/g,'')}">${m.home_team?.image_url?`<img class="pitch-team-logo home" src="${esc(m.home_team.image_url)}" alt="">`:''}${m.away_team?.image_url?`<img class="pitch-team-logo away" src="${esc(m.away_team.image_url)}" alt="">`:''}<div class="goal g1"></div><div class="goal g2"></div><span class="corner tl"></span><span class="corner tr"></span><span class="corner bl"></span><span class="corner br"></span><span class="centerDot"></span><div class="players"><div class="status">Ladataan kokoonpanoa…</div></div></div><div class="note">OUT = boxin ulkopuolelta · pelaajaa painamalla näet tarkat tilastot.</div></section>`).join('');
     list.filter(m=>!m.__nlStatic).forEach(m=>loadGame(m,false));
     initStaticNLHydration(list);
     list.filter(m=>m.__nlStatic).forEach(m=>{
@@ -1900,11 +1917,11 @@ function renderPlayerStat(el,mode){
   }
   if(legacy)legacy.style.display='none';
   box.style.setProperty('display','block','important');
-  const vals=hist.map(v=>mode==='shots'?(Number(v.shotOn)||0):mode==='all'?(Number(v.all)||0):mode==='fouls'?(Number(v.fouls)||0):mode==='headers'?(Number(v.headers)||0):v.cardsObj||{yellow:0,red:0});
+  const vals=hist.map(v=>mode==='shots'?(Number(v.all)||0):mode==='all'?(Number(v.all)||0):mode==='fouls'?(Number(v.fouls)||0):mode==='headers'?(Number(v.headers)||0):v.cardsObj||{yellow:0,red:0});
   const nums=vals.map(v=>typeof v==='number'?v:(Number(v?.yellow)||0)+(Number(v?.red)||0));
   box.innerHTML=vals.map((v,i)=>formatPlayerStat(v,mode,i,nums)).join('–');
 }
-function setPlayerStatMode(matchId,mode){const bar=document.querySelector(`[data-stat-bar="${CSS.escape(String(matchId))}"]`);if(!bar)return;bar.querySelectorAll('.player-stat-btn').forEach(b=>b.classList.toggle('active',b.dataset.stat===mode));const pitch=document.querySelector(`#p${String(matchId).replace(/[^a-zA-Z0-9_-]/g,'')}`);if(!pitch)return;pitch.querySelectorAll('.p').forEach(el=>renderPlayerStat(el,mode));bar.dataset.mode=mode}
+function setPlayerStatMode(matchId,mode){const bar=document.querySelector(`[data-stat-bar="${CSS.escape(String(matchId))}"]`);if(!bar)return;bar.querySelectorAll('.player-stat-btn').forEach(b=>b.classList.toggle('active',b.dataset.stat===mode));const pitch=document.querySelector(`#p${String(matchId).replace(/[^a-zA-Z0-9_-]/g,'')}`);if(!pitch)return;pitch.querySelectorAll('.p').forEach(el=>renderPlayerStat(el,mode));bar.dataset.mode=mode} window.otbSetStatModeFromButton=function(btn){try{const bar=btn?.closest?.("[data-stat-bar]");if(!bar)return;setPlayerStatMode(bar.dataset.statBar,btn.dataset.stat||"otb")}catch(e){console.warn("stat mode switch",e)}};
 const playerMatchStatsFallbackCache=new Map();
 async function getPlayerMatchStats(matchId,playerId){if(!playerId)return null;const ck=String(matchId)+':'+String(playerId);if(playerMatchStatsFallbackCache.has(ck))return playerMatchStatsFallbackCache.get(ck);try{const d=await api(`matches/${encodeURIComponent(matchId)}/players/${encodeURIComponent(playerId)}`),r=d?.player||d?.data?.player||d?.data||d;playerMatchStatsFallbackCache.set(ck,r||null);return r||null}catch(e){playerMatchStatsFallbackCache.set(ck,null);return null}}
 const playerShotsCache=new Map();
