@@ -1021,7 +1021,7 @@ body.nhl-mode .nhl-team-panel{display:block!important;width:auto!important;min-w
 <div id="status" class="status">Valmis.</div><div id="diag" class="status" style="font-size:11px"></div><div id="out"></div></main><div id="drawer" class="drawer hidden"></div>
 <script>
 const API='/pitchapi/';
-const MAIN_LEAGUES=['Premier League','LaLiga','Serie A','Bundesliga','Ligue 1','Champions League','Europa League','Conference League','Nations League A','Nations League B','Nations League C'];
+const MAIN_LEAGUES=['Premier League','LaLiga','Serie A','Bundesliga','Ligue 1','Champions League','Europa League','Conference League','Nations League A','Nations League B','Nations League C','Nations League D'];
 const MAIN_PATTERNS={
   'Premier League':[/premier league/i],
   'LaLiga':[/la ?liga/i,/laliga/i],
@@ -1033,19 +1033,32 @@ const MAIN_PATTERNS={
   'Conference League':[/conference league/i],
   'Nations League A':[/nations league.*\bA\b/i,/uefa nations.*\bA\b/i],
   'Nations League B':[/nations league.*\bB\b/i,/uefa nations.*\bB\b/i],
-  'Nations League C':[/nations league.*\bC\b/i,/uefa nations.*\bC\b/i]
+  'Nations League C':[/nations league.*\bC\b/i,/uefa nations.*\bC\b/i],
+  'Nations League D':[/nations league.*\bD\b/i,/uefa nations.*\bD\b/i]
 };
 const MAIN_SET=new Set(MAIN_LEAGUES);
 const ALLOWED=MAIN_LEAGUES;
 
-const NL_LEAGUES=['Nations League A','Nations League B','Nations League C'];
+const NL_LEAGUES=['Nations League A','Nations League B','Nations League C','Nations League D'];
 const NL_DATES=[
   '2026-09-25','2026-09-26','2026-09-27','2026-09-28','2026-09-29',
   '2026-09-30','2026-10-01','2026-10-02','2026-10-03','2026-10-04',
   '2026-10-05','2026-10-06','2026-11-12','2026-11-13','2026-11-14',
-  '2026-11-15','2026-11-16','2026-11-17'
+  '2026-11-13','2026-11-14','2026-11-15','2026-11-16','2026-11-17'
 ];
 const NL_FIXTURES=[
+  ['2026-09-24','Nations League D','Andorra','Malta'],
+  ['2026-09-24','Nations League D','Liechtenstein','Lithuania'],
+  ['2026-09-27','Nations League D','Lithuania','Azerbaijan'],
+  ['2026-09-27','Nations League D','Gibraltar','Andorra'],
+  ['2026-10-01','Nations League D','Azerbaijan','Liechtenstein'],
+  ['2026-10-01','Nations League D','Malta','Gibraltar'],
+  ['2026-10-04','Nations League D','Azerbaijan','Lithuania'],
+  ['2026-10-04','Nations League D','Malta','Andorra'],
+  ['2026-11-13','Nations League D','Andorra','Gibraltar'],
+  ['2026-11-13','Nations League D','Liechtenstein','Azerbaijan'],
+  ['2026-11-16','Nations League D','Gibraltar','Malta'],
+  ['2026-11-16','Nations League D','Lithuania','Liechtenstein'],
   ['2026-09-25','Nations League A','Italy','Belgium'],
   ['2026-09-25','Nations League A','Türkiye','France'],
   ['2026-09-25','Nations League B','Georgia','Northern Ireland'],
@@ -1175,6 +1188,9 @@ async function loadLeagues(){
     const x=arr.find(l=>(MAIN_PATTERNS[wanted]||[]).some(re=>re.test(l.name||'')));
     if(x) leagueMap[wanted]=x;
   }
+  // Nations League D is not consistently exposed as a separate PitchAPI league.
+  // Keep it as a first-class local league so its verified UEFA fixtures are still selectable.
+  if(!leagueMap['Nations League D']) leagueMap['Nations League D']={id:'nl-static-d',name:'Nations League D',__static:true};
   for(const l of arr){
     if(!l?.id||!l?.name) continue;
     const already=Object.values(leagueMap).some(x=>String(x.id)===String(l.id));
@@ -1193,7 +1209,7 @@ function populateLeagueSelector(){
   const tabs=document.getElementById('mainLeagueTabs');
   if(tabs){
     tabs.innerHTML=main.map((n,i)=>{
-      const label=n==='Premier League'?'🇬🇧 PL':n==='LaLiga'?'🇪🇸 LaLiga':n==='Serie A'?'🇮🇹 Serie A':n==='Bundesliga'?'🇩🇪 Bundesliga':n==='Ligue 1'?'🇫🇷 Ligue 1':n==='Champions League'?'🏆 UCL':n==='Europa League'?'🏆 UEL':n==='Conference League'?'🏆 UECL':n==='Nations League A'?'🌍 NL A':n==='Nations League B'?'🌍 NL B':'🌍 NL C';
+      const label=n==='Premier League'?'🇬🇧 PL':n==='LaLiga'?'🇪🇸 LaLiga':n==='Serie A'?'🇮🇹 Serie A':n==='Bundesliga'?'🇩🇪 Bundesliga':n==='Ligue 1'?'🇫🇷 Ligue 1':n==='Champions League'?'🏆 UCL':n==='Europa League'?'🏆 UEL':n==='Conference League'?'🏆 UECL':n==='Nations League A'?'🌍 NL A':n==='Nations League B'?'🌍 NL B':n==='Nations League C'?'🌍 NL C':'🌍 NL D';
       return `<button type="button" class="league-tab${n===filter?' active':''}" data-league="${esc(n)}">${label}</button>`;
     }).join('');
     // Bind directly after every rebuild. This avoids stale delegated handlers
@@ -3186,7 +3202,9 @@ body.home-mode #topDateNavigator{display:none!important}
   function renderBottom(side){const el=$(side==='home'?'nhlHomeForm':'nhlAwayForm');if(!el)return;const t=side==='home'?live.selected?.homeTeam:live.selected?.awayTeam;el.innerHTML=`<div class="nhl-bottom-title">${esc(teamName(t))} · Viimeiset ottelut</div><div class="nhl-form-row"><div class="nhl-form-item">G1<b>—</b></div><div class="nhl-form-item">G2<b>—</b></div><div class="nhl-form-item">G3<b>—</b></div><div class="nhl-form-item">G4<b>—</b></div><div class="nhl-form-item">G5<b>—</b></div></div>`}
   function renderGameStats(){const box=$('nhlGameStats');if(!box)return;const h=live.selected?.homeTeam,a=live.selected?.awayTeam;box.innerHTML=`<div class="nhl-bottom-title">OTTELUTILASTOT</div><div class="nhl-stat-compare"><b>${esc(h?.score??'—')}</b><span>Tilanne</span><b>${esc(a?.score??'—')}</b><div class="nhl-bar"><i style="width:50%"></i></div><span>Maalit</span><div class="nhl-bar red"><i style="width:50%"></i></div><b>—</b><span>Laukaukset</span><b>—</b><div></div><span>Torjunnat</span><div></div></div>`}
   async function renderCurrentUnit(){if(!live.selected||!live.currentData)return false;renderSide('home',live.currentData,live.currentProfiles);renderSide('away',live.currentData,live.currentProfiles);renderPlayerPanel('home',live.currentData,live.currentProfiles);renderPlayerPanel('away',live.currentData,live.currentProfiles);return true}
-  async function selectGame(id,force=false){const g=live.allGames.find(x=>Number(x.id)===Number(id));if(!g)return;live.selected=g;renderGames();$('nhlSelectedGame').textContent=`${teamName(g.awayTeam)} – ${teamName(g.homeTeam)} · ${numGameType(g)===1?'PRESEASON':'RUNKOSARJA'}`;$('nhlRinkModule')?.classList.add('nhl-loading');try{const cached=live.cache.get(g.id),isLive=['LIVE','CRIT','OFF','FINAL'].includes(String(g.gameState||'').toUpperCase()),fresh=!force&&cached&&(Date.now()-cached.ts)<live.refreshMs&&!isLive;let data=fresh?cached.data:null;if(!data){const [landing,box,pbp]=await Promise.all([api('/gamecenter/'+g.id+'/landing').catch(()=>null),api('/gamecenter/'+g.id+'/boxscore').catch(()=>null),api('/gamecenter/'+g.id+'/play-by-play').catch(()=>null)]);data={...(landing||{}),...(box||{}),...(pbp||{})};live.cache.set(g.id,{data,ts:Date.now()})}const raw=['home','away'].flatMap(side=>{const d=extractSide(data,side);return [...(d.forwards||[]),...(d.defense||[]),...(d.goalies||[])]});const profiles=await hydrateProfiles(raw);live.currentData=data;live.currentProfiles=profiles;renderSide('home',data,profiles);renderSide('away',data,profiles);renderDashHeader(g);setTeamIdentity(g);renderPlayerPanel('home',data,profiles);renderPlayerPanel('away',data,profiles);renderBottom('home');renderBottom('away');renderGameStats();$('nhlRinkModule')?.classList.remove('nhl-loading');return true}catch(e){console.warn('NHL selectGame',e);$('nhlRinkModule')?.classList.remove('nhl-loading');return false}}
+  async function selectGame(id,force=false){const g=live.allGames.find(x=>Number(x.id)===Number(id));if(!g)return;live.selected=g;renderGames();$('nhlSelectedGame').textContent=`${teamName(g.awayTeam)} – ${teamName(g.homeTeam)} · ${numGameType(g)===1?'PRESEASON':'RUNKOSARJA'}`;$('nhlRinkModule')?.classList.add('nhl-loading');try{const cached=live.cache.get(g.id),isLive=['LIVE','CRIT','OFF','FINAL'].includes(String(g.gameState||'').toUpperCase()),fresh=!force&&cached&&(Date.now()-cached.ts)<live.refreshMs&&!isLive;let data=fresh?cached.data:null;if(!data){const [landing,box,pbp,summary]=await Promise.all([api('/gamecenter/'+g.id+'/landing').catch(()=>null),api('/gamecenter/'+g.id+'/boxscore').catch(()=>null),api('/gamecenter/'+g.id+'/play-by-play').catch(()=>null),api('/gamecenter/'+g.id+'/landing').catch(()=>null)]);data={...(landing||{}),...(box||{}),...(summary||{}),...(pbp||{})};
+        // Completed/preseason games often expose the usable player list in boxscore/rosterSpots rather than projected lines. Keep those players and let extractSide build the five-man view from them.
+        live.cache.set(g.id,{data,ts:Date.now()})}const raw=['home','away'].flatMap(side=>{const d=extractSide(data,side);return [...(d.forwards||[]),...(d.defense||[]),...(d.goalies||[])]});const profiles=await hydrateProfiles(raw);live.currentData=data;live.currentProfiles=profiles;renderSide('home',data,profiles);renderSide('away',data,profiles);renderDashHeader(g);setTeamIdentity(g);renderPlayerPanel('home',data,profiles);renderPlayerPanel('away',data,profiles);renderBottom('home');renderBottom('away');renderGameStats();$('nhlRinkModule')?.classList.remove('nhl-loading');return true}catch(e){console.warn('NHL selectGame',e);$('nhlRinkModule')?.classList.remove('nhl-loading');return false}}
   async function getGamesForDate(k){const maps=new Map();const pull=async path=>{try{const j=await api(path);const arr=Array.isArray(j?.games)?j.games:(Array.isArray(j?.gameWeek)?j.gameWeek.flatMap(x=>x.games||[]):[]);for(const g of arr){const n=normalizeGame(g,k);if(n?.id)maps.set(String(n.id),n)}}catch(e){console.warn('NHL schedule source',path,e)}};
     // NHL publishes its schedule by North-American calendar date. A game such as
     // Edmonton–Calgary at 21:00 local on Sep 26 is Sep 27 in Finland. Pull both
