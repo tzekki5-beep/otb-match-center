@@ -746,6 +746,186 @@ window.otbSelectLeague=async function(leagueName){
 const nlTeamHistoryCache=new Map();
 const nlTeamHistoryPromiseCache=new Map();
 
+
+/* v35: SofaScore enrichment fallback for static Nations League fixtures.
+   PitchAPI remains the primary source. SofaScore is used only when the
+   fixture itself has no PitchAPI match ID yet, so predicted players can still
+   be resolved to their real club, image and last five club matches. */
+const sofaPlayerSearchCache=new Map();
+const sofaPlayerProfileCache=new Map();
+const sofaEventsCache=new Map();
+const sofaLineupCache=new Map();
+const sofaShotCache=new Map();
+const sofaHistoryCache=new Map();
+const SOFA_BASE='https://www.sofascore.com/api/v1/';
+
+async function sofaApi(path){
+  const r=await fetch(SOFA_BASE+path,{cache:'no-store',headers:{'Accept':'application/json'}});
+  let d=null; try{d=await r.json()}catch(e){}
+  if(!r.ok)throw Error('SofaScore HTTP '+r.status);
+  return d||{};
+}
+function sofaNorm(v){return normName(v)}
+function sofaResultPlayerName(r){
+  return r?.entity?.name||r?.player?.name||r?.name||'';
+}
+async function sofaFindPlayer(name){
+  const ck=sofaNorm(name);
+  if(sofaPlayerSearchCache.has(ck))return sofaPlayerSearchCache.get(ck);
+  const promise=(async()=>{
+    try{
+      const d=await sofaApi('search/all?q='+encodeURIComponent(name));
+      const arr=Array.isArray(d?.results)?d.results:Array.isArray(d?.data)?d.data:[];
+      const players=arr.map(r=>r?.entity||r).filter(x=>x&&x.id&&(
+        x.name||x.player?.name||x.team?.name
+      ));
+      let q=players.find(x=>sofaNorm(x.name||x.player?.name)===ck);
+      if(!q)q=players.find(x=>nlNameMatch(name,x.name||x.player?.name));
+      if(!q)q=players.find(x=>String(x.type||'').toLowerCase().includes('player'));
+      if(!q)return null;
+      const id=q.id||q.player?.id;
+      if(!id)return null;
+      let prof=q;
+      try{
+        const pd=await sofaApi('player/'+encodeURIComponent(id));
+        prof=pd?.player||pd?.data?.player||pd||q;
+      }catch(e){}
+      return {...q,...prof,id:String(id),name:prof?.name||q?.name||name,
+        image_url:prof?.image||prof?.image_url||prof?.imageUrl||`https://img.sofascore.com/api/v1/player/${id}/image`,
+        team:prof?.team||q?.team||null};
+    }catch(e){console.warn('Sofa player search',name,e);return null}
+  })();
+  sofaPlayerSearchCache.set(ck,promise);
+  return promise;
+}
+async function sofaPlayerEvents(playerId,cutoffTime){
+  const ck=String(playerId)+':'+String(cutoffTime||'');
+  if(sofaEventsCache.has(ck))return sofaEventsCache.get(ck);
+  const promise=(async()=>{
+    try{
+      const d=await sofaApi(`player/${encodeURIComponent(playerId)}/events/last/0`);
+      const cut=Date.parse(cutoffTime||'9999-12-31T23:59:59Z');
+      return (Array.isArray(d?.events)?d.events:[])
+        .filter(e=>e?.status?.type==='finished'||e?.status?.code===100||e?.status?.description==='Ended')
+        .filter(e=>!Number.isFinite(cut)||Number(e.startTimestamp||0)*1000<cut)
+        .sort((a,b)=>Number(b.startTimestamp||0)-Number(a.startTimestamp||0))
+        .slice(0,5);
+    }catch(e){console.warn('Sofa player events',playerId,e);return[]}
+  })();
+  sofaEventsCache.set(ck,promise); return promise;
+}
+async function sofaLineups(eventId){
+  const ck=String(eventId); if(sofaLineupCache.has(ck))return sofaLineupCache.get(ck);
+  const promise=sofaApi(`event/${encodeURIComponent(eventId)}/lineups`).catch(e=>{console.warn('Sofa lineup',eventId,e);return null});
+  sofaLineupCache.set(ck,promise); return promise;
+}
+async function sofaShots(eventId,playerId){
+  const ck=String(eventId)+':'+String(playerId); if(sofaShotCache.has(ck))return sofaShotCache.get(ck);
+  const promise=sofaApi(`event/${encodeURIComponent(eventId)}/shotmap/player/${encodeURIComponent(playerId)}`)
+    .then(d=>Array.isArray(d?.shotmap)?d.shotmap:[]).catch(()=>[]);
+  sofaShotCache.set(ck,promise); return promise;
+}
+function sofaPlayerRow(lineups,playerId,name){
+  const all=[...(lineups?.home?.players||[]),...(lineups?.away?.players||[])];
+  let x=all.find(p=>String(p?.player?.id||p?.id)===String(playerId));
+  if(!x)x=all.find(p=>nlNameMatch(name,p?.player?.name||p?.name));
+  return x||null;
+}
+function sofaNum(st,...keys){
+  const sources=[st,st?.statistics,st?.stats].filter(Boolean);
+  for(const src of sources){
+    for(const k of keys){
+      const v=src?.[k];
+      if(v==null)continue;
+      const n=typeof v==='object'?Number(v.value??v.current??v.total??NaN):Number(v);
+      if(Number.isFinite(n))return n;
+    }
+  }
+  return null;
+}
+function sofaShotRowToInternal(s){
+  const c=s?.playerCoordinates||{};
+  const x=Number(c.x), inside=Number.isFinite(x)?x<=16.5:null;
+  const on=['save','goal'].includes(String(s?.shotType||'').toLowerCase());
+  const goal=String(s?.shotType||'').toLowerCase()==='goal';
+  return {x:Number.isFinite(Number(c.y))?Number(c.y)*1.05:50,y:Number.isFinite(x)?x*1.05:20,
+    expected_goals:Number(s?.xg||0),is_on_target:on,is_inside_box:inside,
+    event_type:goal?'Goal':String(s?.shotType||''),minute:Number(s?.time||0),
+    situation:s?.situation||'',shot_type:s?.bodyPart||'',_sofa:true};
+}
+async function sofaPlayerHistory(name,cutoffTime){
+  const ck=sofaNorm(name)+':'+String(cutoffTime||'');
+  if(sofaHistoryCache.has(ck))return sofaHistoryCache.get(ck);
+  const promise=(async()=>{
+    const prof=await sofaFindPlayer(name);
+    if(!prof?.id)return {profile:null,rows:[]};
+    const events=await sofaPlayerEvents(prof.id,cutoffTime);
+    const rows=[];
+    for(const e of events){
+      const lu=await sofaLineups(e.id);
+      const pr=sofaPlayerRow(lu,prof.id,name);
+      if(!pr)continue;
+      const st=pr.statistics||pr.stats||{};
+      let shots=[];
+      const total=sofaNum(st,'totalShots','shots');
+      if(Number(total||0)>0)shots=await sofaShots(e.id,prof.id);
+      const converted=shots.map(sofaShotRowToInternal);
+      const otbStat=sofaNum(st,'shotsFromOutsideTheBox','shotsOutsideTheBox');
+      const onStat=sofaNum(st,'shotsOnTarget','onTargetShots');
+      const allStat=sofaNum(st,'totalShots','shots');
+      const otb=otbStat!=null?otbStat:converted.filter(x=>x.is_inside_box===false).length;
+      const on=onStat!=null?onStat:converted.filter(x=>x.is_inside_box===false&&x.is_on_target).length;
+      const all=allStat!=null?allStat:converted.length;
+      const headers=sofaNum(st,'headedGoals','headers','aerialDuelsWon','totalContest')??0;
+      const cards=(sofaNum(st,'yellowCards','yellow')||0)+(sofaNum(st,'redCards','directRedCards','yellowRedCards')||0);
+      const fouls=sofaNum(st,'fouls','foulsCommitted')??0;
+      const date=e.startTimestamp?new Date(Number(e.startTimestamp)*1000).toISOString():(e.startTimestamp||'');
+      const home=e.homeTeam?.name||'',away=e.awayTeam?.name||'';
+      rows.push({otb,on,shotOn:sofaNum(st,'shotsOnTarget','onTargetShots')??on,all,headers,fouls,cards,
+        cardsObj:{yellow:sofaNum(st,'yellowCards','yellow')||0,red:sofaNum(st,'redCards','directRedCards','yellowRedCards')||0},
+        shots:converted,opp:`${home} – ${away}`,matchId:String(e.id),played:true,_sofa:true,
+        date,minutes:sofaNum(st,'minutesPlayed','minutes'),goals:sofaNum(st,'goals'),assists:sofaNum(st,'assists'),
+        xg:sofaNum(st,'expectedGoals','xG'),rating:sofaNum(st,'rating')});
+    }
+    return {profile:prof,rows:rows.slice(0,5)};
+  })();
+  sofaHistoryCache.set(ck,promise); return promise;
+}
+async function hydrateStaticNLFromSofa(m,pred,root){
+  const names=[...pred.home,...pred.away];
+  const results=[];
+  let cursor=0;
+  async function worker(){
+    while(true){const i=cursor++;if(i>=names.length)return;const name=names[i];
+      try{results[i]={name,...await sofaPlayerHistory(name,m.time_utc)}}catch(e){results[i]={name,profile:null,rows:[]}}
+    }
+  }
+  await Promise.all([worker(),worker(),worker(),worker()]);
+  let got=0;
+  const enriched={};
+  results.forEach(r=>{enriched[normName(r.name)]=r;if(r.profile?.id||r.profile?.image_url||r.rows.length)got++});
+  const resolve=(names)=>names.map(name=>{const r=enriched[normName(name)]||{};const rows=r.rows||[];return {name:r.profile?.name||name,image_url:r.profile?.image_url||'',player_id:r.profile?.id||null,__history:rows,__sofaProfile:r.profile||null,__sofa:true};});
+  const hs=resolve(pred.home),as=resolve(pred.away);
+  let inner='';
+  for(const q of place(hs,true,pred.homeFormation))inner+=card(q.p,m.home_team?.id||'',m.id,q.x,q.y);
+  for(const q of place(as,false,pred.awayFormation))inner+=card(q.p,m.away_team?.id||'',m.id,q.x,q.y);
+  root.querySelector('.players').innerHTML=inner;
+  const byName=new Map([...hs,...as].map(p=>[normName(p.name),p]));
+  root.querySelectorAll('.p').forEach(el=>{
+    const p=byName.get(normName(el.dataset.playerName||el.querySelector('.name')?.textContent||''));
+    if(!p)return;
+    el._history=Array.isArray(p.__history)?p.__history:[];
+    el.__sofaProfile=p.__sofaProfile||null;
+    el.dataset.sofaPlayerId=p.player_id||'';
+    el.dataset.playerId=p.player_id||'';
+    const face=el.querySelector('.face');
+    if(face&&p.image_url){face.src=p.image_url;face.style.visibility='visible'}
+    const mode=document.querySelector(`[data-stat-bar="${CSS.escape(String(m.id))}"]`)?.dataset.mode||'otb';
+    renderPlayerStat(el,mode);
+  });
+  return got;
+}
+
 function nlNameMatch(a,b){
   const x=normName(a),y=normName(b);
   if(!x||!y)return false;
@@ -840,6 +1020,21 @@ async function hydrateStaticNLMatch(m){
       nlRecentTeamMatchesByName(m.home_team?.name||'',m.time_utc),
       nlRecentTeamMatchesByName(m.away_team?.name||'',m.time_utc)
     ]);
+
+    /* If the national team's own history cannot resolve the predicted
+       players, switch to player-level club history. This is the important
+       fallback: the player is not required to have a recent national-team
+       match in PitchAPI. */
+    if(homeHist.length<5 || awayHist.length<5){
+      const sofaGot=await hydrateStaticNLFromSofa(m,pred,root);
+      if(sofaGot>0){
+        const note=root.parentElement.querySelector('.note');
+        if(note)note.textContent=`🟢 Pelaajien kuvat ja viimeiset ${Math.min(5,sofaGot)} pelaajakohtaista ottelua ladattu · lähde: pelaajaprofiili + seurajoukkueen otteluhistoria.`;
+        m.__nlHydrated=true;
+        window.dispatchEvent(new CustomEvent('otb-history-ready',{detail:{matchId:m.id,source:'sofascore'}}));
+        return;
+      }
+    }
 
     const [homeRows,awayRows]=await Promise.all([
       buildTeamHistoryRows(homeHist),
@@ -972,6 +1167,17 @@ function initStaticNLHydration(list){
   };
   requestAnimationFrame(startVisible);
 }
+
+async function openStaticNLPlayer(el,m){
+  const name=el.dataset.playerName||el.querySelector('.name')?.textContent||'?';
+  const d=$('#drawer'); d.classList.remove('hidden');
+  const hist=Array.isArray(el._history)?el._history:[];
+  const profile=el.__sofaProfile||null;
+  const shots=hist.flatMap(v=>Array.isArray(v.shots)?v.shots:[]);
+  const total=hist.reduce((s,v)=>s+(v.all||0),0),on=hist.reduce((s,v)=>s+(v.shotOn||v.on||0),0),otb=hist.reduce((s,v)=>s+(v.otb||0),0),cards=hist.reduce((s,v)=>s+(v.cards||0),0),fouls=hist.reduce((s,v)=>s+(v.fouls||0),0),headers=hist.reduce((s,v)=>s+(v.headers||0),0);
+  d.innerHTML=`<button class="x" onclick="this.parentElement.classList.add('hidden')">✕</button><h2>${esc(name)}</h2><div class="drawer-sub">${esc(profile?.team?.name||'Seurajoukkue')} · pelaajaprofiili · viimeiset ${hist.length} ottelua</div><div class="grid"><div class="stat"><b>${total}</b>Laukaukset</div><div class="stat"><b>${on}</b>Kohti</div><div class="stat"><b>${otb}</b>OTB</div><div class="stat"><b>${cards}</b>🟨/🟥</div><div class="stat"><b>${headers}</b>Pääpallot</div><div class="stat"><b>${fouls}</b>Rikkeet</div></div><div class="raw-title">🧾 Viimeiset ${hist.length} ottelua</div><table><thead><tr><th>Ottelu</th><th>OTB</th><th>Kohti</th><th>Lauk.</th><th>Kortit</th><th>Pääp.</th><th>Rikkeet</th></tr></thead><tbody>${hist.map(v=>`<tr><td>${esc(v.opp||'')}</td><td>${v.otb||0}</td><td>${v.shotOn||v.on||0}</td><td>${v.all||0}</td><td>${v.cards||0}</td><td>${v.headers||0}</td><td>${v.fouls||0}</td></tr>`).join('')}</tbody></table><div class="drawer-note">Kuvat ja viimeisten otteluiden pelaajatilastot haetaan pelaajan omasta seurajoukkuehistoriasta. Laukauskartta tarkentuu ottelukohtaisesti, kun shotmap-data on saatavilla.</div>`;
+}
+
 function render(){
 
   if(filter==='ALL'){
@@ -986,7 +1192,7 @@ function render(){
     initStaticNLHydration(list);
     list.filter(m=>m.__nlStatic).forEach(m=>{
       const pitch=document.querySelector(`#p${m.id.replace(/[^a-zA-Z0-9_-]/g,'')}`);
-      if(pitch)pitch.querySelectorAll('.p').forEach(el=>el.onclick=()=>openPlayer(el.dataset.playerId||'',el.dataset.playerName||el.querySelector('.name')?.textContent||'?',el.dataset.team,m.league?.name,m.time_utc));
+      if(pitch)pitch.querySelectorAll('.p').forEach(el=>el.onclick=()=>{if(el.dataset.sofaPlayerId)openStaticNLPlayer(el,m);else openPlayer(el.dataset.playerId||'',el.dataset.playerName||el.querySelector('.name')?.textContent||'?',el.dataset.team,m.league?.name,m.time_utc)});
     });
     if(lineupRefreshTimer)clearInterval(lineupRefreshTimer);
     lineupRefreshTimer=setInterval(()=>{if(document.visibilityState==='hidden')return;list.filter(m=>!m.__nlStatic&&m.status!=='finished').forEach(m=>loadGame(m,true));},300000);
