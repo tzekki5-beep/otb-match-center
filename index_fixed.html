@@ -950,14 +950,36 @@ async function sofaFindPlayer(name){
   if(sofaPlayerSearchCache.has(ck))return sofaPlayerSearchCache.get(ck);
   const promise=(async()=>{
     try{
-      const d=await sofaApi('search/all?q='+encodeURIComponent(name));
-      const arr=Array.isArray(d?.results)?d.results:Array.isArray(d?.data)?d.data:[];
-      const players=arr.map(r=>r?.entity||r).filter(x=>x&&x.id&&(
-        x.name||x.player?.name||x.team?.name
-      ));
-      let q=players.find(x=>sofaNorm(x.name||x.player?.name)===ck);
-      if(!q)q=players.find(x=>nlNameMatch(name,x.name||x.player?.name));
-      if(!q)q=players.find(x=>String(x.type||'').toLowerCase().includes('player'));
+      const queries=[name, name.replace(/\s+/g,' ').trim()];
+      const candidates=[];
+      const seen=new Set();
+      const collect=(node)=>{
+        if(!node)return;
+        if(Array.isArray(node)){for(const x of node)collect(x);return}
+        if(typeof node!=='object')return;
+        const entity=node.entity||node.player||null;
+        const x=entity&&typeof entity==='object'?{...node,...entity}:node;
+        const id=x?.id||x?.player?.id;
+        const nm=x?.name||x?.player?.name||x?.playerName;
+        if(id&&nm){
+          const k=String(id);
+          if(!seen.has(k)){seen.add(k);candidates.push({...x,id:String(id),name:String(nm)});}
+        }
+        for(const [k,v] of Object.entries(node)){
+          if(k==='team'||k==='homeTeam'||k==='awayTeam')continue;
+          if(v&&typeof v==='object')collect(v);
+        }
+      };
+      for(const q of queries){
+        try{
+          const d=await sofaApi('search/all?q='+encodeURIComponent(q));
+          collect(d?.results||d?.data||d);
+          if(candidates.some(x=>sofaNorm(x.name)===ck))break;
+        }catch(e){console.warn('Sofa search query',q,e)}
+      }
+      let q=candidates.find(x=>sofaNorm(x.name)===ck);
+      if(!q)q=candidates.find(x=>nlNameMatch(name,x.name));
+      if(!q)q=candidates.find(x=>String(x.type||x.entityType||'').toLowerCase().includes('player'));
       if(!q)return null;
       const id=q.id||q.player?.id;
       if(!id)return null;
@@ -979,14 +1001,18 @@ async function sofaPlayerEvents(playerId,cutoffTime,teamId){
   if(sofaEventsCache.has(ck))return sofaEventsCache.get(ck);
   const promise=(async()=>{
     try{
-      const d=await sofaApi(`player/${encodeURIComponent(playerId)}/events/last/0`);
+      const pages=await Promise.all([0,1].map(async page=>{
+        try{return await sofaApi(`player/${encodeURIComponent(playerId)}/events/last/${page}`)}catch(e){return null}
+      }));
+      const all=pages.flatMap(d=>Array.isArray(d?.events)?d.events:[]);
+      const uniq=[...new Map(all.map(e=>[String(e?.id||e?.startTimestamp||Math.random()),e])).values()];
       const cut=Date.parse(cutoffTime||'9999-12-31T23:59:59Z');
-      return (Array.isArray(d?.events)?d.events:[])
+      return uniq
         .filter(e=>e?.status?.type==='finished'||e?.status?.code===100||e?.status?.description==='Ended')
         .filter(e=>!Number.isFinite(cut)||Number(e.startTimestamp||0)*1000<cut)
         .filter(e=>!teamId || String(e?.homeTeam?.id||'')===String(teamId) || String(e?.awayTeam?.id||'')===String(teamId))
         .sort((a,b)=>Number(b.startTimestamp||0)-Number(a.startTimestamp||0))
-        .slice(0,5);
+        .slice(0,12);
     }catch(e){console.warn('Sofa player events',playerId,e);return[]}
   })();
   sofaEventsCache.set(ck,promise); return promise;
@@ -1203,6 +1229,8 @@ async function hydrateStaticNLMatch(m){
     const names=[...pred.home,...pred.away];
     const results=[];
     let cursor=0;
+    const progressNote=root.parentElement.querySelector('.note');
+    if(progressNote)progressNote.textContent='🟡 Kokoonpano näkyy · tunnistetaan pelaajat ja haetaan viimeiset 5 seurajoukkueottelua…';
     async function worker(){
       while(true){
         const i=cursor++;
@@ -1236,9 +1264,6 @@ async function hydrateStaticNLMatch(m){
     async function resolveSide(names,rows,hist,formation,teamName){
       const out=[];
       for(const name of names){
-        // Prefer the existing PitchAPI player/match data. This is important
-        // for national-team fixtures because the lineup name can exist even
-        // when the external club-history source cannot resolve the player.
         const q=nlFindPlayerInRows(rows,name);
         let vals=[];
         if(q){
@@ -1257,8 +1282,6 @@ async function hydrateStaticNLMatch(m){
           continue;
         }
 
-        // Fallback to the club history source only when PitchAPI did not
-        // produce usable rows. Keep any PitchAPI identity/image if available.
         const s=enriched.get(normName(name));
         if(s?.profile?.id || s?.rows?.length){
           out.push({
@@ -1337,7 +1360,7 @@ async function hydrateStaticNLMatch(m){
     const historyCount=[...hs,...as].filter(p=>Array.isArray(p.__history)&&p.__history.length).length;
     const note=root.parentElement.querySelector('.note');
     if(note){
-      note.textContent=historyCount?`🟢 Pelaajien kuvat + viimeiset 5 ottelua ladattu · ${clubCount} pelaajalle löytyi seuraprofiili · OTB = boxin ulkopuolelta.`:'🟡 Kokoonpano löytyi, mutta pelaajakohtaista otteluhistoriaa ei saatu vielä lähteestä.';
+      note.textContent=historyCount?`🟢 Pelaajien kuvat + viimeiset 5 ottelua ladattu · ${clubCount} pelaajalle löytyi seuraprofiili · OTB = boxin ulkopuolelta.`:'🟡 Kokoonpano löytyi · pelaajadataa yritetään vielä automaattisella varahaulla.';
     }
 
     m.__nlHydrated=true;
@@ -1507,9 +1530,13 @@ function render(){
         polling for it.
       */
       await refreshStaticNLFixtures();
+      const now=Date.now();
       const current=games.filter(m=>!m.__nlStatic&&m.status!=='finished');
-      current.forEach(m=>loadGame(m,true));
-    },300000);
+      current.filter(m=>{
+        const t=Date.parse(m.time_utc||'');
+        return !Number.isFinite(t)||t<=now+180*60*1000;
+      }).forEach(m=>loadGame(m,true));
+    },120000);
 
     /* Do one extra immediate check after rendering. This is cheap when there
        are no static fixtures and means a newly-created PitchAPI match can
@@ -1664,7 +1691,8 @@ function card(p,teamId,matchId,x,y){
   return `<div class="p${inj?' injury-player':''}" data-id="${esc(key)}" data-player-id="${esc(id||'')}" data-player-name="${esc(pName(p))}" data-team="${esc(teamId)}" data-match="${esc(matchId)}" data-injured="${inj?'1':'0'}" style="left:${x}%;top:${y}%"><img class="face" data-pid="${esc(id||'')}" src="${esc(u)}" onerror="imageFallback(this)"><div class="name">${esc(pName(p))}</div><span class="absence-marker" data-absence-marker title="Loukkaantunut / sivussa" style="display:${inj?'inline-flex':'none'}">✚</span><div class="nums otb" data-otb>–/– · –/– · –/– · –/– · –/–</div><div class="player-stat-values" data-player-stat-values></div><span data-ont style="display:none"></span></div>`;
 }
 async function getLineups(id,force=false){if(!force&&lineupCache.has(id))return lineupCache.get(id);if(force)lineupCache.delete(id);const d=await api(`matches/${id}/lineups`);lineupCache.set(id,d);return d}
-async function getMatchPlayers(id){
+async function getMatchPlayers(id,force=false){
+  if(force)matchPlayersCache.delete(id);
   if(matchPlayersCache.has(id))return matchPlayersCache.get(id);
   const d=await api(`matches/${id}/players`),map=new Map(),rows=Array.isArray(d)?d:(Array.isArray(d?.players)?d.players:Array.isArray(d?.items)?d.items:Array.isArray(d?.data)?d.data:[]);
   for(const row of rows){
@@ -1755,7 +1783,7 @@ function resolveLineupSides(d,m,pm){
 async function loadGame(m,force=false){
   const box=$('#p'+m.id.replace(/[^a-zA-Z0-9_-]/g,'')+' .players');if(!box)return;
   try{
-    const d=await getLineups(m.id,force),pm=await getMatchPlayers(m.id).catch(()=>new Map()),resolved=resolveLineupSides(d,m,pm),home=resolved.home,away=resolved.away;
+    const d=await getLineups(m.id,force),pm=await getMatchPlayers(m.id,force).catch(()=>new Map()),resolved=resolveLineupSides(d,m,pm),home=resolved.home,away=resolved.away;
     const hsOfficial=home.starters||[],asOfficial=away.starters||[],hsPred=lineupStarters(d,'home',home),asPred=lineupStarters(d,'away',away);
     const hsRaw=lineupOfficial(home,hsOfficial)?hsOfficial:hsPred,asRaw=lineupOfficial(away,asOfficial)?asOfficial:asPred;
     const hs0=cleanStartingXI(hsRaw),as0=cleanStartingXI(asRaw);
@@ -2033,13 +2061,21 @@ async function loadHistory(m,teamId,starters){
     const hist=await teamMatches(teamId,m.league.name,m.time_utc);
     const rows=await buildTeamHistoryRows(hist);
     const pitchId=`#p${m.id.replace(/[^a-zA-Z0-9_-]/g,'')}`;
+    let sofaCursor=0;
+    const sofaResults=new Map();
+    const needSofa=[];
+
+    // PitchAPI remains the primary source. Only unresolved players use the
+    // player-level fallback, so normal matches do not double their API load.
     await Promise.all(starters.map(async p=>{
       const key=playerKey(p);
       let vals=[];
       try{vals=await buildHistoryRows(rows,p)}catch(e){
         console.warn('player history',key,e);
-        vals=hist.map(g=>({otb:0,on:0,shotOn:0,all:0,headers:0,shots:[],fouls:0,cards:0,cardsObj:{yellow:0,red:0},opp:matchLabel(g),matchId:g.id,played:false}));
+        vals=[];
       }
+      const usable=Array.isArray(vals)&&vals.some(v=>v.played || v.all>0 || v.cards>0 || v.fouls>0 || v.headers>0);
+      if(!usable)needSofa.push({p,vals});
       const el=document.querySelector(`${pitchId} .p[data-id="${CSS.escape(key)}"]`);
       if(!el)return;
       el._history=vals;
@@ -2047,6 +2083,32 @@ async function loadHistory(m,teamId,starters){
       const marker=el.querySelector('[data-absence-marker]');
       if(marker) marker.style.display=explicitInjury?'inline-flex':'none';
       el.classList.toggle('injury-player',explicitInjury);
+      const mode=document.querySelector(`[data-stat-bar="${CSS.escape(String(m.id))}"]`)?.dataset.mode||'otb';
+      renderPlayerStat(el,mode);
+    }));
+
+    async function sofaWorker(){
+      while(true){
+        const i=sofaCursor++; if(i>=needSofa.length)return;
+        const {p}=needSofa[i];
+        try{
+          const sh=await sofaPlayerHistory(pName(p),m.time_utc);
+          if(sh?.rows?.length)sofaResults.set(playerKey(p),sh);
+        }catch(e){console.warn('player history fallback',pName(p),e)}
+      }
+    }
+    if(needSofa.length)await Promise.all([sofaWorker(),sofaWorker(),sofaWorker(),sofaWorker()]);
+
+    await Promise.all(starters.map(async p=>{
+      const key=playerKey(p),el=document.querySelector(`${pitchId} .p[data-id="${CSS.escape(key)}"]`);if(!el)return;
+      const sh=sofaResults.get(key);
+      if(sh?.rows?.length){
+        el._history=sh.rows;
+        el.__sofaProfile=sh.profile||null;
+        el.dataset.sofaPlayerId=sh.profile?.id||'';
+        const face=el.querySelector('.face');
+        if(face&&sh.profile?.image_url){face.src=sh.profile.image_url;face.style.visibility='visible'}
+      }
       const mode=document.querySelector(`[data-stat-bar="${CSS.escape(String(m.id))}"]`)?.dataset.mode||'otb';
       renderPlayerStat(el,mode);
       window.dispatchEvent(new CustomEvent('otb-history-ready',{detail:{matchId:m.id,playerId:String(pid(p)||key)}}));
