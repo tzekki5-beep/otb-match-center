@@ -489,7 +489,7 @@ html,body{overflow-x:hidden}
 #sideEyeHome .seh-sub{display:block;font-size:12px;letter-spacing:.32em;margin-top:4px;opacity:.9}
 #sideEyeHome .seh-arrow{font-size:42px;margin-left:auto}
 #sideEyeHome .seh-nhl-panel{display:none;position:absolute;inset:0;z-index:5;background:radial-gradient(circle at 50% 20%,rgba(18,79,130,.25),rgba(2,7,13,.98) 58%);padding:28px;overflow:auto}
-#sideEyeHome .seh-nhl-inner{width:min(1150px,100%);margin:0 auto;padding-top:10vh}
+#sideEyeHome .seh-nhl-inner{width:min(1450px,100%);margin:0 auto;padding-top:3vh}
 #sideEyeHome .seh-back{border:1px solid #42677e;background:#0b1d2b;color:#fff;border-radius:11px;padding:10px 14px;font-weight:900;cursor:pointer}
 #sideEyeHome .seh-nhl-title{margin-top:25px;font-size:clamp(32px,5vw,64px);font-weight:1000;color:#eaf5ff}
 #sideEyeHome .seh-nhl-title span{color:#4ca7ff}
@@ -500,6 +500,7 @@ html,body{overflow-x:hidden}
 #sideEyeHome .seh-nhl-note{margin-top:18px;padding:15px;border:1px dashed #315777;border-radius:12px;color:#9db5ca;background:#071522}
 body.home-mode{overflow:hidden}
 body.home-mode #topDateNavigator{display:none!important}
+body.football-mode #topDateNavigator, body.nhl-mode #topDateNavigator{display:block!important;width:100%;margin-left:0;margin-right:0}
 #sideEyeHome{height:100dvh;min-height:100dvh;padding:0}
 #sideEyeHome .seh-bg{background-size:100% 100%;background-position:center;background-repeat:no-repeat}
 #sideEyeHome .seh-grid{min-height:100dvh}
@@ -2288,7 +2289,7 @@ $('#date').value=today();renderTopDateNavigator($('#date').value);if(isPublicWor
     for(let i=-3;i<=30;i++){
       const d=new Date(base); d.setDate(base.getDate()+i);
       const iso=isoLocalTop(d);
-      const label=i===0?'Tänään':d.toLocaleDateString('fi-FI',{weekday:'short'});
+      const label=d.toLocaleDateString('fi-FI',{weekday:'short'});
       const date=d.toLocaleDateString('fi-FI',{day:'2-digit',month:'2-digit'});
       const b=document.createElement('button');
       b.type='button'; b.className='top-date-day'+(iso===activeIso?' active':'');
@@ -2324,7 +2325,7 @@ $('#date').value=today();renderTopDateNavigator($('#date').value);if(isPublicWor
     box.innerHTML='';
     for(let i=0;i<=30;i++){
       const d=new Date(base); d.setDate(base.getDate()+i); const iso=isoLocal(d);
-      const label=i===0?'Tänään':d.toLocaleDateString('fi-FI',{weekday:'short'});
+      const label=d.toLocaleDateString('fi-FI',{weekday:'short'});
       const date=d.toLocaleDateString('fi-FI',{day:'2-digit',month:'2-digit'});
       const b=document.createElement('button'); b.className='v20-day'+(iso===active?' active':'');
       b.innerHTML=`${label}<small>${date}</small>`; b.onclick=()=>setAppDate(iso); box.appendChild(b);
@@ -2461,7 +2462,7 @@ $('#date').value=today();renderTopDateNavigator($('#date').value);if(isPublicWor
   }
 
   function homeView(){
-    document.body.classList.remove('football-mode');
+    document.body.classList.remove('football-mode','nhl-mode');
     document.body.classList.add('home-mode');
     if(topDateNavigator && footballMount) footballMount.insertBefore(topDateNavigator, footballMount.firstChild);
     nhl.style.display='none';
@@ -2472,13 +2473,14 @@ $('#date').value=today();renderTopDateNavigator($('#date').value);if(isPublicWor
   function footballView(){
     nhl.style.display='none';
     if(topDateNavigator && footballMount) footballMount.insertBefore(topDateNavigator, footballMount.firstChild);
-    document.body.classList.remove('home-mode');
+    document.body.classList.remove('home-mode','nhl-mode');
     document.body.classList.add('football-mode');
     openFootball?.setAttribute('aria-expanded','true');
     window.scrollTo({top:0,behavior:'instant'});
   }
   function nhlView(){
     document.body.classList.remove('home-mode','football-mode');
+    document.body.classList.add('nhl-mode');
     if(topDateNavigator && nhlDateMount) nhlDateMount.appendChild(topDateNavigator);
     nhl.style.display='block';
     openNhl?.setAttribute('aria-expanded','true');
@@ -2488,6 +2490,34 @@ $('#date').value=today();renderTopDateNavigator($('#date').value);if(isPublicWor
   openNhl?.addEventListener('click',nhlView);
   nhlBack?.addEventListener('click',homeView);
   footballBack?.addEventListener('click',homeView);
+})();
+</script>
+
+<script id="side-eye-league-fallback-js">
+(function(){
+  const leagues=[
+    ['Premier League','🇬🇧 PL'],['LaLiga','🇪🇸 LaLiga'],['Serie A','🇮🇹 Serie A'],
+    ['Bundesliga','🇩🇪 Bundesliga'],['Ligue 1','🇫🇷 Ligue 1'],
+    ['Champions League','🏆 UCL'],['Europa League','🏆 UEL'],['Conference League','🏆 UECL'],
+    ['Nations League A','🌍 NL A'],['Nations League B','🌍 NL B'],['Nations League C','🌍 NL C']
+  ];
+  function ensure(){
+    const tabs=document.getElementById('mainLeagueTabs');
+    if(tabs && !tabs.children.length){
+      tabs.innerHTML=leagues.map(([v,l])=>`<button class="league-tab" data-league="${v}">${l}</button>`).join('');
+    }
+    if(tabs){
+      tabs.querySelectorAll('.league-tab').forEach(b=>{
+        if(b.dataset.bound)return;
+        b.dataset.bound='1';
+        b.addEventListener('click',()=>{
+          if(typeof window.otbSelectLeague==='function') window.otbSelectLeague(b.dataset.league);
+        });
+      });
+    }
+  }
+  document.addEventListener('DOMContentLoaded',ensure);
+  setTimeout(ensure,50); setTimeout(ensure,500); setTimeout(ensure,1500);
 })();
 </script>
 </body></html>
