@@ -3882,76 +3882,73 @@ window.addEventListener('otb-history-ready',()=>setTimeout(apply,50));
 .pitch-team-label .ptl-mark{font-size:20px!important;line-height:1!important;display:inline-flex!important;align-items:center!important;justify-content:center!important;min-width:22px!important;width:22px!important;height:22px!important;opacity:1!important}
 .pitch-team-label .ptl-mark img{width:22px!important;height:22px!important;object-fit:contain!important;border-radius:3px!important}
 </style>
-<script id="otb-v64-country-flags-final-js">
+<script id="otb-v65-real-country-flags">
 (()=>{
 'use strict';
-const FLAGS={
-  'France':'🇫🇷','Belgium':'🇧🇪','Italy':'🇮🇹','Türkiye':'🇹🇷','Turkey':'🇹🇷',
-  'Northern Ireland':'🇬🇧','Georgia':'🇬🇪','Spain':'🇪🇸','England':'🏴','Germany':'🇩🇪',
-  'Portugal':'🇵🇹','Switzerland':'🇨🇭','Croatia':'🇭🇷','Czechia':'🇨🇿','Czech Republic':'🇨🇿',
-  'North Macedonia':'🇲🇰','Ukraine':'🇺🇦','Hungary':'🇭🇺','Bosnia and Herzegovina':'🇧🇦',
-  'Poland':'🇵🇱','Romania':'🇷🇴','Sweden':'🇸🇪','Montenegro':'🇲🇪','Armenia':'🇦🇲',
-  'Cyprus':'🇨🇾','Latvia':'🇱🇻','Denmark':'🇩🇰','Netherlands':'🇳🇱','Austria':'🇦🇹',
-  'Greece':'🇬🇷','Serbia':'🇷🇸','Slovenia':'🇸🇮','Slovakia':'🇸🇰','Albania':'🇦🇱',
-  'Scotland':'🏴','Wales':'🏴','Republic of Ireland':'🇮🇪','Ireland':'🇮🇪','Finland':'🇫🇮',
-  'Iceland':'🇮🇸','Norway':'🇳🇴','Estonia':'🇪🇪','Lithuania':'🇱🇹','Bulgaria':'🇧🇬',
-  'Israel':'🇮🇱','Faroe Islands':'🇫🇴','Kazakhstan':'🇰🇿','Moldova':'🇲🇩','San Marino':'🇸🇲',
-  'Luxembourg':'🇱🇺'
+const CODES={
+ 'France':'fr','Belgium':'be','Italy':'it','Türkiye':'tr','Turkey':'tr','Northern Ireland':'gb-nir','Georgia':'ge',
+ 'Spain':'es','England':'gb-eng','Germany':'de','Portugal':'pt','Switzerland':'ch','Croatia':'hr','Czechia':'cz','Czech Republic':'cz',
+ 'North Macedonia':'mk','Ukraine':'ua','Hungary':'hu','Bosnia and Herzegovina':'ba','Poland':'pl','Romania':'ro','Sweden':'se',
+ 'Montenegro':'me','Armenia':'am','Cyprus':'cy','Latvia':'lv','Denmark':'dk','Netherlands':'nl','Austria':'at','Greece':'gr',
+ 'Serbia':'rs','Slovenia':'si','Slovakia':'sk','Albania':'al','Scotland':'gb-sct','Wales':'gb-wls',
+ 'Republic of Ireland':'ie','Ireland':'ie','Finland':'fi','Iceland':'is','Norway':'no','Estonia':'ee','Lithuania':'lt',
+ 'Bulgaria':'bg','Israel':'il','Faroe Islands':'fo','Kazakhstan':'kz','Moldova':'md','San Marino':'sm','Luxembourg':'lu',
+ 'Kosovo':'xk','Andorra':'ad','Malta':'mt','Liechtenstein':'li','Gibraltar':'gi','Slovakia':'sk','Turkey':'tr'
 };
 const norm=s=>String(s||'').trim().replace(/\s+/g,' ');
-function setLabel(label,side){
-  const name=norm(label.querySelector('.ptl-name')?.textContent);
-  const mark=label.querySelector('.ptl-mark');
-  if(!mark)return;
-  const flag=FLAGS[name];
-  if(flag){
-    if(mark.textContent!==flag || mark.querySelector('img')) mark.textContent=flag;
-    mark.removeAttribute('title');
-    return;
-  }
-  // Club teams: remove the old home/away house/plane marker. If a team logo
-  // exists on the pitch, use that logo in the corner instead.
-  const logo=document.querySelector(`.pitch-team-logo.${side}`);
-  if(logo && logo.src){
-    mark.innerHTML='';
-    const img=document.createElement('img');
-    img.src=logo.src; img.alt=''; img.loading='lazy';
-    mark.appendChild(img);
-  }else{
-    mark.textContent='';
-  }
+const flagUrl=code=>`https://flagcdn.com/w40/${code}.png`;
+function getTeamName(label){
+ return norm(label.querySelector('.ptl-name')?.textContent || label.textContent.replace(/^[^A-Za-zÀ-ž]+/,'').trim());
+}
+function setCountryFlag(label){
+ const mark=label.querySelector('.ptl-mark'); if(!mark)return false;
+ const name=getTeamName(label), code=CODES[name];
+ if(!code)return false;
+ const src=flagUrl(code);
+ mark.innerHTML='';
+ const img=document.createElement('img');
+ img.src=src; img.alt=name+' lippu'; img.title=name; img.width=28; img.height=20; img.loading='lazy';
+ img.style.cssText='width:28px!important;height:20px!important;object-fit:cover!important;border-radius:2px!important;display:block!important';
+ mark.appendChild(img);
+ mark.dataset.otbFlagName=name;
+ return true;
+}
+function setClubLogo(label,side){
+ const mark=label.querySelector('.ptl-mark'); if(!mark)return;
+ const logo=document.querySelector(`.pitch-team-logo.${side}`);
+ if(logo?.src){
+   mark.innerHTML=''; const img=document.createElement('img'); img.src=logo.src; img.alt=''; img.width=28; img.height=28; img.loading='lazy';
+   img.style.cssText='width:28px!important;height:28px!important;object-fit:contain!important;display:block!important'; mark.appendChild(img);
+ } else { mark.textContent=''; }
 }
 function apply(root=document){
-  root.querySelectorAll('.pitch-team-label').forEach(label=>{
-    setLabel(label,label.classList.contains('away')?'away':'home');
-  });
-  // Safety net: no field corner may ever display the generic home/away icons.
-  root.querySelectorAll('.pitch-team-label .ptl-mark').forEach(mark=>{
-    if(mark.textContent==='🏠' || mark.textContent==='✈️' || mark.textContent==='🏠 Koti' || mark.textContent==='✈️ Vieras'){
-      const label=mark.closest('.pitch-team-label');
-      if(label) setLabel(label,label.classList.contains('away')?'away':'home');
-    }
-  });
+ root.querySelectorAll('.pitch-team-label').forEach(label=>{
+   const side=label.classList.contains('away')?'away':'home';
+   if(!setCountryFlag(label)) setClubLogo(label,side);
+ });
 }
 function boot(){
-  apply(document);
-  const out=document.querySelector('#out');
-  if(out && !out.__otbV64Observer){
-    let busy=false;
-    const obs=new MutationObserver(()=>{
-      if(busy)return;
-      busy=true;
-      requestAnimationFrame(()=>{try{apply(out)}finally{busy=false}});
-    });
-    obs.observe(out,{childList:true,subtree:true});
-    out.__otbV64Observer=obs;
-  }
-  [500,1200,2500,5000].forEach(ms=>setTimeout(()=>apply(document),ms));
+ apply(document);
+ const out=document.querySelector('#out');
+ if(out && !out.__otbV65Observer){
+   let queued=false;
+   const obs=new MutationObserver(()=>{
+     if(queued)return; queued=true;
+     requestAnimationFrame(()=>{queued=false; apply(out)});
+   });
+   obs.observe(out,{childList:true,subtree:true}); out.__otbV65Observer=obs;
+ }
+ [300,800,1600,3000,5000].forEach(ms=>setTimeout(()=>apply(document),ms));
 }
 if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',boot,{once:true});else boot();
-window.addEventListener('otb:history-ready',()=>apply(document));
-window.addEventListener('otb:nhl-game-selected',()=>setTimeout(()=>apply(document),50));
+window.addEventListener('otb:history-ready',()=>setTimeout(()=>apply(document),30));
+window.addEventListener('otb:nhl-game-selected',()=>setTimeout(()=>apply(document),30));
 })();
 </script>
-<script>window.OTB_BUILD_VERSION="V64-FLAGS-FINAL";</script>
+<script>window.OTB_BUILD_VERSION="V65-REAL-COUNTRY-FLAGS";</script>
+
+<style id="otb-v65-real-flag-css">
+.pitch-team-label .ptl-mark{width:30px!important;min-width:30px!important;height:24px!important;display:inline-flex!important;align-items:center!important;justify-content:center!important;line-height:1!important}
+.pitch-team-label .ptl-mark img{width:28px!important;height:20px!important;object-fit:cover!important;border-radius:2px!important;display:block!important}
+</style>
 </body></html>
