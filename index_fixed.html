@@ -3768,31 +3768,39 @@ async function schedule(){
  const today=localKey(new Date());
  const out=new Map();
  const consume=j=>{for(const g of [...arr(j?.games),...arr(j?.gameWeek?.flatMap?.(x=>x?.games))]){const n=norm(g);if(n)out.set(String(n.id),n)}};
- // NHL's schedule endpoint normally returns a whole game week. Retry once with a longer timeout.
- for(let attempt=0;attempt<2 && out.size===0;attempt++){try{consume(await fetchJson('/schedule/'+today,attempt?22000:15000))}catch(e){console.warn('NHL schedule attempt',attempt+1,e)}}
- // IMPORTANT: always query every visible day individually. The weekly endpoint can
- // contain only part of the window; never let one successful day suppress the others.
- {
-   const days=Array.from({length:8},(_,i)=>add(today,i));
-   const rs=await Promise.allSettled(days.map(d=>fetchJson('/schedule/'+d,12000)));
-   rs.forEach(r=>{if(r.status==='fulfilled')consume(r.value)});
+ const visible=Array.from({length:8},(_,i)=>add(today,i));
+ // Do not fire eight NHL requests at once. The NHL endpoint can throttle/abort
+ // parallel browser requests, which previously left only the first day's games.
+ // Fetch each schedule date sequentially and retry failed dates once.
+ for(const d of visible){
+   let ok=false;
+   for(let attempt=0;attempt<2 && !ok;attempt++){
+     try{consume(await fetchJson('/schedule/'+d,attempt?22000:15000));ok=true}
+     catch(e){console.warn('NHL schedule '+d+' attempt '+(attempt+1),e);if(attempt===0)await new Promise(r=>setTimeout(r,350))}
+   }
  }
- // External fallback for schedule-only data. It is intentionally used only when NHL's API failed.
- if(out.size===0){
+ // Fill any gaps with ESPN, one date at a time. NHL games played on an ET date
+ // can fall on the following Finnish calendar date, so we normalize by startTimeUTC.
+ for(const d of visible){
+   const has=outHasFinnishDay(d,out);
+   if(has)continue;
    try{
-     const u='https://site.api.espn.com/apis/site/v2/sports/hockey/nhl/scoreboard?dates='+today.replaceAll('-','');
-     const r=await fetch(u,{cache:'no-store'}); if(r.ok){const j=await r.json();
-       for(const e of arr(j?.events)){const c=e?.competitions?.[0], comps=arr(c?.competitors);if(!c||comps.length<2)continue;
-         const home=comps.find(x=>x.homeAway==='home'), away=comps.find(x=>x.homeAway==='away'); if(!home||!away)continue;
-         const h={abbrev:home.team?.abbreviation,name:{default:home.team?.displayName||home.team?.shortDisplayName||'—'},logo:home.team?.logo};
-         const a={abbrev:away.team?.abbreviation,name:{default:away.team?.displayName||away.team?.shortDisplayName||'—'},logo:away.team?.logo};
-         const g={id:e.id,startTimeUTC:c.date,gameState:e?.status?.type?.state==='in'?'LIVE':e?.status?.type?.completed?'FINAL':'FUT',homeTeam:h,awayTeam:a}; const n=norm(g); if(n)out.set('espn-'+e.id,n);
-       }
+     const u='https://site.api.espn.com/apis/site/v2/sports/hockey/nhl/scoreboard?dates='+d.replaceAll('-','');
+     const r=await fetch(u,{cache:'no-store'}); if(!r.ok)continue;
+     const j=await r.json();
+     for(const e of arr(j?.events)){
+       const c=e?.competitions?.[0], comps=arr(c?.competitors);if(!c||comps.length<2)continue;
+       const home=comps.find(x=>x.homeAway==='home'), away=comps.find(x=>x.homeAway==='away'); if(!home||!away)continue;
+       const h={abbrev:home.team?.abbreviation,name:{default:home.team?.displayName||home.team?.shortDisplayName||'—'},logo:home.team?.logo};
+       const a={abbrev:away.team?.abbreviation,name:{default:away.team?.displayName||away.team?.shortDisplayName||'—'},logo:away.team?.logo};
+       const g={id:e.id,startTimeUTC:c.date,gameState:e?.status?.type?.state==='in'?'LIVE':e?.status?.type?.completed?'FINAL':'FUT',homeTeam:h,awayTeam:a};
+       const n=norm(g);if(n)out.set('espn-'+e.id,n);
      }
-   }catch(e){console.warn('NHL ESPN schedule fallback',e)}
+   }catch(e){console.warn('NHL ESPN fallback '+d,e)}
  }
  return [...out.values()].sort((a,b)=>new Date(a.startTimeUTC)-new Date(b.startTimeUTC));
 }
+function outHasFinnishDay(day,out){for(const g of out.values())if(g?.dateKey===day)return true;return false;}
 function mount(){const p=$('nhlLivePanel');if(!p)return null;p.innerHTML=`<div id="otbNhlV55Schedule"><div id="otbNhlV55Days"></div><div id="otbNhlV55Games"><button class="v55-arrow" data-shift="-1" aria-label="Edellinen ottelu">‹</button><div class="v55-loading" style="grid-column:2/5">Haetaan NHL-otteluita…</div><button class="v55-arrow" data-shift="1" aria-label="Seuraava ottelu">›</button></div></div>`;return p}
 function renderDays(){const e=$('otbNhlV55Days');if(!e)return;e.innerHTML=state.days.map((d,i)=>`<button type="button" class="${d===state.day?'active':''}" data-day="${d}">${i===0?'TÄNÄÄN':label(d)}<small>${state.byDay.get(d)?.length||0} ottelua</small></button>`).join('')}
 function renderGames(){const e=$('otbNhlV55Games');if(!e)return;const gs=state.byDay.get(state.day)||[];state.offset=Math.max(0,Math.min(state.offset,Math.max(0,gs.length-3)));const vis=gs.slice(state.offset,state.offset+3);const card=g=>`<article class="v55-game ${state.selected&&String(state.selected.id)===String(g.id)?'active':''}" data-id="${esc(g.id)}"><div class="v55-time">${esc(localTime(g.startTimeUTC))}</div><div class="v55-team"><img src="${esc(logo(g.awayTeam))}" alt=""><b>${esc(tn(g.awayTeam))}</b></div><div class="v55-team"><img src="${esc(logo(g.homeTeam))}" alt=""><b>${esc(tn(g.homeTeam))}</b></div><div class="v55-state">${g.gameState==='LIVE'?'🔴 LIVE':(g.gameState==='FINAL'||g.gameState==='OFF')?'LOPPU':'ENNAKKO'} · Avaa ottelu</div></article>`;e.innerHTML=`<button class="v55-arrow" data-shift="-1" ${state.offset<=0?'disabled':''}>‹</button>${vis.length?vis.map(card).join(''):'<div class="v55-empty" style="grid-column:2/5">Tälle päivälle ei ole NHL-otteluita.</div>'}<button class="v55-arrow" data-shift="1" ${state.offset+3>=gs.length?'disabled':''}>›</button>`}
