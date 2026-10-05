@@ -3618,7 +3618,7 @@ body.nhl-mode .nhl-player-card img{display:block!important;object-fit:cover!impo
   const st=p=>p?.stats||p||{};
   const api=async path=>{const r=await fetch(API+path,{cache:'no-store',headers:{accept:'application/json'}});if(!r.ok)throw Error('NHL '+r.status);return r.json()};
   const gameType=g=>Number(g?.gameType??g?.gameTypeCode??0);
-  const normalize=(g)=>{const dt=g?.startTimeUTC||g?.startTime||g?.startTimeLocal;let dk='';try{dk=dt?helDate(new Date(dt)):''}catch{}return {...g,dateKey:dk||g?.gameDate||g?.dateKey||'',gameType:gameType(g)} };
+  const normalize=(g,scheduleKey='')=>{const dt=g?.startTimeUTC||g?.startTime||g?.startTimeLocal;let localKey='';try{localKey=dt?helDate(new Date(dt)):''}catch{}return {...g,dateKey:localKey||g?.gameDate||g?.dateKey||'',scheduleDateKey:g?.gameDate||g?.dateKey||scheduleKey,gameType:gameType(g)} };
   const state={games:[],selected:null,unit:'1',range:'today',details:new Map()};
   function status(t){if($('nhlDataStatus'))$('nhlDataStatus').textContent=t}
   function setDateHeader(){const d=today();const m=$('nhlDashMeta');if(m&&!state.selected)m.textContent=d.split('-').reverse().join('.')}
@@ -3626,7 +3626,7 @@ body.nhl-mode .nhl-player-card img{display:block!important;object-fit:cover!impo
   async function getDateGames(k){
     const out=[];
     for(const path of ['/score/'+k,'/schedule/'+k]){
-      try{const j=await api(path);const arr=Array.isArray(j?.games)?j.games:(Array.isArray(j?.gameWeek)?j.gameWeek.flatMap(x=>x.games||[]):[]);out.push(...arr.map(normalize))}catch(e){console.warn('NHL schedule',path,e)}
+      try{const j=await api(path);const arr=Array.isArray(j?.games)?j.games:(Array.isArray(j?.gameWeek)?j.gameWeek.flatMap(x=>x.games||[]):[]);out.push(...arr.map(g=>normalize(g,k)))}catch(e){console.warn('NHL schedule',path,e)}
     }
     return out;
   }
@@ -3651,8 +3651,12 @@ body.nhl-mode .nhl-player-card img{display:block!important;object-fit:cover!impo
   }
   function visibleGames(){
     const d=today();
-    if(state.range==='next')return state.games.filter(g=>g.dateKey>d);
-    return state.games.filter(g=>g.dateKey===d);
+    if(state.range==='next')return state.games.filter(g=>(g.scheduleDateKey||g.dateKey)>d);
+    const todayLocal=state.games.filter(g=>g.dateKey===d);
+    const todaySchedule=state.games.filter(g=>(g.scheduleDateKey||'')===d);
+    const merged=new Map();[...todayLocal,...todaySchedule].forEach(g=>merged.set(String(g.id),g));
+    if(merged.size)return [...merged.values()].sort((a,b)=>new Date(a.startTimeUTC)-new Date(b.startTimeUTC));
+    return state.games.filter(g=>(g.scheduleDateKey||g.dateKey)>=d).slice(0,12);
   }
   function renderGames(){
     const el=$('nhlGames');if(!el)return;const arr=visibleGames();
