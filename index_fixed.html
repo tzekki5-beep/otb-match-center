@@ -3594,7 +3594,7 @@ body.nhl-mode .nhl-player-card img{display:block!important;object-fit:cover!impo
     document.body.classList.add('nhl-match-open');document.querySelectorAll('.nhl-game-card').forEach(c=>c.classList.toggle('active',String(c.dataset.gameId)===String(g.id)));const sel=$('nhlSelectedGame');if(sel)sel.textContent=`${tn(a)} – ${tn(h)} · ${st==='OFF'||st==='FINAL'?'LOPPU':st==='LIVE'||st==='CRIT'?'LIVE':'ENNAKKO'}`;$('nhlRinkModule')?.classList.remove('nhl-loading');
   }
   async function load(g){const token=++state.token;const key=String(g.id);$('nhlRinkModule')?.classList.add('nhl-loading');try{if(state.cache.has(key)){const c=state.cache.get(key);draw(c.game||g,c.data,c.profiles);$('nhlRinkModule')?.classList.remove('nhl-loading');return}const real=await resolve(g);if(token!==state.token)return;const activeGame=real&&real.id?real:g;window.__otbNhlResolvedGame=activeGame;let box=null;try{if(real.id)box=await api('/gamecenter/'+real.id+'/boxscore')}catch{}if(token!==state.token)return;const [hr,ar]=await Promise.all([roster(real.homeTeam||g.homeTeam),roster(real.awayTeam||g.awayTeam)]);if(token!==state.token)return;const hb=normBox(box,'home'),abx=normBox(box,'away');const home=merge(hr,hb),away=merge(ar,abx);const verified=has(hb)&&has(abx);const data={home,away,source:verified?'Ottelun vahvistettu boxscore':'Joukkueen rosteri · arvio'};const profiles=await profilesVisible(data);if(token!==state.token)return;state.cache.set(key,{game:activeGame,data,profiles});draw(activeGame,data,profiles)}catch(err){console.warn('OTB NHL V33',err);$('nhlRinkModule')?.classList.remove('nhl-loading')}}
-  function install(){window.addEventListener('otb:nhl-game-selected',ev=>{const g=ev.detail?.game;if(g)load(g)});document.addEventListener('click',ev=>{const tab=ev.target.closest?.('.nhl-rink-tab');if(!tab)return;state.unit=tab.dataset.nhlUnit||'1';const g=window.__otbNhlResolvedGame||window.__otbNhlActiveGame;if(g){const key=String(window.__otbNhlActiveGame?.id??g.id),c=state.cache.get(key);if(c)setTimeout(()=>draw(c.game||g,c.data,c.profiles),20)}});}
+  function install(){window.addEventListener('otb:nhl-game-selected',ev=>{const g=ev.detail?.game;if(g){state.selected=g;window.__otbNhlActiveGame=g;load(g)}});document.addEventListener('click',ev=>{const tab=ev.target.closest?.('.nhl-rink-tab');if(!tab)return;state.unit=tab.dataset.nhlUnit||'1';const g=window.__otbNhlResolvedGame||window.__otbNhlActiveGame;if(g){const key=String(window.__otbNhlActiveGame?.id??g.id),c=state.cache.get(key);if(c)setTimeout(()=>draw(c.game||g,c.data,c.profiles),20)}});}
   if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',install,{once:true});else install();
 })();
 </script>
@@ -3629,7 +3629,7 @@ body.nhl-mode .nhl-player-card img{display:block!important;object-fit:cover!impo
     return 2;
   };
   const normalize=(g,scheduleKey='')=>{const dt=g?.startTimeUTC||g?.startTime||g?.startTimeLocal;let localKey='';try{localKey=dt?helDate(new Date(dt)):''}catch{}return {...g,dateKey:localKey||g?.gameDate||g?.dateKey||scheduleKey,scheduleDateKey:g?.gameDate||g?.dateKey||scheduleKey,gameType:gameType(g)} };
-  const state={games:[],selected:null,unit:'1',range:'today',details:new Map()};
+  const state={games:[],selected:null,unit:'1',range:'today',details:new Map()}; window.__otbNhlV40State=state;
   function status(t){if($('nhlDataStatus'))$('nhlDataStatus').textContent=t}
   function setDateHeader(){const d=today();const m=$('nhlDashMeta');if(m&&!state.selected)m.textContent=d.split('-').reverse().join('.')}
   function teamLogoFallback(t){return logo(t)}
@@ -3711,7 +3711,7 @@ body.nhl-mode .nhl-player-card img{display:block!important;object-fit:cover!impo
   function stat(p,goalie=false){const s=st(p);if(goalie){const v=p?.savePctg??p?.savePercentage??s.savePctg??s.savePercentage;return `SV% ${v==null?'—':(Number(v)<=1?Number(v)*100:Number(v)).toFixed(1)}`}return `PTS ${s.points??p?.points??'—'} · SOG ${s.sog??s.shots??p?.sog??p?.shots??'—'}`}
   function slot(side,cls,p,goalie=false){const el=document.querySelector(`.slot.${side}.${cls}`);if(!el)return;const f=el.querySelector('.nhl-face'),n=el.querySelector('.nhl-name'),r=el.querySelector('.nhl-role'),m=el.querySelector('.nhl-mini');n.textContent=p?pname(p):(goalie?'Maalivahti':'—');r.textContent=p?(pos(p)||(goalie?'MV':'')):(goalie?'MV':'');m.textContent=p?stat(p,goalie):(goalie?'SV% —':'PTS — · SOG —');if(f){const h=head(p);f.style.backgroundImage=h?`url("${h}")`:'';f.style.backgroundSize='cover';f.style.backgroundPosition='center';f.style.backgroundColor='#dbe3e8'}}
   function card(p,goalie=false){if(!p)return '';return `<div class="nhl-player-card"><img src="${esc(head(p))}" alt="" onerror="this.style.visibility='hidden'"><div><div class="nhl-player-name"><span class="nhl-player-num">${esc(p.sweaterNumber??p.jerseyNumber??'')}</span>${esc(pname(p))}</div><div class="nhl-player-meta">${esc(pos(p)||(goalie?'MV':''))} · ${esc(stat(p,goalie))}</div></div></div>`}
-  function panel(side,d,t){const el=$(side==='home'?'nhlHomePlayers':'nhlAwayPlayers');if(!el)return;const u=state.unit,fs=forwardsFor(d,u).slice(0,3),ds=(d.defense||[]).slice(0,2),g=d.goalies?.[0];el.innerHTML=`<div class="nhl-panel-head"><img src="${esc(teamLogoFallback(t))}" alt=""><div><b>${esc(tn(t))}</b><small>${esc(ab(t))}</small></div></div><div class="nhl-roster-source">${d.forwards.length?'NHL:n rosteri / boxscore':'Kokoonpano ei vielä julkaistu'}</div><div class="nhl-player-group-title">${u==='pp1'?'YV1':u==='pp2'?'YV2':'Ketju '+u}</div>${fs.map(p=>card(p)).join('')||'<div class="nhl-empty-note">Pelaajat eivät ole vielä saatavilla.</div>'}<div class="nhl-player-group-title">Puolustajat</div>${ds.map(p=>card(p)).join('')||'<div class="nhl-empty-note">—</div>'}<div class="nhl-player-group-title">Maalivahti</div>${card(g,true)||'<div class="nhl-empty-note">—</div>'}`}
+  function panel(side,d,t){const el=$(side==='home'?'nhlHomePlayers':'nhlAwayPlayers');if(!el)return;const u=state.unit,fs=forwardsFor(d,u).slice(0,3),ds=(d.defense||[]).slice(0,2),g=d.goalies?.[0];el.innerHTML=`<div class="nhl-panel-head"><img src="${esc(teamLogoFallback(t))}" alt=""><div><b>${esc(tn(t))}</b><small>${esc(ab(t))}</small></div></div><div class="nhl-roster-source">${d.forwards.length?'NHL:n rosteri / boxscore':'Kokoonpano ei vielä julkaistu'}</div>${fs.map(p=>card(p)).join('')||'<div class="nhl-empty-note">Pelaajat eivät ole vielä saatavilla.</div>'}${ds.map(p=>card(p)).join('')} ${card(g,true)||''}`}
   async function select(g,force){
     if(!g)return;state.selected=g;window.__otbNhlActiveGame=g;document.body.classList.add('nhl-match-open');renderGames();
     const d=new Date(g.startTimeUTC), e=id=>$(id);setDateHeader();
@@ -3731,6 +3731,7 @@ body.nhl-mode .nhl-player-card img{display:block!important;object-fit:cover!impo
     }catch(err){console.error('OTB NHL v40 game',err);status('Ottelun kokoonpano ei ollut saatavilla vielä.');}
     $('nhlRinkModule')?.classList.remove('nhl-loading');
   }
+  window.__otbNhlV40Reload=(g)=>select(g,true);
   function install(){
     document.addEventListener('click',ev=>{
       const c=ev.target.closest?.('#nhlGames .nhl-game-card');if(c){ev.preventDefault();ev.stopImmediatePropagation();const g=state.games.find(x=>String(x.id)===String(c.dataset.gameId));if(g)void select(g,true);return}
@@ -3855,4 +3856,20 @@ body.nhl-mode .nhl-dashboard-grid > .nhl-team-panel.away{grid-column:3!important
 body.nhl-mode .nhl-rink{width:100%!important;max-width:none!important}
 @media(max-width:980px){body.nhl-mode .nhl-dashboard-grid{grid-template-columns:1fr!important}body.nhl-mode .nhl-dashboard-grid > .nhl-team-panel.home,body.nhl-mode .nhl-dashboard-grid > .nhl-rink-wrap,body.nhl-mode .nhl-dashboard-grid > .nhl-team-panel.away{grid-column:1!important;grid-row:auto!important}}
 </style>
+
+<script id="otb-nhl-v45-unit-fix">
+(()=>{
+  'use strict';
+  document.addEventListener('click',ev=>{
+    const b=ev.target.closest?.('.nhl-rink-tab');
+    if(!b)return;
+    ev.preventDefault(); ev.stopImmediatePropagation();
+    const u=b.dataset.nhlUnit||'1';
+    document.querySelectorAll('.nhl-rink-tab').forEach(x=>x.classList.toggle('active',x===b));
+    const s=window.__otbNhlV40State;
+    const g=window.__otbNhlV43Game||window.__otbNhlActiveGame;
+    if(s){ s.unit=u; if(g){s.selected=g; void window.__otbNhlV40Reload?.(g);} }
+  },true);
+})();
+</script>
 </body></html>
