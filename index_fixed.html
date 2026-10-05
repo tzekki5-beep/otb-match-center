@@ -3617,8 +3617,18 @@ body.nhl-mode .nhl-player-card img{display:block!important;object-fit:cover!impo
   const head=p=>p?.headshot||p?.headShot||p?.playerHeadshot||p?.image||'';
   const st=p=>p?.stats||p||{};
   const api=async path=>{const r=await fetch(API+path,{cache:'no-store',headers:{accept:'application/json'}});if(!r.ok)throw Error('NHL '+r.status);return r.json()};
-  const gameType=g=>Number(g?.gameType??g?.gameTypeCode??0);
-  const normalize=(g,scheduleKey='')=>{const dt=g?.startTimeUTC||g?.startTime||g?.startTimeLocal;let localKey='';try{localKey=dt?helDate(new Date(dt)):''}catch{}return {...g,dateKey:localKey||g?.gameDate||g?.dateKey||'',scheduleDateKey:g?.gameDate||g?.dateKey||scheduleKey,gameType:gameType(g)} };
+  const gameType=g=>{
+    const n=Number(g?.gameType??g?.gameTypeCode??g?.gameTypeId??0);
+    if(n===1||n===2||n===3||n===4) return n;
+    const id=String(g?.id??'');
+    // NHL schedule/score payloads can omit gameType. For the current season,
+    // numeric game IDs beginning with 202601 are preseason; the October games
+    // we fetch here are regular-season games.
+    if(/^202601\d+$/.test(id)) return 1;
+    if(/^2026\d+$/.test(id)) return 2;
+    return 2;
+  };
+  const normalize=(g,scheduleKey='')=>{const dt=g?.startTimeUTC||g?.startTime||g?.startTimeLocal;let localKey='';try{localKey=dt?helDate(new Date(dt)):''}catch{}return {...g,dateKey:localKey||g?.gameDate||g?.dateKey||scheduleKey,scheduleDateKey:g?.gameDate||g?.dateKey||scheduleKey,gameType:gameType(g)} };
   const state={games:[],selected:null,unit:'1',range:'today',details:new Map()};
   function status(t){if($('nhlDataStatus'))$('nhlDataStatus').textContent=t}
   function setDateHeader(){const d=today();const m=$('nhlDashMeta');if(m&&!state.selected)m.textContent=d.split('-').reverse().join('.')}
@@ -3635,7 +3645,16 @@ body.nhl-mode .nhl-player-card img{display:block!important;object-fit:cover!impo
     try{
       const base=new Date(), keys=[-1,0,1,2,3,4,5,6,7].map(n=>helDate(add(base,n)));
       const chunks=await Promise.all([...new Set(keys)].map(getDateGames));
-      const map=new Map();chunks.flat().forEach(g=>{if((gameType(g)===1||gameType(g)===2)&&g.id)map.set(String(g.id),g)});
+      const map=new Map();
+      // Do not require gameType to be present in the API payload. The NHL
+      // score/schedule endpoints are already NHL-only; filtering on a missing
+      // optional field was the reason the picker could render zero games.
+      chunks.flat().forEach(g=>{
+        if(g?.id) {
+          const ng={...g,gameType:gameType(g)};
+          if(ng.gameType===1||ng.gameType===2) map.set(String(ng.id),ng);
+        }
+      });
       state.games=[...map.values()].sort((a,b)=>new Date(a.startTimeUTC)-new Date(b.startTimeUTC));
       window.__otbNhlGames=state.games;
       renderGames();
