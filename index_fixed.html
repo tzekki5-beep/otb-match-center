@@ -1565,13 +1565,20 @@ const sofaEventsCache=new Map();
 const sofaLineupCache=new Map();
 const sofaShotCache=new Map();
 const sofaHistoryCache=new Map();
-const SOFA_BASE='https://www.sofascore.com/api/v1/';
+const SOFA_BASE='https://api.sofascore.com/api/v1/';
 
 async function sofaApi(path){
-  const r=await fetch(SOFA_BASE+path,{cache:'no-store',headers:{'Accept':'application/json'}});
-  let d=null; try{d=await r.json()}catch(e){}
-  if(!r.ok)throw Error('SofaScore HTTP '+r.status);
-  return d||{};
+  const urls=[SOFA_BASE+path,'https://www.sofascore.com/api/v1/'+path];
+  let lastErr=null;
+  for(const url of urls){
+    try{
+      const r=await fetch(url,{cache:'no-store',headers:{'Accept':'application/json'}});
+      let d=null; try{d=await r.json()}catch(e){}
+      if(r.ok && d && typeof d==='object') return d;
+      lastErr=Error('SofaScore HTTP '+r.status);
+    }catch(e){lastErr=e}
+  }
+  throw lastErr||Error('SofaScore API failed');
 }
 function sofaNorm(v){return normName(v)}
 function sofaResultPlayerName(r){
@@ -1584,12 +1591,11 @@ async function sofaFindPlayer(name){
     try{
       const d=await sofaApi('search/all?q='+encodeURIComponent(name));
       const arr=Array.isArray(d?.results)?d.results:Array.isArray(d?.data)?d.data:[];
-      const players=arr.map(r=>r?.entity||r).filter(x=>x&&x.id&&(
-        x.name||x.player?.name||x.team?.name
-      ));
+      const players=arr.map(r=>r?.entity||r).filter(x=>x&&x.id&&(x.name||x.player?.name||x.team?.name));
       let q=players.find(x=>sofaNorm(x.name||x.player?.name)===ck);
       if(!q)q=players.find(x=>nlNameMatch(name,x.name||x.player?.name));
-      if(!q)q=players.find(x=>String(x.type||'').toLowerCase().includes('player'));
+      if(!q)q=players.find(x=>String(x.type||x.entityType||x.category||'').toLowerCase().includes('player'));
+      if(!q)q=players.find(x=>x.player?.id||x.position||x.jerseyNumber);
       if(!q)return null;
       const id=q.id||q.player?.id;
       if(!id)return null;
@@ -1993,6 +1999,12 @@ async function hydrateStaticNLMatch(m){
   }
 }
 
+function nlCountryFlag(name){
+  const k=String(name||'').trim();
+  const map={France:'🇫🇷',Belgium:'🇧🇪',Italy:'🇮🇹','Türkiye':'🇹🇷',Turkey:'🇹🇷','Northern Ireland':'🇬🇧',Georgia:'🇬🇪',Spain:'🇪🇸',England:'🏴',Germany:'🇩🇪',Portugal:'🇵🇹',Switzerland:'🇨🇭',Croatia:'🇭🇷',Czechia:'🇨🇿','Czech Republic':'🇨🇿','North Macedonia':'🇲🇰',Ukraine:'🇺🇦',Hungary:'🇭🇺','Bosnia and Herzegovina':'🇧🇦',Poland:'🇵🇱',Romania:'🇷🇴',Sweden:'🇸🇪',Montenegro:'🇲🇪',Armenia:'🇦🇲',Cyprus:'🇨🇾',Latvia:'🇱🇻',Denmark:'🇩🇰',Netherlands:'🇳🇱',Austria:'🇦🇹',Greece:'🇬🇷',Serbia:'🇷🇸',Slovenia:'🇸🇮',Slovakia:'🇸🇰',Albania:'🇦🇱',Scotland:'🏴',Wales:'🏴','Republic of Ireland':'🇮🇪',Ireland:'🇮🇪',Finland:'🇫🇮',Iceland:'🇮🇸',Norway:'🇳🇴',Estonia:'🇪🇪',Lithuania:'🇱🇹',Bulgaria:'🇧🇬',Israel:'🇮🇱'};
+  return map[k]||'🌍';
+}
+
 function renderStaticNLMatch(m){
   const pred=predictedNLFor(m);
   let inner='';
@@ -2019,8 +2031,8 @@ function renderStaticNLMatch(m){
       <span class="stat-mode-label">Viimeiset 5</span>
     </div>
     <div class="pitch" id="p${m.id.replace(/[^a-zA-Z0-9_-]/g,'')}">
-      <div class="pitch-team-label home"><span class="ptl-mark">🏠</span><span class="ptl-name">${esc(m.home_team?.name||'Kotijoukkue')}</span></div>
-      <div class="pitch-team-label away"><span class="ptl-mark">✈️</span><span class="ptl-name">${esc(m.away_team?.name||'Vierasjoukkue')}</span></div>
+      <div class="pitch-team-label home"><span class="ptl-mark">${nlCountryFlag(m.home_team?.name)}</span><span class="ptl-name">${esc(m.home_team?.name||'Kotijoukkue')}</span></div>
+      <div class="pitch-team-label away"><span class="ptl-mark">${nlCountryFlag(m.away_team?.name)}</span><span class="ptl-name">${esc(m.away_team?.name||'Vierasjoukkue')}</span></div>
       <div class="goal g1"></div><div class="goal g2"></div>
       <span class="corner tl"></span><span class="corner tr"></span><span class="corner bl"></span><span class="corner br"></span>
       <span class="centerDot"></span><div class="players">${inner}</div>
@@ -2123,7 +2135,7 @@ function render(){
   const list=games.filter(m=>m.league?.name===filter);
   if(!list.length){$('#out').innerHTML='<div class="status">Ei otteluita tällä päivällä tässä sarjassa.</div>';return}
   if(MAIN_SET.has(filter)){
-    $('#out').innerHTML=list.map(m=>m.__nlStatic?renderStaticNLMatch(m):`<section class="match"><div class="mh"><div class="mh-team"><div class="mh-team-text"><div class="teams">${esc(m.home_team?.name||'Kotijoukkue')}</div><div class="lg">${esc(m.league?.name||'')}</div></div>${m.home_team?.image_url?`<img class="mh-logo" src="${esc(m.home_team.image_url)}" alt="">`:''}</div><div class="tm">${localTime(m.time_utc)}${m.status==='finished'?' · '+m.score_home+'–'+m.score_away:''}</div><div class="mh-team away">${m.away_team?.image_url?`<img class="mh-logo" src="${esc(m.away_team.image_url)}" alt="">`:''}<div class="mh-team-text"><div class="teams">${esc(m.away_team?.name||'Vierasjoukkue')}</div></div></div></div><div class="player-stat-bar" data-stat-bar="${esc(m.id)}" data-mode="otb"><div class="player-stat-caption">Pelaajien viimeiset 5 ottelua · valitse näytettävä tilasto</div><button type="button" class="player-stat-btn active" data-stat="otb" onclick="window.otbSetStatModeFromButton(this)">OTB / OTB kohti</button><button type="button" class="player-stat-btn" data-stat="shots" onclick="window.otbSetStatModeFromButton(this)">Laukaukset</button><button type="button" class="player-stat-btn" data-stat="cards" onclick="window.otbSetStatModeFromButton(this)">Kortit</button><button type="button" class="player-stat-btn" data-stat="fouls" onclick="window.otbSetStatModeFromButton(this)">Rikkeet</button><button type="button" class="player-stat-btn" data-stat="headers" onclick="window.otbSetStatModeFromButton(this)">Pääpallot</button><button type="button" class="player-stat-btn" data-stat="all" onclick="window.otbSetStatModeFromButton(this)">Kaikki laukaukset</button><span class="stat-mode-label">Viimeiset 5</span></div><div class="pitch" id="p${m.id.replace(/[^a-zA-Z0-9_-]/g,'')}">${m.home_team?.image_url?`<img class="pitch-team-logo home" src="${esc(m.home_team.image_url)}" alt="">`:''}${m.away_team?.image_url?`<img class="pitch-team-logo away" src="${esc(m.away_team.image_url)}" alt="">`:''}<div class="pitch-team-label home"><span class="ptl-mark">🏠</span><span class="ptl-name">${esc(m.home_team?.name||'Kotijoukkue')}</span></div><div class="pitch-team-label away"><span class="ptl-mark">✈️</span><span class="ptl-name">${esc(m.away_team?.name||'Vierasjoukkue')}</span></div><div class="goal g1"></div><div class="goal g2"></div><span class="corner tl"></span><span class="corner tr"></span><span class="corner bl"></span><span class="corner br"></span><span class="centerDot"></span><div class="players"><div class="status">Ladataan kokoonpanoa…</div></div></div><div class="note">OUT = boxin ulkopuolelta · pelaajaa painamalla näet tarkat tilastot.</div></section>`).join('');
+    $('#out').innerHTML=list.map(m=>m.__nlStatic?renderStaticNLMatch(m):`<section class="match"><div class="mh"><div class="mh-team"><div class="mh-team-text"><div class="teams">${esc(m.home_team?.name||'Kotijoukkue')}</div><div class="lg">${esc(m.league?.name||'')}</div></div>${m.home_team?.image_url?`<img class="mh-logo" src="${esc(m.home_team.image_url)}" alt="">`:''}</div><div class="tm">${localTime(m.time_utc)}${m.status==='finished'?' · '+m.score_home+'–'+m.score_away:''}</div><div class="mh-team away">${m.away_team?.image_url?`<img class="mh-logo" src="${esc(m.away_team.image_url)}" alt="">`:''}<div class="mh-team-text"><div class="teams">${esc(m.away_team?.name||'Vierasjoukkue')}</div></div></div></div><div class="player-stat-bar" data-stat-bar="${esc(m.id)}" data-mode="otb"><div class="player-stat-caption">Pelaajien viimeiset 5 ottelua · valitse näytettävä tilasto</div><button type="button" class="player-stat-btn active" data-stat="otb" onclick="window.otbSetStatModeFromButton(this)">OTB / OTB kohti</button><button type="button" class="player-stat-btn" data-stat="shots" onclick="window.otbSetStatModeFromButton(this)">Laukaukset</button><button type="button" class="player-stat-btn" data-stat="cards" onclick="window.otbSetStatModeFromButton(this)">Kortit</button><button type="button" class="player-stat-btn" data-stat="fouls" onclick="window.otbSetStatModeFromButton(this)">Rikkeet</button><button type="button" class="player-stat-btn" data-stat="headers" onclick="window.otbSetStatModeFromButton(this)">Pääpallot</button><button type="button" class="player-stat-btn" data-stat="all" onclick="window.otbSetStatModeFromButton(this)">Kaikki laukaukset</button><span class="stat-mode-label">Viimeiset 5</span></div><div class="pitch" id="p${m.id.replace(/[^a-zA-Z0-9_-]/g,'')}">${m.home_team?.image_url?`<img class="pitch-team-logo home" src="${esc(m.home_team.image_url)}" alt="">`:''}${m.away_team?.image_url?`<img class="pitch-team-logo away" src="${esc(m.away_team.image_url)}" alt="">`:''}<div class="pitch-team-label home"><span class="ptl-mark">${nlCountryFlag(m.home_team?.name)}</span><span class="ptl-name">${esc(m.home_team?.name||'Kotijoukkue')}</span></div><div class="pitch-team-label away"><span class="ptl-mark">${nlCountryFlag(m.away_team?.name)}</span><span class="ptl-name">${esc(m.away_team?.name||'Vierasjoukkue')}</span></div><div class="goal g1"></div><div class="goal g2"></div><span class="corner tl"></span><span class="corner tr"></span><span class="corner bl"></span><span class="corner br"></span><span class="centerDot"></span><div class="players"><div class="status">Ladataan kokoonpanoa…</div></div></div><div class="note">OUT = boxin ulkopuolelta · pelaajaa painamalla näet tarkat tilastot.</div></section>`).join('');
     list.filter(m=>!m.__nlStatic).forEach(m=>loadGame(m,false));
     initStaticNLHydration(list);
     list.filter(m=>m.__nlStatic).forEach(m=>{
