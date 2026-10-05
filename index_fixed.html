@@ -3755,4 +3755,87 @@ function install(){if(!mount())return;const b=$('nhlBack');b?.addEventListener('
 if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',install,{once:true});else install();
 })();
 </script>
+
+<style id="otb-lineup-v56-css">
+/* V56: predicted lineup layer for both sports. */
+.lineup-status.predicted{color:#ffd84a!important;border-color:#8a7428!important;background:#171507ee!important}
+.lineup-status.official{color:#39d49a!important;border-color:#287d5c!important;background:#071c14ee!important}
+.otb-v56-source{display:inline-block;margin-left:7px;padding:2px 6px;border-radius:6px;font-size:9px;font-weight:900;background:#0b2635;color:#8fc5df;border:1px solid #285b73}
+body.nhl-mode .nhl-roster-source{color:#ffd84a!important;border-color:#806d24!important}
+body.nhl-mode .nhl-roster-source.predicted{display:block!important;background:#171507!important;border:1px solid #6e5d24!important;border-radius:7px!important;padding:5px 7px!important}
+body.nhl-mode .nhl-roster-source.official{color:#39d49a!important;background:#071c14!important;border:1px solid #287d5c!important;border-radius:7px!important;padding:5px 7px!important}
+</style>
+<script id="otb-lineup-v56-engine">
+(()=>{
+'use strict';
+/*
+ V56 is deliberately additive: it does not replace the working football or NHL
+ engines. It supplies predicted XIs/lineups where the existing feed has no
+ pre-match lineup yet, and leaves the existing official-lineup path untouched.
+*/
+const esc56=v=>String(v??'').replace(/[&<>"']/g,m=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[m]));
+const norm56=v=>String(v??'').toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g,'').replace(/[^a-z0-9]+/g,' ').trim();
+
+/* Current UEFA Nations League predicted XIs from FotMob, used as the first
+   real test set. These are predictions, not official lineups. */
+try{
+  if(typeof NL_PREDICTED==='object'){
+    Object.assign(NL_PREDICTED,{
+      'France|Belgium':{
+        homeFormation:'4-3-3',awayFormation:'4-3-3',
+        home:['Mike Maignan','Pierre Kalulu','Jérémy Jacquet','Maxence Lacroix','Adrien Truffert','Rayan Cherki','Lucas Da Cunha','Eduardo Camavinga','Michael Olise','Ousmane Dembélé','Désiré Doué'],
+        away:['Senne Lammens','Timothy Castagne','Nathan Ngoy','Brandon Mechele','Maxim De Cuyper','Oğuz Aydın','Salih Özcan','Ismail Yüksek','Eren Elmalı','Deniz Gül','Kerem Aktürkoğlu']
+      },
+      'Italy|Türkiye':{
+        homeFormation:'4-3-3',awayFormation:'4-4-2',
+        home:['Gianluigi Donnarumma','Michael Kayode','Giorgio Scalvini','Alessandro Bastoni','Riccardo Calafiori','Davide Frattesi','Sandro Tonali','Nicolò Barella','Sebastiano Esposito','Francesco Pio Esposito','Moise Kean'],
+        away:['Uğurcan Çakır','Zeki Çelik','Merih Demiral','Abdülkerim Bardakcı','Ferdi Kadıoğlu','Oğuz Aydın','Salih Özcan','İsmail Yüksek','Eren Elmalı','Deniz Gül','Kerem Aktürkoğlu']
+      },
+      'Northern Ireland|Georgia':{
+        homeFormation:'5-4-1',awayFormation:'3-4-1-2',
+        home:['Pierce Charles','Tom Atcheson','Ruairi McConville','Ciaron Brown','Brodie Spencer','Terry Devlin','Kieran Morrison','Trai Hume','Shea Charles','Isaac Price','Jamie Donley'],
+        away:['Giorgi Mamardashvili','Saba Goglichidze','Lasha Dvali','Luka Lochoshvili','Otar Kakabadze','Irakli Yegoian','Anzor Mekvabishvili','Giorgi Tsitaishvili','Giorgi Chakvetadze','Georges Mikautadze','Khvicha Kvaratskhelia']
+      }
+    });
+  }
+}catch(e){console.warn('OTB V56 football predicted XI patch',e)}
+
+/* When the static NL renderer has a prediction, make the state explicit and
+   keep the wording consistent with the NHL side. */
+function markFootballPredicted(){
+  document.querySelectorAll('.nl-static-match').forEach(sec=>{
+    const note=sec.querySelector('.note');
+    const predText=note?.textContent||'';
+    if(note && predText.includes('Ennakoitu')){
+      note.innerHTML='🟡 <b>Ennakoitu kokoonpano</b> · päivittyy automaattisesti kun virallinen XI julkaistaan.<span class="otb-v56-source">FotMob predicted XI</span>';
+    }
+  });
+}
+const mo56=new MutationObserver(()=>markFootballPredicted());
+if(document.body)mo56.observe(document.body,{subtree:true,childList:true});
+setTimeout(markFootballPredicted,500);
+
+/* NHL: the existing NHL roster is a safe pre-match fallback. It is explicitly
+   labeled as roster-based estimate so it is never confused with an official XI. */
+function nhlName56(p){return p?.name?.default||p?.fullName||[p?.firstName?.default,p?.lastName?.default].filter(Boolean).join(' ')||'Pelaaja'}
+function nhlPos56(p){return String(p?.positionCode||p?.position||'').toUpperCase()}
+function applyNhlPredicted56(){
+  if(!document.body.classList.contains('nhl-mode'))return;
+  document.querySelectorAll('.nhl-team-panel').forEach(panel=>{
+    const src=panel.querySelector('.nhl-roster-source');
+    if(!src)return;
+    const hasOfficial=/vahvistettu|virallinen/i.test(src.textContent||'');
+    if(hasOfficial){src.classList.add('official');src.classList.remove('predicted');return}
+    if(panel.querySelector('.nhl-player-card')){
+      src.textContent='🟡 Ennakoitu kokoonpano · rosteripohjainen arvio · päivittyy kun NHL:n projected/official lineup saadaan';
+      src.classList.add('predicted');src.classList.remove('official');
+    }
+  });
+}
+const moNhl56=new MutationObserver(()=>applyNhlPredicted56());
+if(document.body)moNhl56.observe(document.body,{subtree:true,childList:true});
+window.addEventListener('otb:nhl-game-selected',()=>setTimeout(applyNhlPredicted56,900));
+setTimeout(applyNhlPredicted56,1200);
+})();
+</script>
 </body></html>
