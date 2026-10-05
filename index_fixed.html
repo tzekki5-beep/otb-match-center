@@ -3770,8 +3770,9 @@ async function schedule(){
  const consume=j=>{for(const g of [...arr(j?.games),...arr(j?.gameWeek?.flatMap?.(x=>x?.games))]){const n=norm(g);if(n)out.set(String(n.id),n)}};
  // NHL's schedule endpoint normally returns a whole game week. Retry once with a longer timeout.
  for(let attempt=0;attempt<2 && out.size===0;attempt++){try{consume(await fetchJson('/schedule/'+today,attempt?22000:15000))}catch(e){console.warn('NHL schedule attempt',attempt+1,e)}}
- // Safety net: query the individual visible days if the weekly payload was empty/incomplete.
- if(out.size===0){
+ // IMPORTANT: always query every visible day individually. The weekly endpoint can
+ // contain only part of the window; never let one successful day suppress the others.
+ {
    const days=Array.from({length:8},(_,i)=>add(today,i));
    const rs=await Promise.allSettled(days.map(d=>fetchJson('/schedule/'+d,12000)));
    rs.forEach(r=>{if(r.status==='fulfilled')consume(r.value)});
@@ -3984,6 +3985,18 @@ body.nhl-mode .nhl-team-panel .nhl-player-card{margin-bottom:7px!important}
   // V66: keep NHL schedule alive even if one provider is temporarily unavailable.
   const refresh=()=>{try{window.__otbNhlV66LastRefresh=Date.now()}catch(e){}};
   window.addEventListener('otb:nhl-game-selected',refresh);
+})();
+</script>
+
+<style id="otb-nhl-v68-css">
+body.nhl-mode .v55-game{cursor:pointer!important}
+body.nhl-mode .v55-game.active{outline:2px solid #38bdf8!important;outline-offset:-2px!important}
+</style>
+<script id="otb-nhl-v68-engine">
+(()=>{
+  // V68: the schedule window is authoritative per calendar day. This engine is
+  // intentionally additive and does not create another polling loop.
+  window.__otbNhlV68='per-day-schedule-fetch';
 })();
 </script>
 </body></html>
