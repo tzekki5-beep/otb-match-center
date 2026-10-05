@@ -3598,4 +3598,126 @@ body.nhl-mode .nhl-player-card img{display:block!important;object-fit:cover!impo
   if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',install,{once:true});else install();
 })();
 </script>
+<script id="otb-nhl-v40-working-engine">
+(()=>{
+  'use strict';
+  const API='https://api-web.nhle.com/v1', TZ='Europe/Helsinki';
+  const $=id=>document.getElementById(id);
+  const esc=v=>String(v??'').replace(/[&<>\"']/g,m=>({'&':'&amp;','<':'&lt;','>':'&gt;','\"':'&quot;',"'":'&#39;'}[m]));
+  const helDate=d=>new Intl.DateTimeFormat('en-CA',{timeZone:TZ,year:'numeric',month:'2-digit',day:'2-digit'}).format(d);
+  const helTime=d=>new Intl.DateTimeFormat('fi-FI',{timeZone:TZ,hour:'2-digit',minute:'2-digit',hour12:false}).format(d);
+  const add=(d,n)=>{const x=new Date(d);x.setUTCDate(x.getUTCDate()+n);return x};
+  const today=()=>helDate(new Date());
+  const ab=t=>String(t?.abbrev||t?.triCode||t?.abbreviation||'').toUpperCase();
+  const tn=t=>t?.name?.default||t?.commonName?.default||ab(t)||'—';
+  const logo=t=>t?.logo||t?.teamLogo||`https://assets.nhle.com/logos/nhl/svg/${ab(t)}_light.svg`;
+  const pid=p=>p?.playerId??p?.id;
+  const pname=p=>p?.name?.default||p?.name||[p?.firstName?.default,p?.lastName?.default].filter(Boolean).join(' ')||p?.fullName||'Pelaaja';
+  const pos=p=>p?.positionCode||p?.position||'';
+  const head=p=>p?.headshot||p?.headShot||p?.playerHeadshot||p?.image||'';
+  const st=p=>p?.stats||p||{};
+  const api=async path=>{const r=await fetch(API+path,{cache:'no-store',headers:{accept:'application/json'}});if(!r.ok)throw Error('NHL '+r.status);return r.json()};
+  const gameType=g=>Number(g?.gameType??g?.gameTypeCode??0);
+  const normalize=(g)=>{const dt=g?.startTimeUTC||g?.startTime||g?.startTimeLocal;let dk='';try{dk=dt?helDate(new Date(dt)):''}catch{}return {...g,dateKey:dk||g?.gameDate||g?.dateKey||'',gameType:gameType(g)} };
+  const state={games:[],selected:null,unit:'1',range:'today',details:new Map()};
+  function status(t){if($('nhlDataStatus'))$('nhlDataStatus').textContent=t}
+  function setDateHeader(){const d=today();const m=$('nhlDashMeta');if(m&&!state.selected)m.textContent=d.split('-').reverse().join('.')}
+  function teamLogoFallback(t){return logo(t)}
+  async function getDateGames(k){
+    const out=[];
+    for(const path of ['/score/'+k,'/schedule/'+k]){
+      try{const j=await api(path);const arr=Array.isArray(j?.games)?j.games:(Array.isArray(j?.gameWeek)?j.gameWeek.flatMap(x=>x.games||[]):[]);out.push(...arr.map(normalize))}catch(e){console.warn('NHL schedule',path,e)}
+    }
+    return out;
+  }
+  async function loadSchedule(){
+    setDateHeader();status('Haetaan NHL:n otteluohjelmaa…');
+    try{
+      const base=new Date(), keys=[-1,0,1,2,3,4,5,6,7].map(n=>helDate(add(base,n)));
+      const chunks=await Promise.all([...new Set(keys)].map(getDateGames));
+      const map=new Map();chunks.flat().forEach(g=>{if((gameType(g)===1||gameType(g)===2)&&g.id)map.set(String(g.id),g)});
+      state.games=[...map.values()].sort((a,b)=>new Date(a.startTimeUTC)-new Date(b.startTimeUTC));
+      window.__otbNhlGames=state.games;
+      renderGames();
+      const visible=visibleGames();
+      status(`${visible.length} ottelua · NHL API · päivitetty ${helTime(new Date())}`);
+      if(state.selected){const fresh=state.games.find(g=>String(g.id)===String(state.selected.id));if(fresh){state.selected=fresh;await select(fresh,false);return}}
+      if(visible.length)await select(visible[0],false);
+    }catch(e){
+      console.error('OTB NHL v40 schedule',e);
+      status('NHL-dataa ei saatu. Paina Päivitä uudelleen.');
+      if($('nhlGames'))$('nhlGames').innerHTML='<div class="nhl-date-group">NHL-DATA EI SAATAVILLA<small>Tarkista yhteys ja paina Päivitä.</small></div>';
+    }
+  }
+  function visibleGames(){
+    const d=today();
+    if(state.range==='next')return state.games.filter(g=>g.dateKey>d);
+    return state.games.filter(g=>g.dateKey===d);
+  }
+  function renderGames(){
+    const el=$('nhlGames');if(!el)return;const arr=visibleGames();
+    if(!arr.length){el.innerHTML='<div class="nhl-date-group">EI OTTELUITA<small>Ei otteluita tällä valinnalla.</small></div>';return}
+    el.innerHTML=arr.map(g=>{
+      const active=state.selected&&String(state.selected.id)===String(g.id)?' active':'';
+      const a=teamLogoFallback(g.awayTeam),h=teamLogoFallback(g.homeTeam);
+      const typ=gameType(g)===1?'PRESEASON':'RUNKOSARJA';
+      const label=g.gameState==='LIVE'?'LIVE':(g.gameState==='OFF'||g.gameState==='FINAL'?'LOPPU':'ENNAKKO');
+      return `<div class="nhl-game-card${active}" data-game-id="${esc(g.id)}"><div class="nhl-game-top"><span>${typ}</span><span>${label}</span></div><div class="nhl-game-teams"><img class="nhl-game-logo" src="${esc(a)}" alt=""><span>${esc(ab(g.awayTeam))}</span><b>@</b><span>${esc(ab(g.homeTeam))}</span><img class="nhl-game-logo" src="${esc(h)}" alt=""></div><div class="nhl-game-time">${esc(helTime(new Date(g.startTimeUTC)))} Suomen aikaa</div><div class="nhl-game-state">${esc(tn(g.awayTeam))} – ${esc(tn(g.homeTeam))}</div></div>`;
+    }).join('');
+  }
+  async function getGameData(g){
+    const key=String(g.id);if(state.details.has(key))return state.details.get(key);
+    const [box,landing,ar,hr]=await Promise.allSettled([
+      api('/gamecenter/'+encodeURIComponent(g.id)+'/boxscore'),
+      api('/gamecenter/'+encodeURIComponent(g.id)+'/landing'),
+      api('/roster/'+encodeURIComponent(ab(g.awayTeam).toLowerCase())+'/current'),
+      api('/roster/'+encodeURIComponent(ab(g.homeTeam).toLowerCase())+'/current')
+    ]);
+    const b=box.status==='fulfilled'?box.value:null, l=landing.status==='fulfilled'?landing.value:null;
+    const nr=x=>({forwards:Array.isArray(x?.forwards)?x.forwards:[],defense:Array.isArray(x?.defensemen)?x.defensemen:(x?.defense||[]),goalies:Array.isArray(x?.goalies)?x.goalies:(x?.goaltenders||[])});
+    const bx=side=>{const x=b?.playerByGameStats?.[side+'Team'];return x?nr(x):{forwards:[],defense:[],goalies:[]}};
+    const merge=(ro,bo)=>{
+      const r=nr(ro), b2=bo, map=new Map([...r.forwards,...r.defense,...r.goalies].filter(pid).map(p=>[String(pid(p)),p]));
+      const ov=p=>{const q=map.get(String(pid(p)));return q?{...q,...p}:p};
+      return {forwards:(b2.forwards.length?b2.forwards:r.forwards).map(ov),defense:(b2.defense.length?b2.defense:r.defense).map(ov),goalies:(b2.goalies.length?b2.goalies:r.goalies).map(ov)};
+    };
+    const data={away:merge(ar.status==='fulfilled'?ar.value:null,bx('away')),home:merge(hr.status==='fulfilled'?hr.value:null,bx('home')),landing:l,box:b,source:b&&b.playerByGameStats?'NHL boxscore':'NHL current roster'};
+    state.details.set(key,data);return data;
+  }
+  function forwardsFor(d,u){const f=d?.forwards||[];if(u==='pp1')return f.slice(0,5);if(u==='pp2')return f.slice(5,10);const n=Math.max(0,(Number(u)||1)-1);return f.slice(n*3,n*3+3)}
+  function stat(p,goalie=false){const s=st(p);if(goalie){const v=p?.savePctg??p?.savePercentage??s.savePctg??s.savePercentage;return `SV% ${v==null?'—':(Number(v)<=1?Number(v)*100:Number(v)).toFixed(1)}`}return `PTS ${s.points??p?.points??'—'} · SOG ${s.sog??s.shots??p?.sog??p?.shots??'—'}`}
+  function slot(side,cls,p,goalie=false){const el=document.querySelector(`.slot.${side}.${cls}`);if(!el)return;const f=el.querySelector('.nhl-face'),n=el.querySelector('.nhl-name'),r=el.querySelector('.nhl-role'),m=el.querySelector('.nhl-mini');n.textContent=p?pname(p):(goalie?'Maalivahti':'—');r.textContent=p?(pos(p)||(goalie?'MV':'')):(goalie?'MV':'');m.textContent=p?stat(p,goalie):(goalie?'SV% —':'PTS — · SOG —');if(f){const h=head(p);f.style.backgroundImage=h?`url("${h}")`:'';f.style.backgroundSize='cover';f.style.backgroundPosition='center';f.style.backgroundColor='#dbe3e8'}}
+  function card(p,goalie=false){if(!p)return '';return `<div class="nhl-player-card"><img src="${esc(head(p))}" alt="" onerror="this.style.visibility='hidden'"><div><div class="nhl-player-name"><span class="nhl-player-num">${esc(p.sweaterNumber??p.jerseyNumber??'')}</span>${esc(pname(p))}</div><div class="nhl-player-meta">${esc(pos(p)||(goalie?'MV':''))} · ${esc(stat(p,goalie))}</div></div></div>`}
+  function panel(side,d,t){const el=$(side==='home'?'nhlHomePlayers':'nhlAwayPlayers');if(!el)return;const u=state.unit,fs=forwardsFor(d,u).slice(0,3),ds=(d.defense||[]).slice(0,2),g=d.goalies?.[0];el.innerHTML=`<div class="nhl-panel-head"><img src="${esc(teamLogoFallback(t))}" alt=""><div><b>${esc(tn(t))}</b><small>${esc(ab(t))}</small></div></div><div class="nhl-roster-source">${d.forwards.length?'NHL:n rosteri / boxscore':'Kokoonpano ei vielä julkaistu'}</div><div class="nhl-player-group-title">${u==='pp1'?'YV1':u==='pp2'?'YV2':'Ketju '+u}</div>${fs.map(p=>card(p)).join('')||'<div class="nhl-empty-note">Pelaajat eivät ole vielä saatavilla.</div>'}<div class="nhl-player-group-title">Puolustajat</div>${ds.map(p=>card(p)).join('')||'<div class="nhl-empty-note">—</div>'}<div class="nhl-player-group-title">Maalivahti</div>${card(g,true)||'<div class="nhl-empty-note">—</div>'}`}
+  async function select(g,force){
+    if(!g)return;state.selected=g;window.__otbNhlActiveGame=g;document.body.classList.add('nhl-match-open');renderGames();
+    const d=new Date(g.startTimeUTC), e=id=>$(id);setDateHeader();
+    if(e('nhlDashHomeName'))e('nhlDashHomeName').textContent=tn(g.homeTeam);if(e('nhlDashAwayName'))e('nhlDashAwayName').textContent=tn(g.awayTeam);
+    if(e('nhlDashHomeAbbr'))e('nhlDashHomeAbbr').textContent=ab(g.homeTeam);if(e('nhlDashAwayAbbr'))e('nhlDashAwayAbbr').textContent=ab(g.awayTeam);
+    if(e('nhlDashHomeLogo'))e('nhlDashHomeLogo').src=teamLogoFallback(g.homeTeam);if(e('nhlDashAwayLogo'))e('nhlDashAwayLogo').src=teamLogoFallback(g.awayTeam);
+    if(e('nhlDashMeta'))e('nhlDashMeta').textContent=new Intl.DateTimeFormat('fi-FI',{timeZone:TZ,weekday:'short',day:'2-digit',month:'2-digit',year:'numeric'}).format(d)+' · '+helTime(d);
+    if(e('nhlDashScore'))e('nhlDashScore').textContent=(g.gameState==='LIVE'?'LIVE':(g.gameState==='OFF'||g.gameState==='FINAL'?'LOPPU':'ENNAKKO'));
+    if(e('nhlSelectedGame'))e('nhlSelectedGame').textContent=`${tn(g.awayTeam)} – ${tn(g.homeTeam)} · ${gameType(g)===1?'PRESEASON':'RUNKOSARJA'}`;
+    const hz=document.querySelector('.nhl-zone-logo.home'),az=document.querySelector('.nhl-zone-logo.away');if(hz)hz.style.backgroundImage=`url("${teamLogoFallback(g.homeTeam)}")`;if(az)az.style.backgroundImage=`url("${teamLogoFallback(g.awayTeam)}")`;
+    $('nhlRinkModule')?.classList.add('nhl-loading');
+    try{
+      const data=await getGameData(g);
+      const drawSide=(side)=>{const d=data[side],u=state.unit,fs=forwardsFor(d,u),ds=d.defense||[],goal=d.goalies?.[0];slot(side,'goalie',goal,true);slot(side,'d1',ds[0]);slot(side,'d2',ds[1]);slot(side,'f1',fs[0]);slot(side,'f2',fs[1]);slot(side,'f3',fs[2]);panel(side,d,side==='home'?g.homeTeam:g.awayTeam)};
+      drawSide('home');drawSide('away');
+      status(`NHL API · ${tn(g.awayTeam)} – ${tn(g.homeTeam)} · ${data.source}`);
+    }catch(err){console.error('OTB NHL v40 game',err);status('Ottelun kokoonpano ei ollut saatavilla vielä.');}
+    $('nhlRinkModule')?.classList.remove('nhl-loading');
+  }
+  function install(){
+    document.addEventListener('click',ev=>{
+      const c=ev.target.closest?.('#nhlGames .nhl-game-card');if(c){ev.preventDefault();ev.stopImmediatePropagation();const g=state.games.find(x=>String(x.id)===String(c.dataset.gameId));if(g)void select(g,true);return}
+      const b=ev.target.closest?.('.nhl-rink-tab');if(b){ev.preventDefault();ev.stopImmediatePropagation();state.unit=b.dataset.nhlUnit||'1';if(state.selected)void select(state.selected,true);return}
+      const r=ev.target.closest?.('#nhlRefresh');if(r){ev.preventDefault();ev.stopImmediatePropagation();void loadSchedule();return}
+      const s=ev.target.closest?.('.nhl-schedule-tab');if(s){ev.preventDefault();ev.stopImmediatePropagation();document.querySelectorAll('.nhl-schedule-tab').forEach(x=>x.classList.remove('active'));s.classList.add('active');state.range=s.dataset.scheduleRange||'today';renderGames();if(state.selected&&visibleGames().some(g=>String(g.id)===String(state.selected.id)))return;if(visibleGames()[0])void select(visibleGames()[0],false);return}
+    },true);
+    setDateHeader();void loadSchedule();setInterval(loadSchedule,60000);
+  }
+  if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',install,{once:true});else install();
+})();
+</script>
 </body></html>
