@@ -2019,8 +2019,8 @@ function renderStaticNLMatch(m){
       <span class="stat-mode-label">Viimeiset 5</span>
     </div>
     <div class="pitch" id="p${m.id.replace(/[^a-zA-Z0-9_-]/g,'')}">
-      <div class="pitch-team-label home"><span class="ptl-mark">${nlFlag(m.home_team?.name)}</span><span class="ptl-name">${esc(m.home_team?.name||'Kotijoukkue')}</span></div>
-      <div class="pitch-team-label away"><span class="ptl-mark">${nlFlag(m.away_team?.name)}</span><span class="ptl-name">${esc(m.away_team?.name||'Vierasjoukkue')}</span></div>
+      <div class="pitch-team-label home"><span class="ptl-mark">🏠</span><span class="ptl-name">${esc(m.home_team?.name||'Kotijoukkue')}</span></div>
+      <div class="pitch-team-label away"><span class="ptl-mark">✈️</span><span class="ptl-name">${esc(m.away_team?.name||'Vierasjoukkue')}</span></div>
       <div class="goal g1"></div><div class="goal g2"></div>
       <span class="corner tl"></span><span class="corner tr"></span><span class="corner bl"></span><span class="corner br"></span>
       <span class="centerDot"></span><div class="players">${inner}</div>
@@ -3840,55 +3840,29 @@ window.addEventListener('otb:nhl-game-selected',()=>{setTimeout(applyNhlPredicte
 </style>
 <script>window.OTB_BUILD_VERSION="V60-FAST-PLAYER-DATA";</script>
 
-<style id="otb-v61-safety-css">
+<style id="otb-v62-national-flags">
 .pitch-team-label .ptl-mark{font-size:18px!important;line-height:1!important;display:inline-flex!important;min-width:20px!important;justify-content:center!important}
 </style>
-<script id="otb-v61-safety-engine">
+<script id="otb-v62-safe-fix">
 (()=>{
 'use strict';
-// V61 safety/data patch. This layer is intentionally small and non-observing.
-const FLAG_MAP={
-  'France':'🇫🇷','Belgium':'🇧🇪','Italy':'🇮🇹','Türkiye':'🇹🇷','Turkey':'🇹🇷',
-  'Northern Ireland':'🇬🇧','Georgia':'🇬🇪','Spain':'🇪🇸','England':'🏴','Germany':'🇩🇪',
-  'Portugal':'🇵🇹','Switzerland':'🇨🇭','Croatia':'🇭🇷','Czechia':'🇨🇿','Czech Republic':'🇨🇿',
-  'North Macedonia':'🇲🇰','Ukraine':'🇺🇦','Hungary':'🇭🇺','Bosnia and Herzegovina':'🇧🇦',
-  'Poland':'🇵🇱','Romania':'🇷🇴','Sweden':'🇸🇪','Montenegro':'🇲🇪','Armenia':'🇦🇲',
-  'Cyprus':'🇨🇾','Latvia':'🇱🇻','Denmark':'🇩🇰','Netherlands':'🇳🇱','Netherlands':'🇳🇱',
-  'Austria':'🇦🇹','Greece':'🇬🇷','Serbia':'🇷🇸','Slovenia':'🇸🇮','Slovakia':'🇸🇰',
-  'Albania':'🇦🇱','Scotland':'🏴','Wales':'🏴','Republic of Ireland':'🇮🇪','Ireland':'🇮🇪',
-  'Finland':'🇫🇮','Iceland':'🇮🇸','Norway':'🇳🇴','Estonia':'🇪🇪','Lithuania':'🇱🇹',
-  'Bulgaria':'🇧🇬','Georgia':'🇬🇪','Israel':'🇮🇱','Türkiye':'🇹🇷'
-};
-window.nlFlag=function(name){
-  const n=String(name||'').trim();
-  return FLAG_MAP[n]||'🌍';
-};
-// If a static national-team pitch was already rendered by an earlier layer,
-// update only its two corner marks. No MutationObserver is used.
-function refreshFlags(){
-  document.querySelectorAll('.nl-static-match').forEach(sec=>{
-    const labels=sec.querySelectorAll('.pitch-team-label');
-    if(labels.length<2)return;
-    const teams=sec.querySelectorAll('.mh .mh-team .teams');
-    if(teams.length<2)return;
-    const h=teams[0].textContent.trim();
-    const a=teams[1].textContent.trim();
-    const hm=labels[0].querySelector('.ptl-mark');
-    const am=labels[1].querySelector('.ptl-mark');
-    if(hm)hm.textContent=window.nlFlag(h);
-    if(am)am.textContent=window.nlFlag(a);
-  });
+const FLAGS={France:'🇫🇷',Belgium:'🇧🇪',Italy:'🇮🇹','Türkiye':'🇹🇷',Turkey:'🇹🇷','Northern Ireland':'🇬🇧',Georgia:'🇬🇪',Spain:'🇪🇸',England:'🏴',Germany:'🇩🇪',Portugal:'🇵🇹',Switzerland:'🇨🇭',Croatia:'🇭🇷',Czechia:'🇨🇿','Czech Republic':'🇨🇿','North Macedonia':'🇲🇰',Ukraine:'🇺🇦',Hungary:'🇭🇺','Bosnia and Herzegovina':'🇧🇦',Poland:'🇵🇱',Romania:'🇷🇴',Sweden:'🇸🇪',Montenegro:'🇲🇪',Armenia:'🇦🇲',Cyprus:'🇨🇾',Latvia:'🇱🇻',Denmark:'🇩🇰',Netherlands:'🇳🇱',Austria:'🇦🇹',Greece:'🇬🇷',Serbia:'🇷🇸',Slovenia:'🇸🇮',Slovakia:'🇸🇰',Albania:'🇦🇱',Scotland:'🏴',Wales:'🏴','Republic of Ireland':'🇮🇪',Ireland:'🇮🇪',Finland:'🇫🇮',Iceland:'🇮🇸',Norway:'🇳🇴',Estonia:'🇪🇪',Lithuania:'🇱🇹',Bulgaria:'🇧🇬',Israel:'🇮🇱'};
+function flag(n){return FLAGS[String(n||'').trim()]||'🌍'}
+function apply(){
+ document.querySelectorAll('.nl-static-match').forEach(sec=>{
+   const labels=sec.querySelectorAll('.pitch-team-label');
+   const teams=sec.querySelectorAll('.mh .mh-team .teams');
+   if(labels.length<2||teams.length<2)return;
+   const a=labels[0].querySelector('.ptl-mark'),b=labels[1].querySelector('.ptl-mark');
+   if(a)a.textContent=flag(teams[0].textContent);
+   if(b)b.textContent=flag(teams[1].textContent);
+ });
 }
-function boot(){
-  refreshFlags();
-  setTimeout(refreshFlags,1200);
-  setTimeout(refreshFlags,3000);
-}
-if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',boot,{once:true});
-else boot();
-window.addEventListener('otb-history-ready',()=>setTimeout(refreshFlags,50));
+function boot(){apply();setTimeout(apply,900);setTimeout(apply,2200);setTimeout(apply,4500)}
+if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',boot,{once:true});else boot();
+window.addEventListener('otb-history-ready',()=>setTimeout(apply,50));
 })();
 </script>
-<script>window.OTB_BUILD_VERSION="V61-SAFE-PLAYER-DATA-FLAGS";</script>
+<script>window.OTB_BUILD_VERSION="V62-STABLE-FLAGS-DATA";</script>
 
 </body></html>
