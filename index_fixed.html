@@ -3743,4 +3743,104 @@ body.nhl-mode .nhl-player-card img{display:block!important;object-fit:cover!impo
   if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',install,{once:true});else install();
 })();
 </script>
+
+<style id="otb-nhl-v43-day-ui">
+/* V43: päivä -> ottelut -> vasta valinnan jälkeen kaukalo */
+#otbNhlScheduleV43{display:block!important;width:100%;margin:0 0 12px!important;padding:10px 12px 12px!important;background:linear-gradient(180deg,rgba(4,25,38,.98),rgba(3,16,27,.98))!important;border:1px solid #155477!important;border-radius:13px!important;box-sizing:border-box!important}
+#otbNhlDaysV43{display:flex!important;gap:7px!important;overflow-x:auto!important;padding:1px 1px 8px!important;scrollbar-width:thin!important}
+#otbNhlDaysV43 .otb-day{flex:0 0 92px!important;border:1px solid #285b78!important;background:#08263a!important;color:#cce8f8!important;border-radius:10px!important;padding:8px 6px!important;cursor:pointer!important;text-align:center!important;font-weight:1000!important;font-size:11px!important;line-height:1.15!important}
+#otbNhlDaysV43 .otb-day small{display:block!important;font-size:8px!important;color:#76a8c2!important;margin-top:3px!important;font-weight:900!important}
+#otbNhlDaysV43 .otb-day.active{background:linear-gradient(180deg,#2c9bd8,#176d9f)!important;border-color:#74caff!important;color:#fff!important;box-shadow:0 0 16px rgba(38,158,220,.25)!important}
+#otbNhlDaysV43 .otb-day.today{box-shadow:inset 0 -3px 0 #57b9ec!important}
+#otbNhlGamesV43{display:grid!important;grid-template-columns:repeat(auto-fit,minmax(215px,1fr))!important;gap:8px!important;margin-top:5px!important}
+#otbNhlGamesV43 .otb-game{position:relative!important;min-height:78px!important;border:1px solid #245875!important;border-radius:11px!important;background:linear-gradient(180deg,rgba(8,37,54,.98),rgba(4,20,32,.98))!important;color:#fff!important;padding:9px 10px!important;cursor:pointer!important;box-sizing:border-box!important;transition:.15s!important}
+#otbNhlGamesV43 .otb-game:hover{transform:translateY(-1px)!important;border-color:#53b8ee!important}
+#otbNhlGamesV43 .otb-game.open{border-color:#59bff2!important;box-shadow:0 0 0 1px #59bff233 inset!important;background:linear-gradient(180deg,#124d6e,#071e2e)!important}
+#otbNhlGamesV43 .otb-game-time{position:absolute;right:9px;top:9px;font-size:9px;color:#8fc1d9;font-weight:900}
+#otbNhlGamesV43 .otb-game-team{display:flex!important;align-items:center!important;gap:7px!important;margin:3px 70px 3px 0!important;font-size:12px!important;font-weight:1000!important}
+#otbNhlGamesV43 .otb-game-team img{width:23px!important;height:23px!important;object-fit:contain!important}
+#otbNhlGamesV43 .otb-game-vs{font-size:8px!important;color:#719bb1!important;margin-left:30px!important}
+#otbNhlGamesV43 .otb-game-state{font-size:8px!important;color:#72a8c1!important;margin-top:4px!important;font-weight:900!important}
+#otbNhlGamesV43 .otb-empty{padding:15px!important;text-align:center!important;color:#6e9ab0!important;font-size:10px!important}
+#otbNhlGamesV43 .otb-title{font-size:10px!important;color:#8dbbd0!important;font-weight:1000!important;margin:0 0 6px!important;text-transform:uppercase!important;letter-spacing:.3px!important}
+#otbNhlOpenHintV43{display:none;text-align:center;color:#77a9c1;font-size:9px;font-weight:900;margin:4px 0 9px}
+body.nhl-mode:not(.otb-v43-open) #nhlRinkModule{display:none!important}
+body.nhl-mode:not(.otb-v43-open) .nhl-dash-tabs{display:none!important}
+body.nhl-mode.otb-v43-open #otbNhlOpenHintV43{display:block!important}
+body.nhl-mode.otb-v43-open #nhlRinkModule{display:block!important}
+body.nhl-mode.otb-v43-open #otbNhlScheduleV43{margin-bottom:8px!important}
+@media(max-width:700px){#otbNhlGamesV43{grid-template-columns:1fr!important}#otbNhlDaysV43 .otb-day{flex-basis:82px!important}}
+</style>
+
+<script id="otb-nhl-v43-day-engine">
+(()=>{
+'use strict';
+const API='https://api-web.nhle.com/v1',TZ='Europe/Helsinki';
+const $=s=>document.querySelector(s), $$=s=>[...document.querySelectorAll(s)];
+const esc=v=>String(v??'').replace(/[&<>"']/g,m=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[m]));
+const helDate=d=>new Intl.DateTimeFormat('en-CA',{timeZone:TZ,year:'numeric',month:'2-digit',day:'2-digit'}).format(d);
+const helTime=d=>new Intl.DateTimeFormat('fi-FI',{timeZone:TZ,hour:'2-digit',minute:'2-digit',hour12:false}).format(d);
+const add=(d,n)=>{let x=new Date(d);x.setDate(x.getDate()+n);return x};
+const key=d=>helDate(d);
+const teamName=t=>t?.name?.default||t?.name?.fr||t?.commonName?.default||t?.abbrev||t?.triCode||'—';
+const ab=t=>String(t?.abbrev||t?.triCode||t?.abbreviation||'').toUpperCase();
+const logo=t=>t?.logo||`https://assets.nhle.com/logos/nhl/svg/${ab(t)}_light.svg`;
+const fallbackTeams={PHI:'Philadelphia Flyers',TBL:'Tampa Bay Lightning',OTT:'Ottawa Senators',BOS:'Boston Bruins',WPG:'Winnipeg Jets',PIT:'Pittsburgh Penguins',SJS:'San Jose Sharks',DAL:'Dallas Stars',NSH:'Nashville Predators',TOR:'Toronto Maple Leafs',CAR:'Carolina Hurricanes',MTL:'Montreal Canadiens',DET:'Detroit Red Wings',UTA:'Utah Mammoth',NJD:'New Jersey Devils',MIN:'Minnesota Wild',BUF:'Buffalo Sabres',NYI:'New York Islanders',NYR:'New York Rangers',STL:'St. Louis Blues',CHI:'Chicago Blackhawks',VGK:'Vegas Golden Knights',SEA:'Seattle Kraken',LAK:'Los Angeles Kings',FLA:'Florida Panthers',WSH:'Washington Capitals',COL:'Colorado Avalanche',EDM:'Edmonton Oilers',ANA:'Anaheim Ducks',CBJ:'Columbus Blue Jackets',VAN:'Vancouver Canucks',CGY:'Calgary Flames'};
+const makeTeam=a=>({abbrev:a,name:{default:fallbackTeams[a]||a},logo:`https://assets.nhle.com/logos/nhl/svg/${a}_light.svg`});
+const makeGame=(date,a,h,time)=>({id:`otb-${date}-${a}-${h}`,dateKey:date,scheduleDateKey:date,startTimeUTC:new Date(`${date}T${time||'23:00:00'}Z`).toISOString(),awayTeam:makeTeam(a),homeTeam:makeTeam(h),gameState:'FUT',__otbFallback:true});
+/* Official NHL schedule fallback for the current week. API data replaces these automatically when available. */
+const fallback={
+'2026-10-05':[['PHI','TBL','23:00'],['OTT','BOS','23:30'],['WPG','PIT','23:30'],['SJS','DAL','00:00']],
+'2026-10-06':[['NSH','TOR','23:00'],['CAR','MTL','23:00'],['OTT','DET','23:00'],['UTA','NJD','23:00'],['MIN','BUF','23:00'],['NYI','NYR','23:30'],['STL','CHI','00:00'],['VGK','SEA','01:40'],['FLA','LAK','02:00']],
+'2026-10-07':[['PIT','WSH','23:30'],['COL','WPG','23:30'],['EDM','ANA','02:00']],
+'2026-10-08':[['UTA','BOS','23:00']],
+'2026-10-09':[['SEA','DET','23:00'],['NYR','WSH','23:00'],['PIT','CBJ','23:00'],['ANA','WPG','00:00']],
+'2026-10-10':[['PHI','BOS','17:00'],['VAN','NJD','19:30'],['EDM','SJS','20:00'],['MIN','FLA','22:00'],['UTA','BUF','23:00'],['DET','MTL','23:00'],['NSH','OTT','23:00'],['DAL','PIT','23:00'],['CAR','CHI','23:00'],['CBJ','STL','23:00'],['TOR','COL','23:00'],['TBL','NYI','23:30'],['ANA','CGY','02:00'],['LAK','VGK','02:00']],
+'2026-10-11':[['SEA','WSH','21:00'],['VAN','NYR','22:00'],['CAR','PHI','23:00']],
+'2026-10-12':[['FLA','BUF','17:00'],['OTT','NJD','23:00'],['VGK','MIN','00:00']]
+};
+const state={days:[],byDay:new Map(),selected:null};
+function dayLabel(d,i){const dt=new Date(d+'T12:00:00');const names=['SU','MA','TI','KE','TO','PE','LA'];return i===0?'TÄNÄÄN':`${names[dt.getDay()]} ${dt.getDate()}.${dt.getMonth()+1}.`}
+async function api(path){const r=await fetch(API+path,{cache:'no-store'});if(!r.ok)throw Error(String(r.status));return r.json()}
+async function fetchDay(d){
+ let arr=[];
+ for(const path of ['/score/'+d,'/schedule/'+d]){try{const j=await api(path);const a=Array.isArray(j?.games)?j.games:(Array.isArray(j?.gameWeek)?j.gameWeek.flatMap(x=>x.games||[]):[]);arr.push(...a)}catch(e){}}
+ const map=new Map();arr.forEach(g=>{if(g?.id)map.set(String(g.id),{...g,dateKey:d,scheduleDateKey:g.gameDate||d})});
+ if(map.size)return [...map.values()];
+ return (fallback[d]||[]).map(x=>makeGame(d,x[0],x[1],x[2]));
+}
+function ensureUi(){
+ const old=$('.nhl-schedule-controls');
+ if(old)old.style.display='none';
+ let box=$('#otbNhlScheduleV43');
+ if(!box){
+   box=document.createElement('section');box.id='otbNhlScheduleV43';
+   const anchor=$('#nhlLivePanel')||$('#nhlGames')?.parentElement;
+   if(anchor)anchor.insertBefore(box,$('#nhlGames'));
+   box.innerHTML='<div class="otb-title">NHL · VALITSE PÄIVÄ</div><div id="otbNhlDaysV43"></div><div id="otbNhlOpenHintV43">Valitse ottelu nähdäksesi kokoonpanon ja kaukalon ↓</div><div id="otbNhlGamesV43"></div>';
+ }
+ const oldGames=$('#nhlGames');if(oldGames)oldGames.style.display='none';
+ if(!state.selected)document.body.classList.remove('otb-v43-open');
+}
+function renderDays(active){const el=$('#otbNhlDaysV43');if(!el)return;el.innerHTML=state.days.map((d,i)=>{const n=state.byDay.get(d)?.length||0;return `<button type="button" class="otb-day ${d===active?'active ':''}${i===0?'today':''}" data-day="${d}">${dayLabel(d,i)}<small>${n} ottelua</small></button>`}).join('')}
+function renderGames(day){const el=$('#otbNhlGamesV43');if(!el)return;const arr=state.byDay.get(day)||[];if(!arr.length){el.innerHTML='<div class="otb-empty">Tälle päivälle ei ole otteluita.</div>';return}el.innerHTML=arr.map(g=>{const open=state.selected&&String(state.selected.id)===String(g.id);return `<article class="otb-game ${open?'open':''}" data-id="${esc(g.id)}"><span class="otb-game-time">${esc(helTime(new Date(g.startTimeUTC)))}</span><div class="otb-game-team"><img src="${esc(logo(g.awayTeam))}" alt=""><span>${esc(ab(g.awayTeam))}</span><b>${esc(teamName(g.awayTeam))}</b></div><div class="otb-game-vs">VS</div><div class="otb-game-team"><img src="${esc(logo(g.homeTeam))}" alt=""><span>${esc(ab(g.homeTeam))}</span><b>${esc(teamName(g.homeTeam))}</b></div><div class="otb-game-state">${g.gameState==='LIVE'?'🔴 LIVE':'ENNAKKO'} · Paina avataksesi</div></article>`}).join('')}
+function openGame(g){state.selected=g;document.body.classList.add('otb-v43-open');renderGames(g.dateKey);const meta=$('#nhlDashMeta');if(meta)meta.textContent=new Intl.DateTimeFormat('fi-FI',{timeZone:TZ,weekday:'short',day:'2-digit',month:'2-digit',year:'numeric'}).format(new Date(g.startTimeUTC))+' · '+helTime(new Date(g.startTimeUTC));window.__otbNhlV43Game=g;window.dispatchEvent(new CustomEvent('otb:nhl-game-selected',{detail:{game:g}}));setTimeout(()=>document.querySelector('#nhlRinkModule')?.scrollIntoView({behavior:'smooth',block:'start'}),80)}
+async function load(){
+ ensureUi();
+ const now=new Date();state.days=[];state.byDay.clear();
+ for(let i=0;i<8;i++)state.days.push(key(add(now,i)));
+ const vals=await Promise.all(state.days.map(fetchDay));vals.forEach((games,i)=>state.byDay.set(state.days[i],games.sort((a,b)=>new Date(a.startTimeUTC)-new Date(b.startTimeUTC))));
+ const current=state.selected?.dateKey&&state.byDay.has(state.selected.dateKey)?state.selected.dateKey:state.days[0];
+ renderDays(current);renderGames(current);
+ const status=$('#nhlDataStatus');if(status)status.textContent='NHL · valitse ensin päivä ja sitten ottelu';
+}
+function install(){
+ ensureUi();
+ const box=$('#otbNhlScheduleV43');
+ box?.addEventListener('click',e=>{const day=e.target.closest('.otb-day');if(day){renderDays(day.dataset.day);renderGames(day.dataset.day);return}const game=e.target.closest('.otb-game');if(game){const all=[...state.byDay.values()].flat();const g=all.find(x=>String(x.id)===String(game.dataset.id));if(g)openGame(g)}});
+ load();setInterval(load,60000);
+}
+if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',install,{once:true});else install();
+})();
+</script>
 </body></html>
