@@ -3877,4 +3877,81 @@ window.addEventListener('otb-history-ready',()=>setTimeout(apply,50));
 </script>
 <script>window.OTB_BUILD_VERSION="V62-STABLE-FLAGS-DATA";</script>
 
+
+<style id="otb-v64-country-flags-final">
+.pitch-team-label .ptl-mark{font-size:20px!important;line-height:1!important;display:inline-flex!important;align-items:center!important;justify-content:center!important;min-width:22px!important;width:22px!important;height:22px!important;opacity:1!important}
+.pitch-team-label .ptl-mark img{width:22px!important;height:22px!important;object-fit:contain!important;border-radius:3px!important}
+</style>
+<script id="otb-v64-country-flags-final-js">
+(()=>{
+'use strict';
+const FLAGS={
+  'France':'🇫🇷','Belgium':'🇧🇪','Italy':'🇮🇹','Türkiye':'🇹🇷','Turkey':'🇹🇷',
+  'Northern Ireland':'🇬🇧','Georgia':'🇬🇪','Spain':'🇪🇸','England':'🏴','Germany':'🇩🇪',
+  'Portugal':'🇵🇹','Switzerland':'🇨🇭','Croatia':'🇭🇷','Czechia':'🇨🇿','Czech Republic':'🇨🇿',
+  'North Macedonia':'🇲🇰','Ukraine':'🇺🇦','Hungary':'🇭🇺','Bosnia and Herzegovina':'🇧🇦',
+  'Poland':'🇵🇱','Romania':'🇷🇴','Sweden':'🇸🇪','Montenegro':'🇲🇪','Armenia':'🇦🇲',
+  'Cyprus':'🇨🇾','Latvia':'🇱🇻','Denmark':'🇩🇰','Netherlands':'🇳🇱','Austria':'🇦🇹',
+  'Greece':'🇬🇷','Serbia':'🇷🇸','Slovenia':'🇸🇮','Slovakia':'🇸🇰','Albania':'🇦🇱',
+  'Scotland':'🏴','Wales':'🏴','Republic of Ireland':'🇮🇪','Ireland':'🇮🇪','Finland':'🇫🇮',
+  'Iceland':'🇮🇸','Norway':'🇳🇴','Estonia':'🇪🇪','Lithuania':'🇱🇹','Bulgaria':'🇧🇬',
+  'Israel':'🇮🇱','Faroe Islands':'🇫🇴','Kazakhstan':'🇰🇿','Moldova':'🇲🇩','San Marino':'🇸🇲',
+  'Luxembourg':'🇱🇺'
+};
+const norm=s=>String(s||'').trim().replace(/\s+/g,' ');
+function setLabel(label,side){
+  const name=norm(label.querySelector('.ptl-name')?.textContent);
+  const mark=label.querySelector('.ptl-mark');
+  if(!mark)return;
+  const flag=FLAGS[name];
+  if(flag){
+    if(mark.textContent!==flag || mark.querySelector('img')) mark.textContent=flag;
+    mark.removeAttribute('title');
+    return;
+  }
+  // Club teams: remove the old home/away house/plane marker. If a team logo
+  // exists on the pitch, use that logo in the corner instead.
+  const logo=document.querySelector(`.pitch-team-logo.${side}`);
+  if(logo && logo.src){
+    mark.innerHTML='';
+    const img=document.createElement('img');
+    img.src=logo.src; img.alt=''; img.loading='lazy';
+    mark.appendChild(img);
+  }else{
+    mark.textContent='';
+  }
+}
+function apply(root=document){
+  root.querySelectorAll('.pitch-team-label').forEach(label=>{
+    setLabel(label,label.classList.contains('away')?'away':'home');
+  });
+  // Safety net: no field corner may ever display the generic home/away icons.
+  root.querySelectorAll('.pitch-team-label .ptl-mark').forEach(mark=>{
+    if(mark.textContent==='🏠' || mark.textContent==='✈️' || mark.textContent==='🏠 Koti' || mark.textContent==='✈️ Vieras'){
+      const label=mark.closest('.pitch-team-label');
+      if(label) setLabel(label,label.classList.contains('away')?'away':'home');
+    }
+  });
+}
+function boot(){
+  apply(document);
+  const out=document.querySelector('#out');
+  if(out && !out.__otbV64Observer){
+    let busy=false;
+    const obs=new MutationObserver(()=>{
+      if(busy)return;
+      busy=true;
+      requestAnimationFrame(()=>{try{apply(out)}finally{busy=false}});
+    });
+    obs.observe(out,{childList:true,subtree:true});
+    out.__otbV64Observer=obs;
+  }
+  [500,1200,2500,5000].forEach(ms=>setTimeout(()=>apply(document),ms));
+}
+if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',boot,{once:true});else boot();
+window.addEventListener('otb:history-ready',()=>apply(document));
+window.addEventListener('otb:nhl-game-selected',()=>setTimeout(()=>apply(document),50));
+})();
+</script>
+<script>window.OTB_BUILD_VERSION="V64-FLAGS-FINAL";</script>
 </body></html>
