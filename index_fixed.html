@@ -1423,6 +1423,7 @@ function populateLeagueSelector(){
   if(otherSel){const old=otherSel.value;otherSel.innerHTML='<option value="">Valitse otteluanalyysin sarja…</option>'+others.map(n=>`<option value="${esc(n)}">${esc(n)}</option>`).join('');if(others.includes(old))otherSel.value=old;}
 }
 let loadGeneration=0;
+let activeLoadPromise=null;
 async function load(){
   const myLoad=++loadGeneration;
   if(!key()&&!isPublicWorker()){setKeyUI();$('#status').textContent='Lisää ensin PitchAPI-avain.';return}
@@ -3030,9 +3031,10 @@ $$('.f').forEach(b=>b.onclick=()=>{$$('.f').forEach(x=>x.classList.remove('activ
     if(btn)btn.click();
   });
 
-  // Observe the existing pitch so the new analysis follows the current selected match.
-  const obs=new MutationObserver(()=>setTimeout(refresh,250));
-  obs.observe(document.body,{childList:true,subtree:true});
+  // IMPORTANT: do not observe document.body here. Rendering the analysis
+  // panel itself mutates document.body and the old observer could therefore
+  // trigger an endless render -> mutation -> render loop. Refresh is driven
+  // by explicit history events instead.
   setTimeout(refresh,800);
 })();
 </script>
@@ -3117,9 +3119,11 @@ $$('.f').forEach(b=>b.onclick=()=>{$$('.f').forEach(x=>x.classList.remove('activ
     if(a.length){last=a;render();}
   }
   window.addEventListener("otb-history-ready",()=>setTimeout(refresh,50));
-  new MutationObserver(()=>setTimeout(refresh,350)).observe(document.body,{childList:true,subtree:true});
+  // Never observe the whole document: this module writes its own DOM.
+  // A few one-shot refreshes are enough while player history is hydrating.
   setTimeout(refresh,1200);
   setTimeout(refresh,2500);
+  setTimeout(refresh,5000);
 })();
 </script>
 <style id="v40-long-pitch">.pitch{min-height:1700px!important;height:1700px!important;overflow:visible!important}.pitch .players{height:1700px!important;min-height:1700px!important}@media(max-width:600px){.pitch{min-height:1350px!important;height:1350px!important}.pitch .players{height:1350px!important;min-height:1350px!important}}</style>
@@ -3767,7 +3771,7 @@ body.nhl-mode .nhl-roster-source.official{color:#39d49a!important;background:#07
 <script id="otb-lineup-v57-engine">
 (()=>{
 'use strict';
-/* V57 safety patch: no self-observing MutationObservers. The previous V56
+/* V58 safety patch: no self-observing MutationObservers. The previous V56
    observer rewrote its own DOM and could create an endless mutation loop. */
 try{
   if(typeof NL_PREDICTED==='object'){
@@ -3777,7 +3781,7 @@ try{
       'Northern Ireland|Georgia':{homeFormation:'5-4-1',awayFormation:'3-4-1-2',home:['Pierce Charles','Tom Atcheson','Ruairi McConville','Ciaron Brown','Brodie Spencer','Terry Devlin','Kieran Morrison','Trai Hume','Shea Charles','Isaac Price','Jamie Donley'],away:['Giorgi Mamardashvili','Saba Goglichidze','Lasha Dvali','Luka Lochoshvili','Otar Kakabadze','Irakli Yegoian','Anzor Mekvabishvili','Giorgi Tsitaishvili','Giorgi Chakvetadze','Georges Mikautadze','Khvicha Kvaratskhelia']}
     });
   }
-}catch(e){console.warn('OTB V57 predicted XI patch',e)}
+}catch(e){console.warn('OTB V58 predicted XI patch',e)}
 
 function markFootballPredicted57(){
   document.querySelectorAll('.nl-static-match').forEach(sec=>{
