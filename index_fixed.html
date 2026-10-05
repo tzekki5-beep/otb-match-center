@@ -4164,4 +4164,66 @@ body.nhl-mode .nhl-stat-value.home{color:#f0b52c!important}.nhl-stat-value.away{
 body.nhl-mode .nhl-stat-loading{padding:22px;text-align:center;color:#8fb4c6;font-weight:900;font-size:11px}
 @media(max-width:700px){body.nhl-mode .nhl-stat-grid{grid-template-columns:55px 1fr 55px!important}.nhl-stat-label{font-size:9px!important}}
 </style>
+
+<style id="otb-nhl-v16-sync-css">
+body.nhl-mode .otb-v16-player-card{display:flex!important;align-items:center!important;gap:8px!important;padding:6px 7px!important;margin:5px 0!important;background:rgba(7,29,43,.72)!important;border:1px solid #214d65!important;border-radius:7px!important}
+body.nhl-mode .otb-v16-player-card .v16-avatar{width:30px!important;height:30px!important;border-radius:50%!important;object-fit:cover!important;background:#173546!important;flex:none!important}
+body.nhl-mode .otb-v16-player-card b{font-size:10px!important;color:#fff!important;display:block!important;line-height:1.1!important}
+body.nhl-mode .otb-v16-player-card small{font-size:8px!important;color:#8eb9cd!important;display:block!important;margin-top:2px!important}
+</style>
+<script id="otb-nhl-v16-match-sync">
+(()=>{
+'use strict';
+const $=s=>document.querySelector(s), $$=s=>[...document.querySelectorAll(s)];
+const esc=v=>String(v??'').replace(/[&<>"']/g,m=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[m]));
+const ab=t=>String(t?.abbrev||t?.triCode||t?.abbreviation||'').toUpperCase();
+const tn=t=>t?.name?.default||t?.commonName?.default||t?.abbrev||ab(t)||'—';
+const logo=t=>t?.logo||`https://assets.nhle.com/logos/nhl/svg/${ab(t)}_light.svg`;
+const PROJECTED={
+ PHI:{f:[['Travis Konecny','Christian Dvorak','Matvei Michkov'],['Tyson Foerster','Noah Cates','Porter Martone'],['Carl Grundstrom','Trevor Zegras','Owen Tippett'],['Denver Barkey','Sean Couturier','Noel Acciari']],d:[['Travis Sanheim','Rasmus Ristolainen'],['Cam York','Jamie Drysdale'],['Nick Seeler','David Jiricek']],g:['Dan Vladar','Joseph Woll']},
+ TBL:{f:[['Gage Goncalves','Brayden Point','Nikita Kucherov'],['Jake Guentzel','Anthony Cirelli','Brandon Hagel'],['Ilya Mikheyev','Zemgus Girgensons','Pontus Holmberg'],['Jeffrey Viel','Conor Geekie']],d:[['J.J. Moser','John Carlson'],['Ryan McDonagh','Erik Cernak'],['Victor Hedman','Charle-Edouard D\'Astous'],['Max Crozier']],g:['Andrei Vasilevskiy','Dennis Hildeby']},
+ OTT:{f:[['Warren Foegele','Tim Stutzle','Drake Batherson'],['William Eklund','Dylan Cozens','Fabian Zetterlund'],['Michael Amadio','Shane Pinto','Claude Giroux'],['Nick Cousins','Stephen Halliday','Hayden Hodgson']],d:[['Thomas Chabot','Jordan Spence'],['Tyler Kleven','Carter Yakemchuk'],['Cameron Crotty','Nikolas Matinpalo']],g:['Linus Ullmark','Samuel Ersson']},
+ BOS:{f:[['JJ Peterka','Elias Lindholm','David Pastrnak'],['Casey Mittelstadt','Pavel Zacha','Morgan Geekie'],['James Hagens','Fraser Minten','Marat Khusnutdinov'],['Tanner Jeannot','Matthew Poitras','Mark Kastelic']],d:[['Hampus Lindholm','Will Borgen'],['Mason Lohrei','Charlie McAvoy'],['Nikita Zadorov','Connor Clifton']],g:['Jeremy Swayman','Michael DiPietro']},
+ WPG:{f:[['Kyle Connor','Mark Scheifele','Cole Perfetti'],['Isak Rosen','Viggo Bjorck','Gabriel Vilardi'],['Morgan Barron','Adam Lowry','Brad Lambert'],['Nino Niederreiter','Vladislav Namestnikov','Alex Iafallo']],d:[['Josh Morrissey','Dylan DeMelo'],['Dylan Samberg','Neal Pionk'],['Mario Ferraro','Tyrel Bauer']],g:['Clay Stevenson','Stuart Skinner']},
+ PIT:{f:[['Nick Robertson','Sidney Crosby','Rickard Rakell'],['Egor Chinakhov','Tommy Novak','Evgeni Malkin'],['Andrei Kuzmenko','Ben Kindel','Ville Koivunen'],['Connor Dewar','Blake Lizotte','Hendrix Lapierre']],d:[['Declan Carlile','Erik Karlsson'],['Samuel Girard','Kaedan Korczak'],['Trevor van Riemsdyk','Kris Letang']],g:['Sergei Murashov','Arturs Silovs']},
+ SJS:{f:[['Mason Marchment','Macklin Celebrini','Will Smith'],['Ivar Stenberg','Alexander Wennberg','Collin Graf'],['Igor Chernyshov','Michael Misa','Tyler Toffoli'],['Barclay Goodrow','Zack Ostapchuk','Kiefer Sherwood']],d:[['Darnell Nurse','Michael Kesselring'],['Sam Dickinson','Jacob Trouba'],['Dmitry Orlov','Luca Cagnoni']],g:['Yaroslav Askarov','Alex Nedeljkovic']},
+ DAL:{f:[['Jason Robertson','Roope Hintz','Jamie Benn'],['Sam Steel','Wyatt Johnston','Mikko Rantanen'],['Justin Hryckowian','Arttu Hyry','Tyler Seguin'],['Oskar Back','Radek Faksa','Joel Kiviranta']],d:[['Esa Lindell','Miro Heiskanen'],['Thomas Harley','Nils Lundkvist'],['Lian Bichsel','Tyler Myers']],g:['Jake Oettinger','Casey DeSmith']}
+};
+function data(t){return PROJECTED[ab(t)]||null}
+function card(n,pos){return `<div class="otb-v16-player-card"><div><b>${esc(n)}</b><small>${esc(pos)} · PTS — · SOG — · BLK — · HITS —</small></div></div>`}
+function setHeader(g){
+ const h=$('#nhlDashHomeName'),a=$('#nhlDashAwayName'),hl=$('#nhlDashHomeLogo'),al=$('#nhlDashAwayLogo'),meta=$('#nhlDashMeta'),score=$('#nhlDashScore');
+ if(h)h.textContent=tn(g.homeTeam); if(a)a.textContent=tn(g.awayTeam); if(hl)hl.src=logo(g.homeTeam); if(al)al.src=logo(g.awayTeam);
+ if(meta)meta.textContent=new Intl.DateTimeFormat('fi-FI',{day:'2-digit',month:'2-digit',year:'numeric',timeZone:'Europe/Helsinki'}).format(new Date(g.startTimeUTC));
+ if(score)score.textContent=`${ab(g.awayTeam)}  –  ${ab(g.homeTeam)}`;
+}
+function panel(id,t){
+ const e=$(id),p=data(t); if(!e||!p)return;
+ const fs=p.f[0]||[],ds=p.d[0]||[],g=p.g[0];
+ e.innerHTML=`<div class="nhl-panel-head"><img src="${esc(logo(t))}" alt=""><div><b>${esc(tn(t))}</b><small>${esc(ab(t))}</small></div></div><div class="nhl-roster-source predicted">🟡 Ennakoitu kokoonpano · NHL.com · vaihtuu automaattisesti viralliseksi</div><div class="nhl-player-group-title">Hyökkääjät</div>${fs.map((n,i)=>card(n,['LW','C','RW'][i])).join('')}<div class="nhl-player-group-title">Puolustajat</div>${ds.map(n=>card(n,'D')).join('')}<div class="nhl-player-group-title">Maalivahti</div>${card(g,'MV')}`;
+}
+function rink(g){
+ const sides=[['home',g.homeTeam],['away',g.awayTeam]];
+ for(const [side,t] of sides){const p=data(t);if(!p)continue;const f=p.f[0]||[],d=p.d[0]||[],goal=p.g[0];
+  const vals={goalie:goal,d1:d[0],d2:d[1],f1:f[0],f2:f[1],f3:f[2]};
+  for(const [cls,n] of Object.entries(vals)){const e=$(`.nhl-rink .slot.${side}.${cls}`);if(!e)continue;const ne=e.querySelector('.nhl-name'),ro=e.querySelector('.nhl-role'),mi=e.querySelector('.nhl-mini');if(ne)ne.textContent=n||'—';if(ro)ro.textContent=cls==='goalie'?'MV':cls.startsWith('d')?'D':['LW','C','RW'][['f1','f2','f3'].indexOf(cls)];if(mi)mi.textContent=cls==='goalie'?'SV% —':'PTS — · SOG —';}
+ }
+}
+function sync(g){
+ if(!g?.homeTeam||!g?.awayTeam)return;
+ setHeader(g);panel('#nhlHomePlayers',g.homeTeam);panel('#nhlAwayPlayers',g.awayTeam);rink(g);
+ document.body.classList.add('otb-v43-open');
+ window.__otbNhlV16Selected=g;
+}
+function dedupeSchedule(){
+ const games=$$('#otbNhlV55Games .v55-game');
+ // UI-level safety: never show the same matchup twice when NHL + ESPN supplied different IDs.
+ const seen=new Set(); games.forEach(e=>{const teams=[...e.querySelectorAll('.v55-team b')].map(x=>x.textContent.trim()).join('|');const time=e.querySelector('.v55-time')?.textContent||'';const k=teams+'|'+time;if(seen.has(k))e.remove();else seen.add(k)});
+}
+window.addEventListener('otb:nhl-game-selected',e=>{const g=e.detail?.game;if(!g)return;setTimeout(()=>sync(g),0);setTimeout(()=>sync(g),250);setTimeout(()=>sync(g),1000);});
+// If another engine changes only the header or leaves stale team panels, restore the selected matchup.
+setInterval(()=>{const g=window.__otbNhlV16Selected;if(g&&document.body.classList.contains('nhl-mode')){const hn=$('#nhlDashHomeName')?.textContent?.trim();const an=$('#nhlDashAwayName')?.textContent?.trim();if(hn!==tn(g.homeTeam)||an!==tn(g.awayTeam))sync(g);}},1500);
+setInterval(dedupeSchedule,800);
+})();
+</script>
 </body></html>
