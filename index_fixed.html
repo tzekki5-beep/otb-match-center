@@ -3573,7 +3573,20 @@ const ab=t=>String(t?.abbrev||t?.triCode||t?.abbreviation||'').toUpperCase();
 const tn=t=>t?.name?.default||t?.commonName?.default||t?.abbrev||ab(t);
 const logo=t=>t?.logo||`https://assets.nhle.com/logos/nhl/svg/${ab(t)}_light.svg`;
 const S={unit:'1',game:null,data:null,cache:new Map(),profiles:new Map()};
-async function api(path){const r=await fetch(API+path,{cache:'no-store'});if(!r.ok)throw Error(String(r.status));return r.json()}
+async function api(path){
+  const urls=[API+path,'https://api-web.nhle.com/v1'+path];
+  let last='NHL API -virhe';
+  for(const u of urls){
+    try{
+      const r=await fetch(u,{cache:'no-store',headers:{'Accept':'application/json'}});
+      const text=await r.text();
+      if(!r.ok){last='HTTP '+r.status+' · '+u;continue}
+      let d; try{d=JSON.parse(text)}catch(e){last='Ei JSONia · '+u+' · '+text.slice(0,80);continue}
+      return d;
+    }catch(e){last=String(e?.message||e)}
+  }
+  throw Error(last);
+}
 function statSource(p){return p?.stats||p?.statistics||p?.featuredStats?.regularSeason?.subSeason||p?.featuredStats?.regularSeason||p?.seasonTotals?.find?.(x=>x?.gameTypeId===2)||p}function stats(p,goalie=false){const s=statSource(p);if(goalie){const v=p?.savePctg??p?.savePercentage??s?.savePctg??s?.savePercentage;const gaa=p?.gaa??s?.gaa??s?.goalsAgainstAverage;return `SV% ${v==null?'—':(Number(v)<=1?Number(v).toFixed(3):Number(v).toFixed(3))} · GAA ${gaa==null?'—':Number(gaa).toFixed(2)}`}const pts=s?.points??p?.points,sog=s?.sog??s?.shots??p?.sog??p?.shots;return `PTS ${pts??'—'} · SOG ${sog??'—'}`}
 const arr=x=>Array.isArray(x)?x:[];
 function parts(x){return {forwards:arr(x?.forwards),defense:arr(x?.defensemen||x?.defense),goalies:arr(x?.goalies||x?.goaltenders)}}
