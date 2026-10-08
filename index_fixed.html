@@ -3569,9 +3569,11 @@ body.nhl-mode.nhl-match-open #nhlLivePanel{display:block!important}
 (()=>{
   const storageKey='otb_nhl_proxy_base';
   function base(){
-    const configured=(localStorage.getItem(storageKey)||'').trim().replace(/\/$/,'');
-    if(configured)return configured;
-    return 'https://otb-match-center-public.tzekki5.workers.dev/nhl-api';
+    let configured=(localStorage.getItem(storageKey)||'').trim().replace(/\/$/,'');
+    if(!configured)return 'https://otb-match-center-public.tzekki5.workers.dev/nhl-api';
+    configured=configured.replace(/\/v1$/,'');
+    if(!/\/nhl-api$/i.test(configured))configured += '/nhl-api';
+    return configured;
   }
   window.OTB_NHL_PROXY_FETCH=async(path)=>{
     const url=base()+'/v1'+path;
@@ -4115,7 +4117,7 @@ body.nhl-mode .v55-game.active{outline:2px solid #38bdf8!important;outline-offse
   window.__otbNhlV68='per-day-schedule-fetch';
 })();
 </script>
-<script>window.OTB_BUILD_VERSION="V77-NHL-ROSTER-DEBUG";</script></body></html>
+<script>window.OTB_BUILD_VERSION="V79-NHL-FINAL-ROUTING-FIX";</script></body></html>
 
 <style id="otb-v71-teams-css">
 /* V71 — NHL Joukkueet: full-season player statistics */
