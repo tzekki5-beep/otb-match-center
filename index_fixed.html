@@ -3701,12 +3701,14 @@ async function loadGame(g){
 
 function findUnit(root,keys){if(!root||typeof root!=='object')return null;const q=[root],seen=new Set();while(q.length){const x=q.shift();if(!x||typeof x!=='object'||seen.has(x))continue;seen.add(x);for(const k of Object.keys(x)){const v=x[k],lk=k.toLowerCase();if(keys.some(z=>lk===z||lk.includes(z))&&Array.isArray(v)&&v.length>=3)return v;if(v&&typeof v==='object')q.push(v)}}return null}
 function unit(d,u){const f=arr(d?.forwards);if(u==='pp1')return findUnit(S.data?.landing,['powerplay1','powerplayunit1','pp1'])||f.slice(0,5);if(u==='pp2')return findUnit(S.data?.landing,['powerplay2','powerplayunit2','pp2'])||f.slice(5,10);const x=findUnit(S.data?.landing,[`line${u}`,`forwardline${u}`,`line_${u}`]);if(x)return x;return f.slice((Number(u)-1)*3,(Number(u)-1)*3+3)}
+function findPair(root,keys){if(!root||typeof root!=='object')return null;const q=[root],seen=new Set();while(q.length){const x=q.shift();if(!x||typeof x!=='object'||seen.has(x))continue;seen.add(x);for(const k of Object.keys(x)){const v=x[k],lk=k.toLowerCase();if(keys.some(z=>lk===z||lk.includes(z))&&Array.isArray(v)&&v.length>=2){const ds=v.filter(p=>['D','LD','RD'].includes(String(pos(p)).toUpperCase()));if(ds.length>=2)return ds.slice(0,2);if(v.length===2)return v.slice(0,2)}if(v&&typeof v==='object')q.push(v)}}return null}
+function defenseUnit(d,u){const ds=arr(d?.defense);const n=u==='pp1'?0:u==='pp2'?1:Math.max(0,Number(u)-1);const keys=u==='pp1'?['powerplay1','powerplayunit1','pp1']:u==='pp2'?['powerplay2','powerplayunit2','pp2']:[`defensepair${u}`,`defensepair_${u}`,`defenseunit${u}`,`defenseline${u}`,`defense_line_${u}`,`pair${u}`];const fromLanding=findPair(S.data?.landing,keys);if(fromLanding?.length>=2)return fromLanding;return ds.slice(n*2,n*2+2).length>=2?ds.slice(n*2,n*2+2):ds.slice(0,2)}
 const enrich=a=>a.map(p=>S.profiles.get(String(pid(p)))||p);
 async function hydrate(a){const todo=[...new Map(a.filter(p=>pid(p)&&!head(p)).map(p=>[String(pid(p)),p])).values()];for(let i=0;i<todo.length;i+=6){const got=await Promise.all(todo.slice(i,i+6).map(async p=>{try{return await api('/player/'+pid(p)+'/landing')}catch{return null}}));got.filter(Boolean).forEach(x=>{const p=x?.player||x;if(pid(p))S.profiles.set(String(pid(p)),p)})}}
 function slot(side,c,p,g=false){const e=$(`.slot.${side}.${c}`);if(!e)return;const f=e.querySelector('.nhl-face'),n=e.querySelector('.nhl-name'),r=e.querySelector('.nhl-role'),m=e.querySelector('.nhl-mini');e.dataset.playerId=p?String(pid(p)||''):'';e.dataset.playerName=p?name(p):'';e.classList.toggle('nhl-clickable-player',!!p);n.textContent=p?name(p):(g?'Maalivahti':'—');r.textContent=p?(pos(p)||(g?'MV':'')):(g?'MV':'');m.textContent=p?stats(p,g):(g?'SV% —':'PTS — · SOG —');if(f){const h=head(p);f.style.backgroundImage=h?`url("${h}")`:'';f.style.backgroundColor=h?'transparent':'#dbe3e8'}}
 function card(p,g=false){if(!p)return '';const h=head(p),num=p?.sweaterNumber??p?.jerseyNumber??'',id=pid(p)||'';return `<div class="nhl-player-card nhl-clickable-player" data-player-id="${esc(id)}" data-player-name="${esc(name(p))}"><img src="${esc(h)}" alt="" onerror="this.style.visibility='hidden'"><div><div class="nhl-player-name"><span class="nhl-player-num">${esc(num)}</span>${esc(name(p))}</div><div class="nhl-player-meta">${esc(pos(p)||(g?'MV':''))} · ${esc(stats(p,g))}</div></div></div>`}
-function panel(side,d,t){const e=$(side==='home'?'#nhlHomePlayers':'#nhlAwayPlayers');if(!e)return;const fs=enrich(unit(d,S.unit)).slice(0,3),ds=enrich(arr(d.defense)).slice(0,2),g=enrich(arr(d.goalies)).slice(0,1)[0];const err=S.data?.errors?.[side];e.innerHTML=`<div class="nhl-panel-head"><img src="${esc(logo(t))}" alt=""><div><b>${esc(tn(t))}</b><small>${esc(ab(t))}</small></div></div><div class="nhl-roster-source">Ennakoitu kokoonpano · NHL-rosteri</div>${err&&!fs.length&&!ds.length&&!g?`<div class="nhl-empty-note" style="color:#ffb6b6">Rosterihaku epäonnistui: ${esc(err)}</div>`:''}<div class="nhl-player-group-title">Hyökkääjät</div>${fs.map(p=>card(p)).join('')||'<div class="nhl-empty-note">Hyökkääjiä ei vielä saatavilla.</div>'}<div class="nhl-player-group-title">Puolustajat</div>${ds.map(p=>card(p)).join('')||'<div class="nhl-empty-note">Puolustajia ei vielä saatavilla.</div>'}<div class="nhl-player-group-title">Maalivahti</div>${card(g,true)||'<div class="nhl-empty-note">Maalivahtia ei vielä saatavilla.</div>'}`}
-async function render(){if(!S.game||!S.data)return;const a=S.data.away,h=S.data.home;const af=unit(a,S.unit),hf=unit(h,S.unit);await hydrate([...af.slice(0,3),...hf.slice(0,3),...a.defense.slice(0,2),...h.defense.slice(0,2),...a.goalies.slice(0,1),...h.goalies.slice(0,1)]);panel('home',h,S.game.homeTeam);panel('away',a,S.game.awayTeam);const draw=(side,d)=>{const f=enrich(unit(d,S.unit)),ds=enrich(arr(d.defense)),gs=enrich(arr(d.goalies));slot(side,'goalie',gs[0],true);slot(side,'d1',ds[0]);slot(side,'d2',ds[1]);slot(side,'f1',f[0]);slot(side,'f2',f[1]);slot(side,'f3',f[2])};draw('home',h);draw('away',a)}
+function panel(side,d,t){const e=$(side==='home'?'#nhlHomePlayers':'#nhlAwayPlayers');if(!e)return;const fs=enrich(unit(d,S.unit)).slice(0,3),ds=enrich(defenseUnit(d,S.unit)).slice(0,2),g=enrich(arr(d.goalies)).slice(0,1)[0];const err=S.data?.errors?.[side];e.innerHTML=`<div class="nhl-panel-head"><img src="${esc(logo(t))}" alt=""><div><b>${esc(tn(t))}</b><small>${esc(ab(t))}</small></div></div><div class="nhl-roster-source">Ennakoitu kokoonpano · NHL-rosteri</div>${err&&!fs.length&&!ds.length&&!g?`<div class="nhl-empty-note" style="color:#ffb6b6">Rosterihaku epäonnistui: ${esc(err)}</div>`:''}<div class="nhl-player-group-title">Hyökkääjät</div>${fs.map(p=>card(p)).join('')||'<div class="nhl-empty-note">Hyökkääjiä ei vielä saatavilla.</div>'}<div class="nhl-player-group-title">Puolustajat</div>${ds.map(p=>card(p)).join('')||'<div class="nhl-empty-note">Puolustajia ei vielä saatavilla.</div>'}<div class="nhl-player-group-title">Maalivahti</div>${card(g,true)||'<div class="nhl-empty-note">Maalivahtia ei vielä saatavilla.</div>'}`}
+async function render(){if(!S.game||!S.data)return;const a=S.data.away,h=S.data.home;const af=unit(a,S.unit),hf=unit(h,S.unit);await hydrate([...af.slice(0,3),...hf.slice(0,3),...defenseUnit(a,S.unit),...defenseUnit(h,S.unit),...a.goalies.slice(0,1),...h.goalies.slice(0,1)]);panel('home',h,S.game.homeTeam);panel('away',a,S.game.awayTeam);const hl=document.querySelector('.nhl-zone-logo.home'),al=document.querySelector('.nhl-zone-logo.away'),hb=document.querySelector('.nhl-zone-badge.home'),abg=document.querySelector('.nhl-zone-badge.away');if(hl)hl.style.backgroundImage=`url("${logo(S.game.homeTeam)}")`;if(al)al.style.backgroundImage=`url("${logo(S.game.awayTeam)}")`;if(hb)hb.src=logo(S.game.homeTeam);if(abg)abg.src=logo(S.game.awayTeam);const draw=(side,d)=>{const f=enrich(unit(d,S.unit)),ds=enrich(defenseUnit(d,S.unit)),gs=enrich(arr(d.goalies));slot(side,'goalie',gs[0],true);slot(side,'d1',ds[0]);slot(side,'d2',ds[1]);slot(side,'f1',f[0]);slot(side,'f2',f[1]);slot(side,'f3',f[2])};draw('home',h);draw('away',a)}
 async function select(g){S.game=g;try{S.data=await loadGame(g);await render()}catch(e){console.warn('OTB NHL v46',e);S.data={away:{forwards:[],defense:[],goalies:[]},home:{forwards:[],defense:[],goalies:[]},errors:{away:String(e?.message||e),home:String(e?.message||e)}};await render()}}
 async function openNhlPlayer(id,nameText){
   if(!id)return;
@@ -3895,36 +3897,48 @@ function norm(g,forcedDay=null){return g?.id&&g?.startTimeUTC?{...g,dateKey:loca
 async function schedule(){
  const today=localKey(new Date());
  const out=new Map();
- const consume=(j,forcedDay=null)=>{for(const g of [...arr(j?.games),...arr(j?.gameWeek?.flatMap?.(x=>x?.games))]){const n=norm(g,forcedDay);if(n)out.set(String(n.id),n)}};
  const visible=Array.from({length:8},(_,i)=>add(today,i));
- // Do not fire eight NHL requests at once. The NHL endpoint can throttle/abort
- // parallel browser requests, which previously left only the first day's games.
- // Fetch each schedule date sequentially and retry failed dates once.
- for(const d of visible){
+ // Suomen päivämäärä ja NHL:n kalenteripäivä eivät ole sama asia.
+ // Esimerkiksi NHL 8.10. klo 19 ET alkaa Suomessa 9.10. klo 02.
+ // Haetaan siksi myös näkyvän jakson edeltävä NHL-kalenteripäivä ja
+ // käytetään vain pelin startTimeUTC:stä laskettua Suomen päivää.
+ const sourceDays=Array.from(new Set([add(today,-1),...visible]));
+ const consume=(j)=>{
+   for(const g of arr(j?.games)){
+     if(!g?.id||!g?.startTimeUTC)continue;
+     const dateKey=localKey(new Date(g.startTimeUTC));
+     if(!visible.includes(dateKey))continue;
+     out.set(String(g.id),{...g,dateKey});
+   }
+ };
+ for(const sourceDay of sourceDays){
    let ok=false;
    for(let attempt=0;attempt<2 && !ok;attempt++){
-     try{consume(await fetchJson('/schedule/'+d,attempt?22000:15000),d);ok=true}
-     catch(e){console.warn('NHL schedule '+d+' attempt '+(attempt+1),e);if(attempt===0)await new Promise(r=>setTimeout(r,350))}
+     try{consume(await fetchJson('/schedule/'+sourceDay,attempt?22000:15000));ok=true}
+     catch(e){console.warn('NHL schedule '+sourceDay+' attempt '+(attempt+1),e);if(attempt===0)await new Promise(r=>setTimeout(r,350))}
    }
  }
- // Fill any gaps with ESPN, one date at a time. NHL games played on an ET date
- // can fall on the following Finnish calendar date, so we normalize by startTimeUTC.
+ // ESPN only as fallback. Also query the previous ET date because North
+ // American evening games can belong to the next Finnish calendar day.
  for(const d of visible){
-   const has=outHasFinnishDay(d,out);
-   if(has)continue;
-   try{
-     const u='https://site.api.espn.com/apis/site/v2/sports/hockey/nhl/scoreboard?dates='+d.replaceAll('-','');
-     const r=await fetch(u,{cache:'no-store'}); if(!r.ok)continue;
-     const j=await r.json();
-     for(const e of arr(j?.events)){
-       const c=e?.competitions?.[0], comps=arr(c?.competitors);if(!c||comps.length<2)continue;
-       const home=comps.find(x=>x.homeAway==='home'), away=comps.find(x=>x.homeAway==='away'); if(!home||!away)continue;
-       const h={abbrev:home.team?.abbreviation,name:{default:home.team?.displayName||home.team?.shortDisplayName||'—'},logo:home.team?.logo};
-       const a={abbrev:away.team?.abbreviation,name:{default:away.team?.displayName||away.team?.shortDisplayName||'—'},logo:away.team?.logo};
-       const g={id:e.id,startTimeUTC:c.date,gameState:e?.status?.type?.state==='in'?'LIVE':e?.status?.type?.completed?'FINAL':'FUT',homeTeam:h,awayTeam:a};
-       const n=norm(g,d);if(n)out.set('espn-'+e.id,n);
-     }
-   }catch(e){console.warn('NHL ESPN fallback '+d,e)}
+   if(outHasFinnishDay(d,out))continue;
+   for(const queryDay of [add(d,-1),d]){
+     try{
+       const u='https://site.api.espn.com/apis/site/v2/sports/hockey/nhl/scoreboard?dates='+queryDay.replaceAll('-','');
+       const r=await fetch(u,{cache:'no-store'}); if(!r.ok)continue;
+       const j=await r.json();
+       for(const e of arr(j?.events)){
+         const c=e?.competitions?.[0], comps=arr(c?.competitors);if(!c||comps.length<2)continue;
+         const home=comps.find(x=>x.homeAway==='home'), away=comps.find(x=>x.homeAway==='away'); if(!home||!away)continue;
+         const h={abbrev:home.team?.abbreviation,name:{default:home.team?.displayName||home.team?.shortDisplayName||'—'},logo:home.team?.logo};
+         const a={abbrev:away.team?.abbreviation,name:{default:away.team?.displayName||away.team?.shortDisplayName||'—'},logo:away.team?.logo};
+         const g={id:e.id,startTimeUTC:c.date,gameState:e?.status?.type?.state==='in'?'LIVE':e?.status?.type?.completed?'FINAL':'FUT',homeTeam:h,awayTeam:a};
+         const dateKey=localKey(new Date(g.startTimeUTC));
+         if(dateKey===d)out.set('espn-'+e.id,{...g,dateKey});
+       }
+       if(outHasFinnishDay(d,out))break;
+     }catch(e){console.warn('NHL ESPN fallback '+d+' from '+queryDay,e)}
+   }
  }
  return [...out.values()].sort((a,b)=>new Date(a.startTimeUTC)-new Date(b.startTimeUTC));
 }
@@ -4151,7 +4165,7 @@ body.nhl-mode .v55-game.active{outline:2px solid #38bdf8!important;outline-offse
   window.__otbNhlV68='per-day-schedule-fetch';
 })();
 </script>
-<script>window.OTB_BUILD_VERSION="V79-NHL-FINAL-ROUTING-FIX";</script>\n<script id="otb-nhl-cachefix-v83">\n(()=>{\n  'use strict';\n  const PROXY='https://otb-match-center-public.tzekki5.workers.dev';\n  const cleanPath=path=>{let x=String(path||''); if(!x.startsWith('/')) x='/'+x; return x};\n  async function fetchNHL(path){\n    const p=cleanPath(path);\n    const stamp=Date.now().toString(36)+'-'+Math.random().toString(36).slice(2,8);\n    const urls=[\n      PROXY+'/nhl-api/v1'+p+'?otb_nhl_cache='+stamp,\n      PROXY+'/v1'+p+'?otb_nhl_cache='+stamp\n    ];\n    let last='';\n    for(const url of urls){\n      try{\n        const r=await fetch(url,{method:'GET',cache:'no-store',headers:{'Accept':'application/json'}});\n        const t=(await r.text()).replace(/^\\uFEFF/,'').trim();\n        if(!r.ok){last='HTTP '+r.status+' · '+url;continue}\n        if(/^<!doctype html/i.test(t)||/^<html/i.test(t)||/OTB MATCH CENTER/i.test(t.slice(0,500))){\n          last='HTML-vastaus · '+url;continue\n        }\n        try{return JSON.parse(t)}catch(e){last='Virheellinen JSON · '+url+' · '+t.slice(0,120);continue}\n      }catch(e){last=String(e?.message||e)}\n    }\n    throw Error('NHL API ei palauttanut JSONia. '+last);\n  }\n  window.OTB_NHL_PROXY_FETCH=fetchNHL;\n  window.OTB_NHL_PROXY_BASE=PROXY+'/nhl-api/v1';\n})();\n</script>\n</body></html>
+<script>window.OTB_BUILD_VERSION="V79-NHL-FINAL-ROUTING-FIX";</script></body></html>
 
 <style id="otb-v71-teams-css">
 /* V71 — NHL Joukkueet: full-season player statistics */
