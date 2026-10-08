@@ -3763,7 +3763,7 @@ const localTime=u=>new Intl.DateTimeFormat('fi-FI',{timeZone:TZ,hour:'2-digit',m
 const add=(k,n)=>{const d=new Date(k+'T12:00:00Z');d.setUTCDate(d.getUTCDate()+n);return localKey(d)};
 const state={days:[],byDay:new Map(),day:null,offset:0,selected:null,cache:new Map()};
 async function fetchJson(path,ms=15000){const c=new AbortController();const t=setTimeout(()=>c.abort(),ms);try{const r=await fetch(API+path,{cache:'no-store',signal:c.signal});if(!r.ok)throw Error('HTTP '+r.status);return await r.json()}finally{clearTimeout(t)}}
-function norm(g,forcedDay=null){return g?.id&&g?.startTimeUTC?{...g,dateKey:String(g?.gameDate||forcedDay||localKey(new Date(g.startTimeUTC)))}:null}
+function norm(g,forcedDay=null){return g?.id&&g?.startTimeUTC?{...g,dateKey:localKey(new Date(g.startTimeUTC))}:null}
 async function schedule(){
  const today=localKey(new Date());
  const out=new Map();
