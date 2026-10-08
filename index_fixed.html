@@ -2,7 +2,7 @@
 <html lang="fi">
 <head>
 <meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
-<meta name="theme-color" content="#071120"><title>OTB MATCH CENTER V81 — NHL Final Dashboard</title><meta name="otb-version" content="V21-NHL-FINAL-DASHBOARD">
+<meta name="theme-color" content="#071120"><title>OTB MATCH CENTER V82 — NHL Final Dashboard</title><meta name="otb-version" content="V21-NHL-FINAL-DASHBOARD">
 <style>
 :root{--bg:#071120;--card:#0d1a2e;--line:#29405f;--txt:#edf4ff;--muted:#93a8c5;--accent:#4389c8;--good:#39c98b;--bad:#ff7385}
 *{box-sizing:border-box}body{margin:0;background:var(--bg);color:var(--txt);font-family:system-ui,-apple-system,Segoe UI,Roboto,sans-serif}header{padding:18px 15px 13px;background:#081323;position:sticky;top:0;z-index:5;border-bottom:1px solid var(--line)}h1{font-size:27px;margin:0}.sub{color:var(--muted);margin-top:4px;line-height:1.35}.controls{display:flex;gap:8px;flex-wrap:wrap;margin-top:14px}button,input[type=date],input[type=password]{font:inherit;background:#102039;color:var(--txt);border:1px solid #2b4565;border-radius:12px;padding:10px 13px}button.active{background:var(--accent)}main{max-width:1150px;margin:auto;padding:15px}.status{color:var(--muted);margin-bottom:12px}.err{background:#391722;color:#ffbcc6;border:1px solid #713544;padding:12px;border-radius:12px}.setup{background:#0d1a2e;border:1px solid #29405f;border-radius:16px;padding:15px;margin-bottom:14px}.setup input{width:100%;margin:8px 0}.setup .row{display:flex;gap:8px}.setup .row button{flex:1}.ok{color:var(--good)}
@@ -1056,8 +1056,8 @@ body.nhl-mode.nhl-match-open #nhlLivePanel{display:none!important}
 }
 </style>
 
-<style id="otb-v81-final-roster-ui">
-/* V81 final NHL roster sizing */
+<style id="otb-v82-nhl-ui-only">
+/* V82: UI ONLY. V80 API/proxy code intentionally untouched. */
 .otb-stat-table td.name,.otb-stat-table th.name{min-width:340px!important;width:340px!important}
 .otb-stat-table tbody tr{height:72px!important}
 .otb-player-cell{display:flex!important;align-items:center!important;gap:12px!important;min-width:315px!important}
@@ -3602,46 +3602,49 @@ body.nhl-mode.nhl-match-open #nhlLivePanel{display:block!important}
 @media(max-width:980px){body.nhl-mode .nhl-dashboard-grid{grid-template-columns:1fr!important}.nhl-rink-wrap{order:2!important}.nhl-team-panel.home{order:1!important}.nhl-team-panel.away{order:3!important}.nhl-rink{max-width:790px!important}}
 @media(max-width:700px){body.nhl-mode #otbNhlGamesV43{grid-template-columns:repeat(2,minmax(0,1fr))!important}.nhl-rink{height:650px!important}.nhl-rink .slot{width:92px!important}.nhl-rink .slot .nhl-face{width:48px!important;height:48px!important}.nhl-rink .slot.goalie .nhl-face{width:54px!important;height:54px!important}.nhl-rink .slot .nhl-name{font-size:9px!important;max-width:90px!important}.nhl-team-panel{min-height:0!important}}
 </style>
-<script id="otb-v81-proxy-config">
+<script id="otb-v74-proxy-config">
 (()=>{
-  // V81: NHL proxy is intentionally hard-coded.
-  // Old localStorage proxy settings cannot override this route.
-  const NHL_PROXY='https://otb-match-center-public.tzekki5.workers.dev/nhl-api/v1';
-
-  try{ localStorage.removeItem('otb_nhl_proxy_base'); }catch(e){}
-
+  const FIXED_NHL_PROXY='https://otb-match-center-public.tzekki5.workers.dev/nhl-api';
+  function base(){
+    try{localStorage.removeItem('otb_nhl_proxy_base')}catch(e){}
+    return FIXED_NHL_PROXY;
+  }
   window.OTB_NHL_PROXY_FETCH=async(path)=>{
-    const cleanPath=String(path||'').startsWith('/') ? String(path) : '/'+String(path);
-    const url=NHL_PROXY+cleanPath;
+    const url=base()+'/v1'+path;
     const ctrl=new AbortController();
-    const timer=setTimeout(()=>ctrl.abort(),12000);
+    const timer=setTimeout(()=>ctrl.abort(),9000);
     try{
-      const res=await fetch(url,{
-        cache:'no-store',
-        signal:ctrl.signal,
-        headers:{'Accept':'application/json'}
-      });
+      const res=await fetch(url,{cache:'no-store',signal:ctrl.signal,headers:{'Accept':'application/json, text/plain, */*'}});
       const text=await res.text();
       const clean=text.replace(/^\uFEFF/,'').trim();
       let data=null;
       try{data=JSON.parse(clean)}catch(e){
-        const preview=clean.slice(0,240).replace(/\s+/g,' ');
-        throw Error('NHL-välitys palautti epäkelvon JSON-vastauksen · HTTP '+res.status+' · '+cleanPath+' · '+preview);
+        const preview=clean.slice(0,220).replace(/\s+/g,' ');
+        throw Error('NHL-välitys palautti epäkelvon JSON-vastauksen · HTTP '+res.status+' · '+path+' · '+preview);
       }
-      if(!res.ok){
-        throw Error('NHL-välitys HTTP '+res.status+' · '+cleanPath+' · '+(data?.error?.message||data?.error||data?.message||''));
-      }
-      if(data?.error && data?.forwards==null && data?.goalies==null && data?.skaters==null){
-        throw Error('NHL-välitys: '+(data.error.message||data.error));
-      }
+      if(!res.ok)throw Error('NHL-välitys HTTP '+res.status+' · '+path+' · '+(data?.error||data?.message||''));
+      if(data?.error && data?.forwards==null && data?.goalies==null && data?.skaters==null)throw Error('NHL-välitys: '+(data.error.message||data.error));
       return data;
     }catch(e){
-      if(e?.name==='AbortError') throw Error('NHL-välitys aikakatkaisi 12 sekunnissa · '+cleanPath);
+      if(e?.name==='AbortError')throw Error('NHL-välitys aikakatkaisi 9 sekunnissa · '+path);
       throw e;
-    }finally{
-      clearTimeout(timer);
-    }
+    }finally{clearTimeout(timer)}
   };
+  function addButton(){
+    if(document.getElementById('otbNhlProxySettings'))return;
+    const b=document.createElement('button');b.id='otbNhlProxySettings';b.type='button';b.textContent='⚙ NHL API';
+    b.style.cssText='position:fixed;right:12px;bottom:12px;z-index:999999;background:#074263;color:white;border:1px solid #3da9dd;border-radius:8px;padding:9px 13px;cursor:pointer;font-weight:700';
+    b.onclick=()=>{
+      const value=prompt('Cloudflare NHL Worker -osoite (esim. https://otb-nhl.username.workers.dev/nhl-api). Tyhjennä käyttääksesi saman verkkotunnuksen /nhl-api-reittiä.',localStorage.getItem(storageKey)||'');
+      if(value===null)return;
+      const v=value.trim().replace(/\/$/,'');
+      if(v&&!/^https:\/\//i.test(v)){alert('Anna HTTPS-osoite.');return}
+      if(v)localStorage.setItem(storageKey,v);else localStorage.removeItem(storageKey);
+      alert('NHL API -osoite tallennettu. Päivitä sivu.');
+    };
+    document.body.appendChild(b);
+  }
+  if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',addButton);else addButton();
 })();
 </script>
 <script id="otb-nhl-v46-reference-engine">
