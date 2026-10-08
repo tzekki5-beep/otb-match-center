@@ -3661,7 +3661,16 @@ const ab=t=>String(t?.abbrev||t?.triCode||t?.abbreviation||'').toUpperCase();
 const tn=t=>t?.name?.default||t?.commonName?.default||t?.abbrev||ab(t);
 const logo=t=>t?.logo||`https://assets.nhle.com/logos/nhl/svg/${ab(t)}_light.svg`;
 const S={unit:'1',game:null,data:null,cache:new Map(),profiles:new Map()};
-async function api(path){return window.OTB_NHL_PROXY_FETCH(path)}
+async function api(path){
+  try{return await window.OTB_NHL_PROXY_FETCH(path)}catch(proxyErr){
+    // Worker/proxy may temporarily return the app HTML instead of JSON.
+    // Fall back only for the failed request; the Worker remains the primary route.
+    const r=await fetch('https://api-web.nhle.com/v1'+path,{cache:'no-store',headers:{'Accept':'application/json'}});
+    const text=await r.text();
+    if(!r.ok)throw proxyErr;
+    try{return JSON.parse(text.replace(/^\uFEFF/,'').trim())}catch(e){throw proxyErr}
+  }
+}
 function statSource(p){return p?.stats||p?.statistics||p?.featuredStats?.regularSeason?.subSeason||p?.featuredStats?.regularSeason||p?.seasonTotals?.find?.(x=>x?.gameTypeId===2)||p}function stats(p,goalie=false){const s=statSource(p);if(goalie){const v=p?.savePctg??p?.savePercentage??s?.savePctg??s?.savePercentage;const gaa=p?.gaa??s?.gaa??s?.goalsAgainstAverage;return `SV% ${v==null?'—':(Number(v)<=1?Number(v).toFixed(3):Number(v).toFixed(3))} · GAA ${gaa==null?'—':Number(gaa).toFixed(2)}`}const pts=s?.points??p?.points,sog=s?.sog??s?.shots??p?.sog??p?.shots;return `PTS ${pts??'—'} · SOG ${sog??'—'}`}
 const arr=x=>Array.isArray(x)?x:[];
 function parts(x){return {forwards:arr(x?.forwards),defense:arr(x?.defensemen||x?.defense),goalies:arr(x?.goalies||x?.goaltenders)}}
@@ -4205,7 +4214,16 @@ const pos=p=>p?.positionCode||p?.position||'';
 const n=(v,dec=0)=>v==null||v===''?'—':(Number.isFinite(Number(v))?Number(v).toFixed(dec):String(v));
 const toi=v=>{if(v==null||v==='')return '—';if(typeof v==='number')return `${Math.floor(v/60)}:${String(Math.round(v%60)).padStart(2,'0')}`;return String(v)};
 const head=p=>p?.headshot||p?.headShot||p?.image||p?.imageUrl||'';
-async function api(path){return window.OTB_NHL_PROXY_FETCH(path)}
+async function api(path){
+  try{return await window.OTB_NHL_PROXY_FETCH(path)}catch(proxyErr){
+    // Worker/proxy may temporarily return the app HTML instead of JSON.
+    // Fall back only for the failed request; the Worker remains the primary route.
+    const r=await fetch('https://api-web.nhle.com/v1'+path,{cache:'no-store',headers:{'Accept':'application/json'}});
+    const text=await r.text();
+    if(!r.ok)throw proxyErr;
+    try{return JSON.parse(text.replace(/^\uFEFF/,'').trim())}catch(e){throw proxyErr}
+  }
+}
 function pick(o,...keys){for(const k of keys){if(o?.[k]!=null)return o[k]}return null}
 function mapSkater(p){return {raw:p,id:pid(p),name:name(p),number:num(p),pos:pos(p),GP:pick(p,'gamesPlayed','gp'),G:pick(p,'goals','g'),A:pick(p,'assists','a'),P:pick(p,'points','p'),plusMinus:pick(p,'plusMinus','plusMinusTotal'),PIM:pick(p,'penaltyMinutes','pim'),TOI:pick(p,'timeOnIcePerGame','toiPerGame','timeOnIce'),shifts:pick(p,'shiftsPerGame','shifts'),PPG:pick(p,'ppGoals','powerPlayGoals','ppg'),PPP:pick(p,'ppPoints','powerPlayPoints','ppp'),S:pick(p,'shots','s'),SOG:pick(p,'shotsPerGame','sogPerGame'),SP:pick(p,'shootingPctg','shootingPercentage','shootingPct'),BLK:pick(p,'blockedShots','blocks','blocked'),HITS:pick(p,'hits'),GV:pick(p,'giveaways','gv'),TK:pick(p,'takeaways','tk'),FOW:pick(p,'faceoffWinPctg','faceoffPctg','faceoffWinPct'),head:head(p)}}
 function mapGoalie(p){return {raw:p,id:pid(p),name:name(p),number:num(p),GP:pick(p,'gamesPlayed','gp'),GS:pick(p,'gamesStarted','gs'),W:pick(p,'wins','w'),L:pick(p,'losses','l'),OTL:pick(p,'otLosses','otl'),SA:pick(p,'shotsAgainst','sa'),SV:pick(p,'saves','sv'),GA:pick(p,'goalsAgainst','ga'),SVP:pick(p,'savePct','savePctg','savePercentage'),GAA:pick(p,'goalsAgainstAverage','gaa'),SO:pick(p,'shutouts','so'),G:pick(p,'goals','g'),A:pick(p,'assists','a'),TOI:pick(p,'timeOnIce','toi'),head:head(p)}}
