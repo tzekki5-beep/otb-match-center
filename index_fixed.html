@@ -3571,18 +3571,24 @@ body.nhl-mode.nhl-match-open #nhlLivePanel{display:block!important}
   function base(){
     const configured=(localStorage.getItem(storageKey)||'').trim().replace(/\/$/,'');
     if(configured)return configured;
-    if(location.protocol==='https:'||location.protocol==='http:')return location.origin+'/nhl-api';
-    throw Error('NHL-välityspalvelun osoite puuttuu. Aseta Cloudflare Worker -osoite NHL API -painikkeesta.');
+    return 'https://otb-match-center-public.tzekki5.workers.dev/nhl-api';
   }
   window.OTB_NHL_PROXY_FETCH=async(path)=>{
     const url=base()+'/v1'+path;
     const ctrl=new AbortController();
     const timer=setTimeout(()=>ctrl.abort(),9000);
     try{
-      const res=await fetch(url,{cache:'no-store',signal:ctrl.signal,headers:{'Accept':'application/json'}});
+      const res=await fetch(url,{cache:'no-store',signal:ctrl.signal,headers:{'Accept':'application/json, text/plain, */*'}});
       const text=await res.text();
-      if(!res.ok)throw Error('NHL-välitys HTTP '+res.status+' · '+path+' · '+text.slice(0,180));
-      try{return JSON.parse(text)}catch(e){throw Error('NHL-välitys palautti epäkelvon JSON-vastauksen · '+path)}
+      const clean=text.replace(/^\uFEFF/,'').trim();
+      let data=null;
+      try{data=JSON.parse(clean)}catch(e){
+        const preview=clean.slice(0,220).replace(/\s+/g,' ');
+        throw Error('NHL-välitys palautti epäkelvon JSON-vastauksen · HTTP '+res.status+' · '+path+' · '+preview);
+      }
+      if(!res.ok)throw Error('NHL-välitys HTTP '+res.status+' · '+path+' · '+(data?.error||data?.message||''));
+      if(data?.error && data?.forwards==null && data?.goalies==null && data?.skaters==null)throw Error('NHL-välitys: '+(data.error.message||data.error));
+      return data;
     }catch(e){
       if(e?.name==='AbortError')throw Error('NHL-välitys aikakatkaisi 9 sekunnissa · '+path);
       throw e;
