@@ -3562,7 +3562,7 @@ body.nhl-mode.nhl-match-open #nhlLivePanel{display:block!important}
 <script id="otb-nhl-v46-reference-engine">
 (()=>{
 'use strict';
-const API='https://api-web.nhle.com/v1',TZ='Europe/Helsinki';
+const API='https://otb-match-center-public.tzekki5.workers.dev/nhl-api/v1',TZ='Europe/Helsinki';
 const $=s=>document.querySelector(s),$$=s=>[...document.querySelectorAll(s)];
 const esc=v=>String(v??'').replace(/[&<>"']/g,m=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[m]));
 const name=p=>p?.name?.default||p?.fullName||[p?.firstName?.default||p?.firstName,p?.lastName?.default||p?.lastName].filter(Boolean).join(' ')||'Pelaaja';
@@ -3751,7 +3751,7 @@ body.nhl-mode #nhlLivePanel{display:block!important;visibility:visible!important
 <script id="otb-nhl-v55-engine">
 (()=>{
 'use strict';
-const API='https://api-web.nhle.com/v1',TZ='Europe/Helsinki';
+const API='https://otb-match-center-public.tzekki5.workers.dev/nhl-api/v1',TZ='Europe/Helsinki';
 const $=id=>document.getElementById(id),arr=x=>Array.isArray(x)?x:[];
 const esc=v=>String(v??'').replace(/[&<>"']/g,m=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[m]));
 const ab=t=>String(t?.abbrev||t?.triCode||t?.abbreviation||'').toUpperCase();
@@ -3763,24 +3763,25 @@ const localTime=u=>new Intl.DateTimeFormat('fi-FI',{timeZone:TZ,hour:'2-digit',m
 const add=(k,n)=>{const d=new Date(k+'T12:00:00Z');d.setUTCDate(d.getUTCDate()+n);return localKey(d)};
 const state={days:[],byDay:new Map(),day:null,offset:0,selected:null,cache:new Map()};
 async function fetchJson(path,ms=15000){const c=new AbortController();const t=setTimeout(()=>c.abort(),ms);try{const r=await fetch(API+path,{cache:'no-store',signal:c.signal});if(!r.ok)throw Error('HTTP '+r.status);return await r.json()}finally{clearTimeout(t)}}
-function norm(g,forcedDay=null){return g?.id&&g?.startTimeUTC?{...g,dateKey:localKey(new Date(g.startTimeUTC))}:null}
+function norm(g,forcedDay=null){return g?.id&&g?.startTimeUTC?{...g,dateKey:String(g?.gameDate||forcedDay||localKey(new Date(g.startTimeUTC)))}:null}
 async function schedule(){
  const today=localKey(new Date());
  const out=new Map();
- const consume=(j)=>{for(const g of [...arr(j?.games),...arr(j?.gameWeek?.flatMap?.(x=>x?.games))]){const n=norm(g);if(n)out.set(String(n.id),n)}};
+ const consume=(j,forcedDay=null)=>{for(const g of [...arr(j?.games),...arr(j?.gameWeek?.flatMap?.(x=>x?.games))]){const n=norm(g,forcedDay);if(n)out.set(String(n.id),n)}};
  const visible=Array.from({length:8},(_,i)=>add(today,i));
- // Fetch the previous source date as well because NHL games played in North America
- // can start after midnight in Finland. Grouping is ALWAYS by Finnish local date.
- const sourceDays=Array.from({length:9},(_,i)=>add(today,i-1));
- for(const d of sourceDays){
+ // Do not fire eight NHL requests at once. The NHL endpoint can throttle/abort
+ // parallel browser requests, which previously left only the first day's games.
+ // Fetch each schedule date sequentially and retry failed dates once.
+ for(const d of visible){
    let ok=false;
    for(let attempt=0;attempt<2 && !ok;attempt++){
-     try{consume(await fetchJson('/schedule/'+d,attempt?22000:15000));ok=true}
+     try{consume(await fetchJson('/schedule/'+d,attempt?22000:15000),d);ok=true}
      catch(e){console.warn('NHL schedule '+d+' attempt '+(attempt+1),e);if(attempt===0)await new Promise(r=>setTimeout(r,350))}
    }
  }
- // Keep ESPN only as a last-resort fill for dates with no Finnish-local games.
- for(const d of sourceDays){
+ // Fill any gaps with ESPN, one date at a time. NHL games played on an ET date
+ // can fall on the following Finnish calendar date, so we normalize by startTimeUTC.
+ for(const d of visible){
    const has=outHasFinnishDay(d,out);
    if(has)continue;
    try{
@@ -3789,15 +3790,15 @@ async function schedule(){
      const j=await r.json();
      for(const e of arr(j?.events)){
        const c=e?.competitions?.[0], comps=arr(c?.competitors);if(!c||comps.length<2)continue;
-       const home=comps.find(x=>x.homeAway==='home'), away=comps.find(x=>x.homeAway==='away');if(!home||!away)continue;
+       const home=comps.find(x=>x.homeAway==='home'), away=comps.find(x=>x.homeAway==='away'); if(!home||!away)continue;
        const h={abbrev:home.team?.abbreviation,name:{default:home.team?.displayName||home.team?.shortDisplayName||'—'},logo:home.team?.logo};
        const a={abbrev:away.team?.abbreviation,name:{default:away.team?.displayName||away.team?.shortDisplayName||'—'},logo:away.team?.logo};
        const g={id:e.id,startTimeUTC:c.date,gameState:e?.status?.type?.state==='in'?'LIVE':e?.status?.type?.completed?'FINAL':'FUT',homeTeam:h,awayTeam:a};
-       const n=norm(g);if(n)out.set('espn-'+e.id,n);
+       const n=norm(g,d);if(n)out.set('espn-'+e.id,n);
      }
    }catch(e){console.warn('NHL ESPN fallback '+d,e)}
  }
- return [...out.values()].filter(g=>visible.includes(g.dateKey)).sort((a,b)=>new Date(a.startTimeUTC)-new Date(b.startTimeUTC));
+ return [...out.values()].sort((a,b)=>new Date(a.startTimeUTC)-new Date(b.startTimeUTC));
 }
 function outHasFinnishDay(day,out){for(const g of out.values())if(g?.dateKey===day)return true;return false;}
 function mount(){const p=$('nhlLivePanel');if(!p)return null;p.innerHTML=`<div id="otbNhlV55Schedule"><div id="otbNhlV55Days"></div><div id="otbNhlV55Games"><button class="v55-arrow" data-shift="-1" aria-label="Edellinen ottelu">‹</button><div class="v55-loading" style="grid-column:2/5">Haetaan NHL-otteluita…</div><button class="v55-arrow" data-shift="1" aria-label="Seuraava ottelu">›</button></div></div>`;return p}
@@ -4022,7 +4023,6 @@ body.nhl-mode .v55-game.active{outline:2px solid #38bdf8!important;outline-offse
   window.__otbNhlV68='per-day-schedule-fetch';
 })();
 </script>
-<script>window.OTB_BUILD_VERSION="V81-SAFE-FINNISH-SCHEDULE-TEAMS";</script>
 </body></html>
 
 <style id="otb-v71-teams-css">
