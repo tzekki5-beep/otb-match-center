@@ -3769,19 +3769,22 @@ async function schedule(){
  const out=new Map();
  const consume=(j,forcedDay=null)=>{for(const g of [...arr(j?.games),...arr(j?.gameWeek?.flatMap?.(x=>x?.games))]){const n=norm(g,forcedDay);if(n)out.set(String(n.id),n)}};
  const visible=Array.from({length:8},(_,i)=>add(today,i));
- // Do not fire eight NHL requests at once. The NHL endpoint can throttle/abort
- // parallel browser requests, which previously left only the first day's games.
- // Fetch each schedule date sequentially and retry failed dates once.
- for(const d of visible){
+ // NHL:n gameDate käyttää Pohjois-Amerikan pelipäivää. Suomen päivänäkymää varten
+ // haetaan myös eilinen lähdepäivä, koska sen myöhäisillan ottelut voivat alkaa
+ // Suomessa vasta seuraavan vuorokauden puolella (esim. 02:00).
+ const sourceDays=[add(today,-1),...visible];
+ // Do not fire requests in parallel: the NHL endpoint can throttle browser requests.
+ // Fetch each source date sequentially and retry failed dates once.
+ for(const d of sourceDays){
    let ok=false;
    for(let attempt=0;attempt<2 && !ok;attempt++){
      try{consume(await fetchJson('/schedule/'+d,attempt?22000:15000),d);ok=true}
      catch(e){console.warn('NHL schedule '+d+' attempt '+(attempt+1),e);if(attempt===0)await new Promise(r=>setTimeout(r,350))}
    }
  }
- // Fill any gaps with ESPN, one date at a time. NHL games played on an ET date
- // can fall on the following Finnish calendar date, so we normalize by startTimeUTC.
- for(const d of visible){
+ // Fill any gaps with ESPN, one source date at a time. The fallback also includes
+ // yesterday so late North-American games can land on today's Finnish date.
+ for(const d of sourceDays){
    const has=outHasFinnishDay(d,out);
    if(has)continue;
    try{
