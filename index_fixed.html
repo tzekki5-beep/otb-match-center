@@ -3536,8 +3536,8 @@ body.nhl-mode .nhl-empty-note{font-size:10px!important;color:#7898a9!important;p
 body.nhl-mode .nhl-rink-wrap{width:100%!important;padding:0!important;background:transparent!important;border:0!important;display:flex!important;justify-content:center!important;align-items:stretch!important}
 body.nhl-mode .nhl-rink{width:100%!important;height:668px!important;max-width:790px!important;border-radius:54px!important;border:5px solid #d8e0e4!important;background:#edf2f4!important;box-shadow:inset 0 0 0 2px #aab5ba,0 18px 45px #0009!important;overflow:hidden!important}
 body.nhl-mode .nhl-rink .slot{width:118px!important;z-index:30!important}
-body.nhl-mode .nhl-rink .slot .nhl-face{width:72px!important;height:72px!important;border:3px solid #2a89c4!important;background:#dbe3e8 center/cover no-repeat!important;box-shadow:0 4px 10px #0005!important}
-body.nhl-mode .nhl-rink .slot.goalie .nhl-face{width:78px!important;height:78px!important}
+body.nhl-mode .nhl-rink .slot .nhl-face{width:58px!important;height:58px!important;border:3px solid #2a89c4!important;background:#dbe3e8 center/cover no-repeat!important;box-shadow:0 4px 10px #0005!important}
+body.nhl-mode .nhl-rink .slot.goalie .nhl-face{width:64px!important;height:64px!important}
 body.nhl-mode .nhl-rink .slot.away .nhl-face{border-color:#c94b59!important}
 body.nhl-mode .nhl-rink .slot .nhl-name{font-size:11px!important;max-width:116px!important;padding:4px 8px!important;background:#06131d!important;color:#fff!important;border-radius:7px!important;font-weight:1000!important;white-space:nowrap!important;overflow:hidden!important;text-overflow:ellipsis!important;box-shadow:0 3px 7px #0008!important}
 body.nhl-mode .nhl-rink .slot .nhl-role{font-size:9px!important;color:#233944!important;font-weight:1000!important;margin-top:3px!important}
@@ -3581,13 +3581,7 @@ function merge(ro,bo){const r=parts(ro),b=parts(bo);const all=[...r.forwards,...
 async function loadGame(g){const k=String(g.id);if(S.cache.has(k))return S.cache.get(k);const [box,landing,ar,hr,pbp]=await Promise.allSettled([api('/gamecenter/'+encodeURIComponent(g.id)+'/boxscore'),api('/gamecenter/'+encodeURIComponent(g.id)+'/landing'),api('/roster/'+ab(g.awayTeam).toLowerCase()+'/current'),api('/roster/'+ab(g.homeTeam).toLowerCase()+'/current'),api('/gamecenter/'+encodeURIComponent(g.id)+'/play-by-play')]);const b=box.status==='fulfilled'?box.value:null,l=landing.status==='fulfilled'?landing.value:null,p=pbp.status==='fulfilled'?pbp.value:null;const spots=arr(p?.rosterSpots);const byTeam=(team)=>{const id=team?.id;const abbr=ab(team);const own=spots.filter(x=>x?.teamId===id||x?.teamAbbrev?.default===abbr||x?.teamAbbrev===abbr);return {forwards:own.filter(x=>['C','L','R','LW','RW','F'].includes(String(x?.positionCode||x?.position||'').toUpperCase())),defense:own.filter(x=>['D','LD','RD'].includes(String(x?.positionCode||x?.position||'').toUpperCase())),goalies:own.filter(x=>['G','GK'].includes(String(x?.positionCode||x?.position||'').toUpperCase()))}};const ar0=ar.status==='fulfilled'?ar.value:null,hr0=hr.status==='fulfilled'?hr.value:null;const a=merge(ar0?.forwards||ar0?.defensemen||ar0?.goalies?ar0:byTeam(g.awayTeam),b?.playerByGameStats?.awayTeam||{});const h=merge(hr0?.forwards||hr0?.defensemen||hr0?.goalies?hr0:byTeam(g.homeTeam),b?.playerByGameStats?.homeTeam||{});const d={away:a,home:h,box:b,landing:l,pbp:p};S.cache.set(k,d);return d}
 function findUnit(root,keys){if(!root||typeof root!=='object')return null;const q=[root],seen=new Set();while(q.length){const x=q.shift();if(!x||typeof x!=='object'||seen.has(x))continue;seen.add(x);for(const k of Object.keys(x)){const v=x[k],lk=k.toLowerCase();if(keys.some(z=>lk===z||lk.includes(z))&&Array.isArray(v)&&v.length>=3)return v;if(v&&typeof v==='object')q.push(v)}}return null}
 function unit(d,u){const f=arr(d?.forwards);if(u==='pp1')return findUnit(S.data?.landing,['powerplay1','powerplayunit1','pp1'])||f.slice(0,5);if(u==='pp2')return findUnit(S.data?.landing,['powerplay2','powerplayunit2','pp2'])||f.slice(5,10);const x=findUnit(S.data?.landing,[`line${u}`,`forwardline${u}`,`line_${u}`]);if(x)return x;return f.slice((Number(u)-1)*3,(Number(u)-1)*3+3)}
-function defenseUnit(d,u){
- const ds=arr(d?.defense);
- if(!ds.length)return [];
- const n=u==='pp1'?0:u==='pp2'?2:Math.max(0,(Number(u)-1)*2);
- const out=[ds[n%ds.length],ds[(n+1)%ds.length]].filter(Boolean);
- return out.length===2&&out[0]===out[1]&&ds.length>1?[ds[n%ds.length],ds[(n+2)%ds.length]]:out;
-}
+function defenseUnit(d,u){const ds=arr(d?.defense);if(!ds.length)return [];const n=u==='pp1'?0:u==='pp2'?2:Math.max(0,(Number(u)-1)*2);return [ds[n%ds.length],ds[(n+1)%ds.length]].filter(Boolean)}
 const enrich=a=>a.map(p=>S.profiles.get(String(pid(p)))||p);
 async function hydrate(a){const todo=[...new Map(a.filter(p=>pid(p)&&!head(p)).map(p=>[String(pid(p)),p])).values()];for(let i=0;i<todo.length;i+=6){const got=await Promise.all(todo.slice(i,i+6).map(async p=>{try{return await api('/player/'+pid(p)+'/landing')}catch{return null}}));got.filter(Boolean).forEach(x=>{const p=x?.player||x;if(pid(p))S.profiles.set(String(pid(p)),p)})}}
 function slot(side,c,p,g=false){const e=$(`.slot.${side}.${c}`);if(!e)return;const f=e.querySelector('.nhl-face'),n=e.querySelector('.nhl-name'),r=e.querySelector('.nhl-role'),m=e.querySelector('.nhl-mini');n.textContent=p?name(p):(g?'Maalivahti':'—');r.textContent=p?(pos(p)||(g?'MV':'')):(g?'MV':'');m.textContent=p?stats(p,g):(g?'SV% —':'PTS — · SOG —');e.dataset.playerId=p?String(pid(p)):'';e.dataset.playerName=p?name(p):'';e.dataset.team=side==='home'?tn(S.game?.homeTeam):tn(S.game?.awayTeam);if(f){const h=head(p);f.style.backgroundImage=h?`url("${h}")`:'';f.style.backgroundColor=h?'transparent':'#dbe3e8'}}
@@ -3758,7 +3752,7 @@ body.nhl-mode #nhlLivePanel{display:block!important;visibility:visible!important
 <script id="otb-nhl-v55-engine">
 (()=>{
 'use strict';
-const API='https://otb-match-center-public.tzekki5.workers.dev/nhl-api/v1',TZ='Europe/Helsinki';
+const API='https://api-web.nhle.com/v1',TZ='Europe/Helsinki';
 const $=id=>document.getElementById(id),arr=x=>Array.isArray(x)?x:[];
 const esc=v=>String(v??'').replace(/[&<>"']/g,m=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[m]));
 const ab=t=>String(t?.abbrev||t?.triCode||t?.abbreviation||'').toUpperCase();
@@ -3769,22 +3763,41 @@ const label=k=>{const [y,m,d]=k.split('-').map(Number);return new Intl.DateTimeF
 const localTime=u=>new Intl.DateTimeFormat('fi-FI',{timeZone:TZ,hour:'2-digit',minute:'2-digit',hour12:false}).format(new Date(u));
 const add=(k,n)=>{const d=new Date(k+'T12:00:00Z');d.setUTCDate(d.getUTCDate()+n);return localKey(d)};
 const state={days:[],byDay:new Map(),day:null,offset:0,selected:null,cache:new Map()};
-async function fetchJson(path,ms=15000){const c=new AbortController();const t=setTimeout(()=>c.abort(),ms);try{const r=await fetch(API+path,{cache:'no-store',signal:c.signal,headers:{'Accept':'application/json'}});if(!r.ok)throw Error('HTTP '+r.status);return await r.json()}finally{clearTimeout(t)}}
-function norm(g){return g?.id&&g?.startTimeUTC?{...g,dateKey:localKey(new Date(g.startTimeUTC))}:null}
+async function fetchJson(path,ms=15000){const c=new AbortController();const t=setTimeout(()=>c.abort(),ms);try{const r=await fetch(API+path,{cache:'no-store',signal:c.signal});if(!r.ok)throw Error('HTTP '+r.status);return await r.json()}finally{clearTimeout(t)}}
+function norm(g,forcedDay=null){return g?.id&&g?.startTimeUTC?{...g,dateKey:String(g?.gameDate||forcedDay||localKey(new Date(g.startTimeUTC)))}:null}
 async function schedule(){
  const today=localKey(new Date());
  const out=new Map();
  const consume=(j,forcedDay=null)=>{for(const g of [...arr(j?.games),...arr(j?.gameWeek?.flatMap?.(x=>x?.games))]){const n=norm(g,forcedDay);if(n)out.set(String(n.id),n)}};
  const visible=Array.from({length:8},(_,i)=>add(today,i));
- // Fetch the previous source day too: overnight NHL games belong to the next
- // Finnish calendar date when grouped by Europe/Helsinki local time.
- const sourceDays=Array.from({length:9},(_,i)=>add(today,i-1));
- for(const d of sourceDays){
+ // Do not fire eight NHL requests at once. The NHL endpoint can throttle/abort
+ // parallel browser requests, which previously left only the first day's games.
+ // Fetch each schedule date sequentially and retry failed dates once.
+ for(const d of visible){
    let ok=false;
    for(let attempt=0;attempt<2 && !ok;attempt++){
      try{consume(await fetchJson('/schedule/'+d,attempt?22000:15000),d);ok=true}
      catch(e){console.warn('NHL schedule '+d+' attempt '+(attempt+1),e);if(attempt===0)await new Promise(r=>setTimeout(r,350))}
    }
+ }
+ // Fill any gaps with ESPN, one date at a time. NHL games played on an ET date
+ // can fall on the following Finnish calendar date, so we normalize by startTimeUTC.
+ for(const d of visible){
+   const has=outHasFinnishDay(d,out);
+   if(has)continue;
+   try{
+     const u='https://site.api.espn.com/apis/site/v2/sports/hockey/nhl/scoreboard?dates='+d.replaceAll('-','');
+     const r=await fetch(u,{cache:'no-store'}); if(!r.ok)continue;
+     const j=await r.json();
+     for(const e of arr(j?.events)){
+       const c=e?.competitions?.[0], comps=arr(c?.competitors);if(!c||comps.length<2)continue;
+       const home=comps.find(x=>x.homeAway==='home'), away=comps.find(x=>x.homeAway==='away'); if(!home||!away)continue;
+       const h={abbrev:home.team?.abbreviation,name:{default:home.team?.displayName||home.team?.shortDisplayName||'—'},logo:home.team?.logo};
+       const a={abbrev:away.team?.abbreviation,name:{default:away.team?.displayName||away.team?.shortDisplayName||'—'},logo:away.team?.logo};
+       const g={id:e.id,startTimeUTC:c.date,gameState:e?.status?.type?.state==='in'?'LIVE':e?.status?.type?.completed?'FINAL':'FUT',homeTeam:h,awayTeam:a};
+       const n=norm(g,d);if(n)out.set('espn-'+e.id,n);
+     }
+   }catch(e){console.warn('NHL ESPN fallback '+d,e)}
  }
  return [...out.values()].sort((a,b)=>new Date(a.startTimeUTC)-new Date(b.startTimeUTC));
 }
@@ -4011,12 +4024,7 @@ body.nhl-mode .v55-game.active{outline:2px solid #38bdf8!important;outline-offse
   window.__otbNhlV68='per-day-schedule-fetch';
 })();
 </script>
-<style id="otb-nhl-v81-player-fix">
-body.nhl-mode .nhl-rink .slot{cursor:pointer!important;z-index:60!important}
-body.nhl-mode .nhl-rink .slot .nhl-face{width:72px!important;height:72px!important;background-size:cover!important;background-position:center!important;border-radius:50%!important}
-body.nhl-mode .nhl-rink .slot.goalie .nhl-face{width:80px!important;height:80px!important}
-body.nhl-mode .nhl-rink .slot .nhl-name{font-size:12px!important;max-width:130px!important}
-</style>
+
 <script id="otb-nhl-v81-player-fix">
 (()=>{
 'use strict';
@@ -4029,29 +4037,10 @@ const playerPos=p=>p?.positionCode||p?.position||'—';
 async function playerData(id){const r=await fetch(`${API}/player/${encodeURIComponent(id)}/landing`,{cache:'no-store',headers:{Accept:'application/json'}});if(!r.ok)throw Error('NHL HTTP '+r.status);return r.json()}
 window.openNhlPlayerCard=async function(id,name,team){
  const d=document.getElementById('drawer');if(!d)return;d.classList.remove('hidden');d.innerHTML=`<button class="x" onclick="this.parentElement.classList.add('hidden')">✕</button><h2>${esc(name)}</h2><div class="drawer-sub">NHL-pelaajakortti</div><div class="status">Haetaan pelaajan tietoja…</div>`;
- try{
-  const raw=await playerData(id),p=raw?.player||raw,stats=p?.featuredStats?.regularSeason?.subSeason||p?.seasonTotals?.find?.(x=>x?.gameTypeId===2)||{};
-  const img=playerHead(p);
-  const cards=[['Ottelut',stats.gamesPlayed??p?.gamesPlayed??'—'],['Maalit',stats.goals??p?.goals??'—'],['Syötöt',stats.assists??p?.assists??'—'],['Pisteet',stats.points??p?.points??'—'],['Laukaukset',stats.shots??stats.sog??p?.shots??'—'],['Jääaika',stats.avgTimeOnIcePerGame??p?.avgTimeOnIcePerGame??'—']];
-  d.innerHTML=`<button class="x" onclick="this.parentElement.classList.add('hidden')">✕</button><div style="display:flex;align-items:center;gap:16px;margin-bottom:14px">${img?`<img src="${esc(img)}" alt="" style="width:92px;height:92px;border-radius:50%;object-fit:cover;border:3px solid #2d9bd8">`:''}<div><h2 style="margin:0">${esc(playerName(p)||name)}</h2><div class="drawer-sub">${esc(team||'NHL')} · ${esc(playerPos(p))} · #${esc(p?.sweaterNumber??p?.jerseyNumber??'—')}</div></div></div><div class="grid">${cards.map(x=>`<div class="stat"><b>${esc(String(x[1]))}</b>${esc(x[0])}</div>`).join('')}</div><div class="drawer-note">Pelaajan tiedot haettu NHL:n pelaajaprofiilista.</div>`;
- }catch(e){d.innerHTML=`<button class="x" onclick="this.parentElement.classList.add('hidden')">✕</button><h2>${esc(name)}</h2><div class="err">Pelaajan tietoja ei saatu: ${esc(e.message)}</div>`}
+ try{const raw=await playerData(id),p=raw?.player||raw,stats=p?.featuredStats?.regularSeason?.subSeason||p?.seasonTotals?.find?.(x=>x?.gameTypeId===2)||{},img=playerHead(p);const cards=[['Ottelut',stats.gamesPlayed??p?.gamesPlayed??'—'],['Maalit',stats.goals??p?.goals??'—'],['Syötöt',stats.assists??p?.assists??'—'],['Pisteet',stats.points??p?.points??'—'],['Laukaukset',stats.shots??stats.sog??p?.shots??'—'],['Jääaika',stats.avgTimeOnIcePerGame??p?.avgTimeOnIcePerGame??'—']];d.innerHTML=`<button class="x" onclick="this.parentElement.classList.add('hidden')">✕</button><div style="display:flex;align-items:center;gap:16px;margin-bottom:14px">${img?`<img src="${esc(img)}" alt="" style="width:92px;height:92px;border-radius:50%;object-fit:cover;border:3px solid #2d9bd8">`:''}<div><h2 style="margin:0">${esc(playerName(p)||name)}</h2><div class="drawer-sub">${esc(team||'NHL')} · ${esc(playerPos(p))} · #${esc(p?.sweaterNumber??p?.jerseyNumber??'—')}</div></div></div><div class="grid">${cards.map(x=>`<div class="stat"><b>${esc(String(x[1]))}</b>${esc(x[0])}</div>`).join('')}</div>`}catch(e){d.innerHTML=`<button class="x" onclick="this.parentElement.classList.add('hidden')">✕</button><h2>${esc(name)}</h2><div class="err">Pelaajan tietoja ei saatu: ${esc(e.message)}</div>`}
 };
-function bindNhlSlots(){
- const rink=document.getElementById('nhlRinkModule');
- if(!rink||rink.dataset.otbPlayerDelegated==='1')return;
- rink.dataset.otbPlayerDelegated='1';
- rink.addEventListener('click',e=>{
-   const slot=e.target.closest?.('.slot');
-   if(!slot||!rink.contains(slot))return;
-   const id=slot.dataset.playerId;
-   if(!id)return;
-   e.preventDefault();
-   e.stopPropagation();
-   window.openNhlPlayerCard(id,slot.dataset.playerName||'Pelaaja',slot.dataset.team||'NHL');
- });
-}
-window.addEventListener('otb:nhl-game-selected',()=>setTimeout(bindNhlSlots,100));
-if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',bindNhlSlots,{once:true});else bindNhlSlots();
+function bind(){const rink=document.getElementById('nhlRinkModule');if(!rink||rink.dataset.otbPlayerDelegated==='1')return;rink.dataset.otbPlayerDelegated='1';rink.addEventListener('click',e=>{const slot=e.target.closest?.('.slot');if(!slot)return;const id=slot.dataset.playerId;if(!id)return;e.preventDefault();e.stopPropagation();window.openNhlPlayerCard(id,slot.dataset.playerName||'Pelaaja',slot.dataset.team||'NHL')})}
+window.addEventListener('otb:nhl-game-selected',()=>setTimeout(bind,150));if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',bind,{once:true});else bind();
 })();
 </script>
 </body></html>
