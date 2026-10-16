@@ -4179,7 +4179,7 @@ async function rosterFor(team){
 }
 async function clubStatsFor(team){const t=String(team||'').toUpperCase(),sid=seasonId();for(const path of ['/club-stats/'+t+'/now','/club-stats/'+t+'/'+sid+'/2']){try{return await api(path)}catch(e){}}return null}
 const NHL_TEAM_IDS={ANA:24,BOS:6,BUF:7,CGY:20,CAR:12,CHI:16,COL:21,CBJ:29,DAL:25,DET:17,EDM:22,FLA:13,LAK:26,MIN:30,MTL:8,NSH:18,NJD:1,NYI:2,NYR:3,OTT:9,PHI:4,PIT:5,SJS:28,SEA:55,STL:19,TBL:14,TOR:10,UTA:59,VAN:23,VGK:54,WSH:15,WPG:52};
-async function statsRestFor(team){
+async function statsRestForV71(team){
  const code=String(team||'').toUpperCase(),teamId=NHL_TEAM_IDS[code],sid=seasonId();
  if(!teamId)return {summary:[],realtime:[]};
  const exp=`seasonId=${sid} and gameTypeId=2 and teamId=${teamId}`;
@@ -4249,7 +4249,7 @@ async function select(ab,force=false){
     const [roster, clubStats, restStats] = await Promise.all([
       fetchTeamRoster(ab),
       clubStatsFor(ab),
-      statsRestFor(ab)
+      statsRestForV71(ab)
     ]);
     if(my!==state.token)return;
 
