@@ -4163,7 +4163,7 @@ function rowSkater(p){return `<tr><td class="name"><div class="otb-player-cell">
 function rowGoalie(p){const svp=p.SVP==null?'—':(Number(p.SVP)<=1?Number(p.SVP*100).toFixed(1)+'%':Number(p.SVP).toFixed(1)+'%');return `<tr><td class="name"><div class="otb-player-cell"><img src="${esc(p.head)}" alt="" onerror="this.style.visibility='hidden'"><span class="num">${esc(p.number)}</span><b>${esc(p.name)}</b></div></td><td>${n(p.GP)}</td><td>${n(p.GS)}</td><td>${n(p.W)}</td><td>${n(p.L)}</td><td>${n(p.OTL)}</td><td>${n(p.SA)}</td><td>${n(p.SV)}</td><td>${n(p.GA)}</td><td>${svp}</td><td>${n(p.GAA,2)}</td><td>${n(p.SO)}</td><td>${n(p.G)}</td><td>${n(p.A)}</td><td>${toi(p.TOI)}</td></tr>`}
 function skaterTable(a){return `<div class="otb-table-wrap"><table class="otb-stat-table"><thead><tr><th class="name">Pelaaja</th><th>Paikka</th><th>Ottelut</th><th>Maalit</th><th>Syötöt</th><th>Pisteet</th><th>+/-</th><th>Jäähyt</th><th>Jääaika/O</th><th>Vaihdot/O</th><th>YV-maalit</th><th>YV-pisteet</th><th>Laukaukset</th><th>Lauk.%</th><th>Blokit</th><th>Taklaukset</th><th>Menetykset</th><th>Riistot</th><th>Aloitus%</th></tr></thead><tbody>${a.map(rowSkater).join('')}</tbody></table></div>`}
 function goalieTable(a){return `<div class="otb-table-wrap"><table class="otb-stat-table"><thead><tr><th class="name">Maalivahti</th><th>Ottelut</th><th>Aloitukset</th><th>Voitot</th><th>Tappiot</th><th>Jatkoaikatappiot</th><th>Laukauksia vastaan</th><th>Torjunnat</th><th>Päästetyt</th><th>Torjunta%</th><th>GAA</th><th>Nollapelit</th><th>Maalit</th><th>Syötöt</th><th>Jääaika</th></tr></thead><tbody>${a.map(rowGoalie).join('')}</tbody></table></div>`}
-function mount(){const live=document.querySelector('#nhlLivePanel');const host=live?.parentElement||document.querySelector('.seh-nhl-inner');if(!host||document.getElementById('otbTeamsV71'))return;const el=document.createElement('section');el.id='otbTeamsV71';el.innerHTML=`<div class="otb-teams-head"><div><div class="otb-teams-title">Joukkueet</div><div class="otb-teams-sub">Kauden 2026–27 pelaajatilastot · päivittyvät NHL-datan mukana otteluiden jälkeen</div></div><button class="otb-teams-refresh" type="button" id="otbTeamsRefresh">↻ Päivitä</button></div><div class="otb-team-grid" id="otbTeamGrid">${TEAM_LIST.map(([ab,nm])=>`<button class="otb-team-btn" type="button" data-team="${ab}"><img src="${logo(ab)}" alt=""><span><b>${nm}</b><small>${ab}</small></span></button>`).join('')}</div><div id="otbTeamDetail" class="otb-team-detail"><div class="otb-team-loading">Valitse joukkue.</div></div>`;if(live&&live.parentElement===host) live.insertAdjacentElement('afterend',el); else host.appendChild(el);el.addEventListener('click',e=>{const b=e.target.closest('[data-team]');if(b)select(b.dataset.team)});el.querySelector('#otbTeamsRefresh').addEventListener('click',()=>state.team&&select(state.team,true))}
+function mount(){const live=document.querySelector('#nhlLivePanel');const host=live?.parentElement||document.querySelector('.seh-nhl-inner');if(!host||document.getElementById('otbTeamsV71'))return;const el=document.createElement('section');el.id='otbTeamsV71';el.innerHTML=`<div class="otb-teams-head"><div><div class="otb-teams-title">Joukkueet</div><div class="otb-teams-sub">NHL:n kausitilastot · rosteri ja tilastot yhdistetään pelaaja-ID:llä</div></div><button class="otb-teams-refresh" type="button" id="otbTeamsRefresh">↻ Päivitä</button></div><div class="otb-team-grid" id="otbTeamGrid">${TEAM_LIST.map(([ab,nm])=>`<button class="otb-team-btn" type="button" data-team="${ab}"><img src="${logo(ab)}" alt=""><span><b>${nm}</b><small>${ab}</small></span></button>`).join('')}</div><div id="otbTeamDetail" class="otb-team-detail"><div class="otb-team-loading">Valitse joukkue.</div></div>`;if(live&&live.parentElement===host) live.insertAdjacentElement('afterend',el); else host.appendChild(el);el.addEventListener('click',e=>{const b=e.target.closest('[data-team]');if(b)select(b.dataset.team)});el.querySelector('#otbTeamsRefresh').addEventListener('click',()=>state.team&&select(state.team,true))}
 const state={team:null,cache:new Map(),token:0};
 async function fetchTeamRoster(ab){
   const code=String(ab||'').trim().toUpperCase();
@@ -4211,15 +4211,30 @@ async function select(ab,force=false){
   if(!force&&state.cache.has(ab)){render(ab,state.cache.get(ab));return}
   detail.innerHTML='<div class="otb-team-loading">Haetaan NHL-rosteria…</div>';
   try{
-    const roster=await fetchTeamRoster(ab);
+    const [roster, clubStats] = await Promise.all([
+      fetchTeamRoster(ab),
+      clubStatsFor(ab)
+    ]);
     if(my!==state.token)return;
-    const skaters=[
+
+    // Roster endpoint supplies identity/position/headshot; club-stats supplies season statistics.
+    // Match on NHL player ID so statistics are never assigned to the wrong player.
+    const statRows=(key)=>Array.isArray(clubStats?.[key])?clubStats[key]:[];
+    const skaterStats=new Map(statRows('skaters').map(p=>[String(p.playerId??p.id),p]));
+    const goalieStats=new Map(statRows('goalies').map(p=>[String(p.playerId??p.id),p]));
+    const mergeStats=(players,map)=>players.map(p=>{
+      const stat=map.get(String(pid(p)));
+      return stat ? {...p,...stat,id:pid(p),headshot:head(p)||head(stat),sweaterNumber:num(p)||num(stat)} : p;
+    });
+    const rawSkaters=[
       ...(Array.isArray(roster?.forwards)?roster.forwards:[]),
       ...(Array.isArray(roster?.defensemen)?roster.defensemen:[])
-    ].map(mapSkater);
-    const goalies=(Array.isArray(roster?.goalies)?roster.goalies:[]).map(mapGoalie);
+    ];
+    const rawGoalies=Array.isArray(roster?.goalies)?roster.goalies:[];
+    const skaters=mergeStats(rawSkaters,skaterStats).map(mapSkater);
+    const goalies=mergeStats(rawGoalies,goalieStats).map(mapGoalie);
     if(!skaters.length&&!goalies.length)throw Error('Rosterissa ei ollut pelaajia');
-    const data={season:'20262027',gameType:2,skaters,goalies};
+    const data={season:clubStats?.season||'20262027',gameType:clubStats?.gameType||2,skaters,goalies};
     state.cache.set(ab,data);
     render(ab,data);
   }catch(e){
