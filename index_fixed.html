@@ -4181,20 +4181,26 @@ function mount(){const live=document.querySelector('#nhlLivePanel');const host=l
 const state={team:null,cache:new Map(),token:0};
 async function fetchTeamRoster(ab){
   const code=String(ab||'').trim().toUpperCase();
+  const season=seasonId();
   let last=null;
-  // The Cloudflare worker currently returns an HTML fallback for /roster/* (HTTP 200),
-  // so try the official NHL web API directly first. Keep the existing worker as fallback.
+  const errors=[];
+  // Use the explicit season route first; the NHL /current roster route can fail
+  // for some team/season combinations. The worker's roster route is a final fallback.
   const urls=[
+    'https://api-web.nhle.com/v1/roster/'+encodeURIComponent(code)+'/'+season,
     'https://api-web.nhle.com/v1/roster/'+encodeURIComponent(code)+'/current',
+    API+'/roster/'+encodeURIComponent(code)+'/'+season,
     API+'/roster/'+encodeURIComponent(code)+'/current'
   ];
   for(const url of urls){
     try{
-      const r=await fetch(url,{cache:'no-store',headers:{'Accept':'application/json'}});
+      const r=await fetch(url,{cache:'no-store'});
       const txt=await r.text();
       let data;
-      try{data=JSON.parse(txt)}catch(_){throw Error('Vastaus ei ollut JSON: '+url.replace(/^https?:\/\/[^/]+/,''))}
-      if(!r.ok)throw Error('HTTP '+r.status);
+      try{data=JSON.parse(txt)}catch(_){
+        throw Error('ei JSON (HTTP '+r.status+') '+url.replace(/^https?:\/\/[^/]+/,'').slice(0,90));
+      }
+      if(!r.ok)throw Error('HTTP '+r.status+' '+url.replace(/^https?:\/\/[^/]+/,''));
       data=data?.data??data;
       const roster=findRoster(data)||data?.roster||data;
       if(roster&&(Array.isArray(roster.forwards)||Array.isArray(roster.defensemen)||Array.isArray(roster.goalies)||Array.isArray(roster.goaltenders))){
@@ -4204,10 +4210,10 @@ async function fetchTeamRoster(ab){
           goalies:Array.isArray(roster.goalies)?roster.goalies:(Array.isArray(roster.goaltenders)?roster.goaltenders:[])
         };
       }
-      throw Error('Roster-vastauksessa ei ollut pelaajalistoja');
-    }catch(e){last=e}
+      throw Error('JSON saatiin, mutta roster-listat puuttuvat: '+url.replace(/^https?:\/\/[^/]+/,''));
+    }catch(e){errors.push(e.message);last=e}
   }
-  throw last||Error('Roster puuttuu '+code);
+  throw Error('NHL-rosterin haku epäonnistui. '+errors.join(' | '));
 }
 async function select(ab,force=false){
   mount();
