@@ -4178,6 +4178,19 @@ async function rosterFor(team){
  throw Error('NHL-rosterin haku epäonnistui: '+errors.join(' | '));
 }
 async function clubStatsFor(team){const t=String(team||'').toUpperCase(),sid=seasonId();for(const path of ['/club-stats/'+t+'/now','/club-stats/'+t+'/'+sid+'/2']){try{return await api(path)}catch(e){}}return null}
+const NHL_TEAM_IDS={ANA:24,BOS:6,BUF:7,CGY:20,CAR:12,CHI:16,COL:21,CBJ:29,DAL:25,DET:17,EDM:22,FLA:13,LAK:26,MIN:30,MTL:8,NSH:18,NJD:1,NYI:2,NYR:3,OTT:9,PHI:4,PIT:5,SJS:28,SEA:55,STL:19,TBL:14,TOR:10,UTA:59,VAN:23,VGK:54,WSH:15,WPG:52};
+async function statsRestFor(team){
+ const code=String(team||'').toUpperCase(),teamId=NHL_TEAM_IDS[code],sid=seasonId();
+ if(!teamId)return {summary:[],realtime:[]};
+ const exp=`seasonId=${sid} and gameTypeId=2 and teamId=${teamId}`;
+ const get=async(kind)=>{
+  const q=new URLSearchParams({isAggregate:'false',isGame:'false',cayenneExp:exp,limit:'-1'});
+  const url='https://otb-match-center-public.tzekki5.workers.dev/nhl-stats/skater/'+kind+'?'+q.toString();
+  try{const r=await fetch(url,{cache:'no-store',headers:{'Accept':'application/json'}});const txt=await r.text();if(!r.ok)throw Error('HTTP '+r.status);const d=JSON.parse(txt);return Array.isArray(d)?d:(Array.isArray(d?.data)?d.data:[])}catch(e){console.warn('NHL Stats REST '+kind,e);return []}
+ };
+ const [summary,realtime]=await Promise.all([get('summary'),get('realtime')]);
+ return {summary,realtime};
+}
 function pick(o,...keys){for(const k of keys){if(o?.[k]!=null)return o[k]}return null}
 function mapSkater(p){return {raw:p,id:pid(p),name:name(p),number:num(p),pos:pos(p),GP:pick(p,'gamesPlayed','gp'),G:pick(p,'goals','g'),A:pick(p,'assists','a'),P:pick(p,'points','p'),plusMinus:pick(p,'plusMinus','plusMinusTotal'),PIM:pick(p,'penaltyMinutes','pim'),TOI:pick(p,'timeOnIcePerGame','avgToiPerGame','avgToi','toiPerGame','timeOnIce'),shifts:pick(p,'shiftsPerGame','shifts'),PPG:pick(p,'ppGoals','powerPlayGoals','ppg'),PPP:pick(p,'ppPoints','powerPlayPoints','ppp'),S:pick(p,'shots','s'),SOG:pick(p,'shotsPerGame','sogPerGame'),SP:pick(p,'shootingPctg','shootingPercentage','shootingPct'),BLK:pick(p,'blockedShots','blocks','blocked'),HITS:pick(p,'hits','hitsPerGame'),GV:pick(p,'giveaways','gv'),TK:pick(p,'takeaways','tk'),FOW:pick(p,'faceoffWinPctg','faceoffPctg','faceoffWinPct'),head:head(p)}}
 function mapGoalie(p){return {raw:p,id:pid(p),name:name(p),number:num(p),GP:pick(p,'gamesPlayed','gp'),GS:pick(p,'gamesStarted','gs'),W:pick(p,'wins','w'),L:pick(p,'losses','l'),OTL:pick(p,'otLosses','otl'),SA:pick(p,'shotsAgainst','sa'),SV:pick(p,'saves','sv'),GA:pick(p,'goalsAgainst','ga'),SVP:pick(p,'savePct','savePctg','savePercentage'),GAA:pick(p,'goalsAgainstAverage','gaa'),SO:pick(p,'shutouts','so'),G:pick(p,'goals','g'),A:pick(p,'assists','a'),TOI:pick(p,'timeOnIce','toi'),head:head(p)}}
