@@ -4144,7 +4144,31 @@ function seasonId(){const y=new Date().getUTCFullYear();return String(y)+String(
 function findRoster(root){const seen=new Set(),q=[root];while(q.length){const x=q.shift();if(!x||typeof x!=='object'||seen.has(x))continue;seen.add(x);if((Array.isArray(x.forwards)||Array.isArray(x.defensemen)||Array.isArray(x.defense)||Array.isArray(x.goalies)||Array.isArray(x.goaltenders))){return x.roster&&typeof x.roster==='object'?x.roster:x}for(const k of Object.keys(x)){const v=x[k];if(v&&typeof v==='object')q.push(v)}}return null}
 function findPlayerArrays(root){const out=[];const seen=new Set(),q=[root];while(q.length){const x=q.shift();if(!x||typeof x!=='object'||seen.has(x))continue;seen.add(x);if(Array.isArray(x)){const hits=x.filter(v=>v&&typeof v==='object'&&(v.playerId!=null||v.id!=null||v.player?.id!=null)&&((v.positionCode||v.position||v.sweaterNumber)!=null));if(hits.length)out.push(...hits)}for(const k of Object.keys(x)){const v=x[k];if(v&&typeof v==='object')q.push(v)}}return out}
 function normalizeRoster(root){const r=findRoster(root);if(r)return {forwards:arr(r.forwards),defensemen:arr(r.defensemen||r.defense),goalies:arr(r.goalies||r.goaltenders)};const ps=findPlayerArrays(root);return {forwards:ps.filter(p=>['C','L','R','LW','RW','F'].includes(String(p.positionCode||p.position||'').toUpperCase())),defensemen:ps.filter(p=>['D','LD','RD'].includes(String(p.positionCode||p.position||'').toUpperCase())),goalies:ps.filter(p=>['G','GK'].includes(String(p.positionCode||p.position||'').toUpperCase()))}}
-async function rosterFor(team){const t=String(team||'').toLowerCase();let last=null;for(const path of ['/roster/'+t+'/current','/roster/'+t+'/'+seasonId()]){try{const d=await api(path);const r=normalizeRoster(d);if(r.forwards.length||r.defensemen.length||r.goalies.length)return r;last=Error('Tyhjä roster '+t)}catch(e){last=e}}throw last||Error('Roster puuttuu '+t)}
+async function rosterFor(team){
+  const code=String(team||'').trim().toUpperCase();
+  let last=null;
+  // Roster-only repair: the shared worker route returns HTML with HTTP 200.
+  // Fetch the NHL roster endpoint directly first; keep other NHL API routes unchanged.
+  const urls=[
+    'https://api-web.nhle.com/v1/roster/'+encodeURIComponent(code)+'/current',
+    API+'/roster/'+encodeURIComponent(code.toLowerCase())+'/current',
+    API+'/roster/'+encodeURIComponent(code.toLowerCase())+'/'+seasonId()
+  ];
+  for(const url of urls){
+    try{
+      const r=await fetch(url,{cache:'no-store',headers:{'Accept':'application/json'}});
+      const txt=await r.text();
+      let d;
+      try{d=JSON.parse(txt)}catch(_){throw Error('Roster-vastaus ei ole JSON · HTTP '+r.status+' · '+url.replace(/^https?:\/\/[^/]+/,'').slice(0,90))}
+      if(!r.ok)throw Error('Roster HTTP '+r.status);
+      d=d?.data??d;
+      const roster=normalizeRoster(d);
+      if(roster.forwards.length||roster.defensemen.length||roster.goalies.length)return roster;
+      last=Error('Tyhjä roster '+code);
+    }catch(e){last=e}
+  }
+  throw last||Error('Roster puuttuu '+code);
+}
 async function clubStatsFor(team){const t=String(team||'').toUpperCase(),sid=seasonId();for(const path of ['/club-stats/'+t+'/now','/club-stats/'+t+'/'+sid+'/2']){try{return await api(path)}catch(e){}}return null}
 function pick(o,...keys){for(const k of keys){if(o?.[k]!=null)return o[k]}return null}
 function mapSkater(p){return {raw:p,id:pid(p),name:name(p),number:num(p),pos:pos(p),GP:pick(p,'gamesPlayed','gp'),G:pick(p,'goals','g'),A:pick(p,'assists','a'),P:pick(p,'points','p'),plusMinus:pick(p,'plusMinus','plusMinusTotal'),PIM:pick(p,'penaltyMinutes','pim'),TOI:pick(p,'timeOnIcePerGame','toiPerGame','timeOnIce'),shifts:pick(p,'shiftsPerGame','shifts'),PPG:pick(p,'ppGoals','powerPlayGoals','ppg'),PPP:pick(p,'ppPoints','powerPlayPoints','ppp'),S:pick(p,'shots','s'),SOG:pick(p,'shotsPerGame','sogPerGame'),SP:pick(p,'shootingPctg','shootingPercentage','shootingPct'),BLK:pick(p,'blockedShots','blocks','blocked'),HITS:pick(p,'hits'),GV:pick(p,'giveaways','gv'),TK:pick(p,'takeaways','tk'),FOW:pick(p,'faceoffWinPctg','faceoffPctg','faceoffWinPct'),head:head(p)}}
