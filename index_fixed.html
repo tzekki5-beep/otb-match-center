@@ -1028,6 +1028,26 @@ body.nhl-mode.nhl-match-open #nhlLivePanel{display:none!important}
 }
 </style>
 
+
+<style id="otb-nhl-table-readability-v72">
+/* NHL stats table: clearer numbers without changing the football UI */
+#otbTeamsV71 .otb-stat-table{font-size:14px!important}
+#otbTeamsV71 .otb-stat-table th{font-size:12px!important;padding:12px 10px!important;letter-spacing:.25px!important}
+#otbTeamsV71 .otb-stat-table td{font-size:14px!important;padding:13px 10px!important;font-weight:900!important}
+#otbTeamsV71 .otb-stat-table td.name,#otbTeamsV71 .otb-stat-table th.name{min-width:380px!important;width:380px!important;max-width:380px!important}
+#otbTeamsV71 .otb-player-cell{gap:14px!important;width:360px!important;min-width:360px!important;max-width:360px!important}
+#otbTeamsV71 .otb-player-cell img{width:76px!important;height:76px!important;flex-basis:76px!important}
+#otbTeamsV71 .otb-player-cell .num{font-size:13px!important;min-width:26px!important}
+#otbTeamsV71 .otb-player-cell b{font-size:14px!important;line-height:1.25!important}
+@media(max-width:700px){
+ #otbTeamsV71 .otb-stat-table th{font-size:11px!important}
+ #otbTeamsV71 .otb-stat-table td{font-size:13px!important}
+ #otbTeamsV71 .otb-stat-table td.name,#otbTeamsV71 .otb-stat-table th.name{min-width:310px!important;width:310px!important;max-width:310px!important}
+ #otbTeamsV71 .otb-player-cell{width:290px!important;min-width:290px!important;max-width:290px!important;gap:9px!important}
+ #otbTeamsV71 .otb-player-cell img{width:60px!important;height:60px!important;flex-basis:60px!important}
+ #otbTeamsV71 .otb-player-cell b{font-size:13px!important}
+}
+</style>
 </head><body class="home-mode">
 <div id="sideEyeHome" aria-label="Side Eye Analytics etusivu">
   <div class="seh-bg"></div><div class="seh-overlay"></div>
@@ -4178,14 +4198,35 @@ async function rosterFor(team){
 }
 async function clubStatsFor(team){const t=String(team||'').toUpperCase(),sid=seasonId();for(const path of ['/club-stats/'+t+'/now','/club-stats/'+t+'/'+sid+'/2']){try{return await api(path)}catch(e){}}return null}
 const NHL_TEAM_IDS={ANA:24,BOS:6,BUF:7,CGY:20,CAR:12,CHI:16,COL:21,CBJ:29,DAL:25,DET:17,EDM:22,FLA:13,LAK:26,MIN:30,MTL:8,NSH:18,NJD:1,NYI:2,NYR:3,OTT:9,PHI:4,PIT:5,SJS:28,SEA:55,STL:19,TBL:14,TOR:10,UTA:59,VAN:23,VGK:54,WSH:15,WPG:52};
-async function statsRestForV71(team){
+async function statsRestForV72(team){
  const code=String(team||'').toUpperCase(),teamId=NHL_TEAM_IDS[code],sid=seasonId();
  if(!teamId)return {summary:[],realtime:[]};
- const exp=`seasonId=${sid} and gameTypeId=2 and teamId=${teamId}`;
+ // Try team-filtered stats first. Some NHL Stats REST responses omit realtime rows
+ // when the team filter is applied, so retry the same season without teamId.
  const get=async(kind)=>{
-  const q=new URLSearchParams({isAggregate:'false',isGame:'false',cayenneExp:exp,limit:'-1'});
-  const url='https://otb-match-center-public.tzekki5.workers.dev/nhl-stats/skater/'+kind+'?'+q.toString();
-  try{const r=await fetch(url,{cache:'no-store',headers:{'Accept':'application/json'}});const txt=await r.text();if(!r.ok)throw Error('HTTP '+r.status);const d=JSON.parse(txt);return Array.isArray(d)?d:(Array.isArray(d?.data)?d.data:[])}catch(e){console.warn('NHL Stats REST '+kind,e);return []}
+  const base='seasonId='+sid+' and gameTypeId=2';
+  const fetchRows=async(exp)=>{
+   const q=new URLSearchParams({isAggregate:'false',isGame:'false',cayenneExp:exp,limit:'-1'});
+   const url='https://otb-match-center-public.tzekki5.workers.dev/nhl-stats/skater/'+kind+'?'+q.toString();
+   const r=await fetch(url,{cache:'no-store',headers:{'Accept':'application/json'}});
+   const txt=await r.text();
+   if(!r.ok)throw Error('HTTP '+r.status);
+   const d=JSON.parse(txt);
+   return Array.isArray(d)?d:(Array.isArray(d?.data)?d.data:[]);
+  };
+  try{
+   const filtered=await fetchRows(base+' and teamId='+teamId);
+   if(filtered.length)return filtered;
+   const seasonRows=await fetchRows(base);
+   return seasonRows.filter(p=>String(p.teamId??p.teamID??'')===String(teamId)||String(p.teamAbbrevs??p.teamAbbrev??'').toUpperCase()===code);
+  }catch(e){
+   try{
+    const seasonRows=await fetchRows(base);
+    const rows=seasonRows.filter(p=>String(p.teamId??p.teamID??'')===String(teamId)||String(p.teamAbbrevs??p.teamAbbrev??'').toUpperCase()===code);
+    if(rows.length)return rows;
+   }catch(_){}
+   console.warn('NHL Stats REST '+kind,e);return [];
+  }
  };
  const [summary,realtime]=await Promise.all([get('summary'),get('realtime')]);
  return {summary,realtime};
@@ -4248,7 +4289,7 @@ async function select(ab,force=false){
     const [roster, clubStats, restStats] = await Promise.all([
       fetchTeamRoster(ab),
       clubStatsFor(ab),
-      statsRestForV71(ab)
+      statsRestForV72(ab)
     ]);
     if(my!==state.token)return;
 
