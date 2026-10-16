@@ -2126,13 +2126,27 @@ async function openStaticNLPlayer(el,m){
   d.innerHTML=`<button class="x" onclick="this.parentElement.classList.add('hidden')">✕</button><h2>${esc(name)}</h2><div class="drawer-sub">${esc(profile?.team?.name||'Seurajoukkue')} · pelaajaprofiili · viimeiset ${hist.length} ottelua</div><div class="grid"><div class="stat"><b>${total}</b>Laukaukset</div><div class="stat"><b>${on}</b>Kohti</div><div class="stat"><b>${otb}</b>OTB</div><div class="stat"><b>${cards}</b>🟨/🟥</div><div class="stat"><b>${headers}</b>Pääpallot</div><div class="stat"><b>${fouls}</b>Rikkeet</div></div><div class="raw-title">🧾 Viimeiset ${hist.length} ottelua</div><table><thead><tr><th>Ottelu</th><th>OTB</th><th>Kohti</th><th>Lauk.</th><th>Kortit</th><th>Pääp.</th><th>Rikkeet</th></tr></thead><tbody>${hist.map(v=>`<tr><td>${esc(v.opp||'')}</td><td>${v.otb||0}</td><td>${v.shotOn||v.on||0}</td><td>${v.all||0}</td><td>${v.cards||0}</td><td>${v.headers||0}</td><td>${v.fouls||0}</td></tr>`).join('')}</tbody></table><div class="drawer-note">Kuvat ja viimeisten otteluiden pelaajatilastot haetaan pelaajan omasta seurajoukkuehistoriasta. Laukauskartta tarkentuu ottelukohtaisesti, kun shotmap-data on saatavilla.</div>`;
 }
 
+function normalLeagueName(value){
+  return String(value||'').toLowerCase().normalize('NFD').replace(/[\\u0300-\\u036f]/g,'').replace(/[^a-z0-9]/g,'');
+}
 function render(){
 
   if(filter==='ALL'){
     $('#out').innerHTML='<div class="status select-league-prompt">👆 Valitse ylhäältä sarja nähdäksesi ottelut.</div>';
     return;
   }
-  const list=games.filter(m=>m.league?.name===filter);
+  // League names returned by the API are not always identical to the UI tab
+  // label (e.g. "La Liga" vs "LaLiga"). The selected league's endpoint has
+  // already scoped these fixtures; only use its loaded games as a fallback
+  // when the display-name equality check incorrectly hides them.
+  let list=games.filter(m=>normalLeagueName(m.league?.name)===normalLeagueName(filter));
+  if(!list.length && filter!=='ALL' && games.length){
+    const selected=leagueMap[filter];
+    const selectedId=selected?.id;
+    const idMatched=games.filter(m=>selectedId!=null && String(m.league?.id)===String(selectedId));
+    if(idMatched.length) list=idMatched;
+    else if(games.every(m=>m.league?.name===filter || !m.league?.name)) list=games;
+  }
   if(!list.length){$('#out').innerHTML='<div class="status">Ei otteluita tällä päivällä tässä sarjassa.</div>';return}
   if(MAIN_SET.has(filter)){
     $('#out').innerHTML=list.map(m=>m.__nlStatic?renderStaticNLMatch(m):`<section class="match"><div class="mh"><div class="mh-team"><div class="mh-team-text"><div class="teams">${esc(m.home_team?.name||'Kotijoukkue')}</div><div class="lg">${esc(m.league?.name||'')}</div></div>${m.home_team?.image_url?`<img class="mh-logo" src="${esc(m.home_team.image_url)}" alt="">`:''}</div><div class="tm">${localTime(m.time_utc)}${m.status==='finished'?' · '+m.score_home+'–'+m.score_away:''}</div><div class="mh-team away">${m.away_team?.image_url?`<img class="mh-logo" src="${esc(m.away_team.image_url)}" alt="">`:''}<div class="mh-team-text"><div class="teams">${esc(m.away_team?.name||'Vierasjoukkue')}</div></div></div></div><div class="player-stat-bar" data-stat-bar="${esc(m.id)}" data-mode="otb"><div class="player-stat-caption">Pelaajien viimeiset 5 ottelua · valitse näytettävä tilasto</div><button type="button" class="player-stat-btn active" data-stat="otb" onclick="window.otbSetStatModeFromButton(this)">OTB / OTB kohti</button><button type="button" class="player-stat-btn" data-stat="shots" onclick="window.otbSetStatModeFromButton(this)">Laukaukset</button><button type="button" class="player-stat-btn" data-stat="cards" onclick="window.otbSetStatModeFromButton(this)">Kortit</button><button type="button" class="player-stat-btn" data-stat="fouls" onclick="window.otbSetStatModeFromButton(this)">Rikkeet</button><button type="button" class="player-stat-btn" data-stat="headers" onclick="window.otbSetStatModeFromButton(this)">Pääpallot</button><button type="button" class="player-stat-btn" data-stat="all" onclick="window.otbSetStatModeFromButton(this)">Kaikki laukaukset</button><span class="stat-mode-label">Viimeiset 5</span></div><div class="pitch" id="p${m.id.replace(/[^a-zA-Z0-9_-]/g,'')}">${m.home_team?.image_url?`<img class="pitch-team-logo home" src="${esc(m.home_team.image_url)}" alt="">`:''}${m.away_team?.image_url?`<img class="pitch-team-logo away" src="${esc(m.away_team.image_url)}" alt="">`:''}<div class="pitch-team-label home"><span class="ptl-mark">${nlCountryFlag(m.home_team?.name)}</span><span class="ptl-name">${esc(m.home_team?.name||'Kotijoukkue')}</span></div><div class="pitch-team-label away"><span class="ptl-mark">${nlCountryFlag(m.away_team?.name)}</span><span class="ptl-name">${esc(m.away_team?.name||'Vierasjoukkue')}</span></div><div class="goal g1"></div><div class="goal g2"></div><span class="corner tl"></span><span class="corner tr"></span><span class="corner bl"></span><span class="corner br"></span><span class="centerDot"></span><div class="players"><div class="status">Ladataan kokoonpanoa…</div></div></div><div class="note">OUT = boxin ulkopuolelta · pelaajaa painamalla näet tarkat tilastot.</div></section>`).join('');
@@ -4032,7 +4046,53 @@ body.nhl-mode .v55-game.active{outline:2px solid #38bdf8!important;outline-offse
   window.__otbNhlV68='per-day-schedule-fetch';
 })();
 </script>
-</body></html>
+<
+<script id="otb-date-sync-repair-v1">
+/* Repair date-nav desynchronization: the visible day and the API query must use
+   the same ISO date, and selecting a day must immediately reload the league. */
+(function(){
+  'use strict';
+  function isoToday(){
+    const d=new Date();
+    const local=new Date(d.getTime()-d.getTimezoneOffset()*60000);
+    return local.toISOString().slice(0,10);
+  }
+  function syncButtons(iso){
+    document.querySelectorAll('#topDateDays .top-date-day').forEach(b=>{
+      const m=(b.textContent||'').match(/(\d{2})\.(\d{2})/);
+      if(!m)return;
+      const year=(document.getElementById('date')?.value||iso).slice(0,4);
+      const dayIso=year+'-'+m[2]+'-'+m[1];
+      b.classList.toggle('active',dayIso===iso);
+    });
+  }
+  function chooseDate(iso){
+    const input=document.getElementById('date');
+    if(!input||!iso)return;
+    input.value=iso;
+    syncButtons(iso);
+    // Use the app's existing date-change path, which preserves selected league.
+    input.dispatchEvent(new Event('change',{bubbles:true}));
+  }
+  document.addEventListener('click',function(e){
+    const b=e.target.closest('#topDateDays .top-date-day');
+    if(!b)return;
+    const m=(b.textContent||'').match(/(\d{2})\.(\d{2})/);
+    if(!m)return;
+    const current=document.getElementById('date')?.value||isoToday();
+    chooseDate(current.slice(0,4)+'-'+m[2]+'-'+m[1]);
+  },true);
+  window.addEventListener('DOMContentLoaded',function(){
+    const input=document.getElementById('date');
+    if(!input)return;
+    // Recover from a stale date left by an older build; today is the default.
+    if(!input.value)input.value=isoToday();
+    if(typeof window.renderTopDateNavigator==='function')window.renderTopDateNavigator(input.value);
+    syncButtons(input.value);
+  });
+})();
+</script>
+/body></html>
 
 <style id="otb-v71-teams-css">
 /* V71 — NHL Joukkueet: full-season player statistics */
