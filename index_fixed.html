@@ -3681,10 +3681,14 @@ function slot(side,c,p,g=false){
  m.textContent=p?stats(p,g):(g?'SV% —':'PTS — · SOG —');
  if(f){
   const h=head(p);
-  f.style.backgroundImage=h?`url("${h}")`:'';
-  f.style.backgroundColor=h?'transparent':'#dbe3e8';
+  // The rink stylesheet uses an !important background shorthand, so set the
+  // image and fallback color as important inline declarations as well.
+  f.style.setProperty('background-image',h?`url("${String(h).replace(/"/g,'\\"')}")`:'none','important');
+  f.style.setProperty('background-color',h?'transparent':'#dbe3e8','important');
+  f.style.backgroundPosition='center top';
+  f.style.backgroundSize='cover';
   f.onerror=null;
-  if(h){f.onerror=()=>{f.style.backgroundImage='';f.style.backgroundColor='#cbd7de';};}
+  if(h){f.onerror=()=>{f.style.setProperty('background-image','none','important');f.style.setProperty('background-color','#cbd7de','important');};}
  }
 }
 function card(p,g=false){if(!p)return '';const h=head(p),num=p?.sweaterNumber??p?.jerseyNumber??'';return `<div class="nhl-player-card"><img src="${esc(h)}" alt="" onerror="this.style.visibility='hidden'"><div><div class="nhl-player-name"><span class="nhl-player-num">${esc(num)}</span>${esc(name(p))}</div><div class="nhl-player-meta">${esc(pos(p)||(g?'MV':''))} · ${esc(stats(p,g))}</div></div></div>`}
