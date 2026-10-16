@@ -3599,7 +3599,12 @@ function seasonId(){const y=new Date().getUTCFullYear();return String(y)+String(
 function findRoster(root){const seen=new Set(),q=[root];while(q.length){const x=q.shift();if(!x||typeof x!=='object'||seen.has(x))continue;seen.add(x);if((Array.isArray(x.forwards)||Array.isArray(x.defensemen)||Array.isArray(x.defense)||Array.isArray(x.goalies)||Array.isArray(x.goaltenders))){return x.roster&&typeof x.roster==='object'?x.roster:x}for(const k of Object.keys(x)){const v=x[k];if(v&&typeof v==='object')q.push(v)}}return null}
 function findPlayerArrays(root){const out=[];const seen=new Set(),q=[root];while(q.length){const x=q.shift();if(!x||typeof x!=='object'||seen.has(x))continue;seen.add(x);if(Array.isArray(x)){const hits=x.filter(v=>v&&typeof v==='object'&&(v.playerId!=null||v.id!=null||v.player?.id!=null)&&((v.positionCode||v.position||v.sweaterNumber)!=null));if(hits.length)out.push(...hits)}for(const k of Object.keys(x)){const v=x[k];if(v&&typeof v==='object')q.push(v)}}return out}
 function normalizeRoster(root){const r=findRoster(root);if(r)return {forwards:arr(r.forwards),defensemen:arr(r.defensemen||r.defense),goalies:arr(r.goalies||r.goaltenders)};const ps=findPlayerArrays(root);return {forwards:ps.filter(p=>['C','L','R','LW','RW','F'].includes(String(p.positionCode||p.position||'').toUpperCase())),defensemen:ps.filter(p=>['D','LD','RD'].includes(String(p.positionCode||p.position||'').toUpperCase())),goalies:ps.filter(p=>['G','GK'].includes(String(p.positionCode||p.position||'').toUpperCase()))}}
-async function rosterFor(team){const raw=String(team||'').trim();const codes=[raw.toUpperCase(),raw.toLowerCase()];let last=null;for(const code of [...new Set(codes)])for(const path of ['/roster/'+code+'/current','/roster/'+code+'/'+seasonId()]){try{const d=await api(path);const r=normalizeRoster(d);if(r.forwards.length||r.defensemen.length||r.goalies.length)return r;last=Error('Tyhjä roster '+code)}catch(e){last=e}}throw last||Error('Roster puuttuu '+raw)}
+async function rosterFor(team){
+ const code=String(team||'').trim().toUpperCase(),season=seasonId();let last=null;const errors=[];
+ const urls=['https://api-web.nhle.com/v1/roster/'+encodeURIComponent(code)+'/'+season,'https://api-web.nhle.com/v1/roster/'+encodeURIComponent(code)+'/current',API+'/roster/'+encodeURIComponent(code)+'/current',API+'/roster/'+encodeURIComponent(code)+'/'+season];
+ for(const url of urls){try{const r=await fetch(url,{cache:'no-store',headers:{'Accept':'application/json'}});const txt=await r.text();let d;try{d=JSON.parse(txt)}catch(_){throw Error('ei JSON (HTTP '+r.status+') '+url.replace(/^https?:\/\/[^/]+/,'').slice(0,90))}if(!r.ok)throw Error('HTTP '+r.status);d=d?.data??d;const ro=normalizeRoster(d);if(ro.forwards.length||ro.defensemen.length||ro.goalies.length)return ro;throw Error('tyhjä roster '+code)}catch(e){last=e;errors.push(e.message)}}
+ throw Error('NHL-rosterin haku epäonnistui: '+errors.join(' | '));
+}
 async function clubStatsFor(team){const t=String(team||'').toUpperCase(),sid=seasonId();for(const path of ['/club-stats/'+t+'/now','/club-stats/'+t+'/'+sid+'/2']){try{return await api(path)}catch(e){}}return null}
 function statSource(p){return p?.stats||p?.statistics||p?.featuredStats?.regularSeason?.subSeason||p?.featuredStats?.regularSeason||p?.seasonTotals?.find?.(x=>x?.gameTypeId===2)||p}function stats(p,goalie=false){const s=statSource(p);if(goalie){const v=p?.savePctg??p?.savePercentage??s?.savePctg??s?.savePercentage;const gaa=p?.gaa??s?.gaa??s?.goalsAgainstAverage;return `SV% ${v==null?'—':(Number(v)<=1?Number(v).toFixed(3):Number(v).toFixed(3))} · GAA ${gaa==null?'—':Number(gaa).toFixed(2)}`}const pts=s?.points??p?.points,sog=s?.sog??s?.shots??p?.sog??p?.shots;return `PTS ${pts??'—'} · SOG ${sog??'—'}`}
 const arr=x=>Array.isArray(x)?x:[];
@@ -4145,29 +4150,10 @@ function findRoster(root){const seen=new Set(),q=[root];while(q.length){const x=
 function findPlayerArrays(root){const out=[];const seen=new Set(),q=[root];while(q.length){const x=q.shift();if(!x||typeof x!=='object'||seen.has(x))continue;seen.add(x);if(Array.isArray(x)){const hits=x.filter(v=>v&&typeof v==='object'&&(v.playerId!=null||v.id!=null||v.player?.id!=null)&&((v.positionCode||v.position||v.sweaterNumber)!=null));if(hits.length)out.push(...hits)}for(const k of Object.keys(x)){const v=x[k];if(v&&typeof v==='object')q.push(v)}}return out}
 function normalizeRoster(root){const r=findRoster(root);if(r)return {forwards:arr(r.forwards),defensemen:arr(r.defensemen||r.defense),goalies:arr(r.goalies||r.goaltenders)};const ps=findPlayerArrays(root);return {forwards:ps.filter(p=>['C','L','R','LW','RW','F'].includes(String(p.positionCode||p.position||'').toUpperCase())),defensemen:ps.filter(p=>['D','LD','RD'].includes(String(p.positionCode||p.position||'').toUpperCase())),goalies:ps.filter(p=>['G','GK'].includes(String(p.positionCode||p.position||'').toUpperCase()))}}
 async function rosterFor(team){
-  const code=String(team||'').trim().toUpperCase();
-  let last=null;
-  // Roster-only repair: the shared worker route returns HTML with HTTP 200.
-  // Fetch the NHL roster endpoint directly first; keep other NHL API routes unchanged.
-  const urls=[
-    'https://api-web.nhle.com/v1/roster/'+encodeURIComponent(code)+'/current',
-    API+'/roster/'+encodeURIComponent(code.toLowerCase())+'/current',
-    API+'/roster/'+encodeURIComponent(code.toLowerCase())+'/'+seasonId()
-  ];
-  for(const url of urls){
-    try{
-      const r=await fetch(url,{cache:'no-store',headers:{'Accept':'application/json'}});
-      const txt=await r.text();
-      let d;
-      try{d=JSON.parse(txt)}catch(_){throw Error('Roster-vastaus ei ole JSON · HTTP '+r.status+' · '+url.replace(/^https?:\/\/[^/]+/,'').slice(0,90))}
-      if(!r.ok)throw Error('Roster HTTP '+r.status);
-      d=d?.data??d;
-      const roster=normalizeRoster(d);
-      if(roster.forwards.length||roster.defensemen.length||roster.goalies.length)return roster;
-      last=Error('Tyhjä roster '+code);
-    }catch(e){last=e}
-  }
-  throw last||Error('Roster puuttuu '+code);
+ const code=String(team||'').trim().toUpperCase(),season=seasonId();let last=null;const errors=[];
+ const urls=['https://api-web.nhle.com/v1/roster/'+encodeURIComponent(code)+'/'+season,'https://api-web.nhle.com/v1/roster/'+encodeURIComponent(code)+'/current',API+'/roster/'+encodeURIComponent(code)+'/current',API+'/roster/'+encodeURIComponent(code)+'/'+season];
+ for(const url of urls){try{const r=await fetch(url,{cache:'no-store',headers:{'Accept':'application/json'}});const txt=await r.text();let d;try{d=JSON.parse(txt)}catch(_){throw Error('ei JSON (HTTP '+r.status+') '+url.replace(/^https?:\/\/[^/]+/,'').slice(0,90))}if(!r.ok)throw Error('HTTP '+r.status);d=d?.data??d;const roster=findRoster(d)||d?.roster||d;const ro={forwards:Array.isArray(roster?.forwards)?roster.forwards:[],defensemen:Array.isArray(roster?.defensemen)?roster.defensemen:(Array.isArray(roster?.defense)?roster.defense:[]),goalies:Array.isArray(roster?.goalies)?roster.goalies:(Array.isArray(roster?.goaltenders)?roster.goaltenders:[])};if(ro.forwards.length||ro.defensemen.length||ro.goalies.length)return ro;throw Error('tyhjä roster '+code)}catch(e){last=e;errors.push(e.message)}}
+ throw Error('NHL-rosterin haku epäonnistui: '+errors.join(' | '));
 }
 async function clubStatsFor(team){const t=String(team||'').toUpperCase(),sid=seasonId();for(const path of ['/club-stats/'+t+'/now','/club-stats/'+t+'/'+sid+'/2']){try{return await api(path)}catch(e){}}return null}
 function pick(o,...keys){for(const k of keys){if(o?.[k]!=null)return o[k]}return null}
