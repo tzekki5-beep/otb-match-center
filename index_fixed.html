@@ -1487,7 +1487,14 @@ async function load(){
         const allowedIds=new Set(Object.values(leagueMap).map(x=>String(x.id)));
         matches=(d.matches||[]).filter(m=>allowedIds.has(String(m?.league?.id)));
       }
-      games=matches.map(m=>{const target=ALLOWED.find(n=>String(leagueMap[n]?.id)===String(m?.league?.id));return {...m,league:{...(m.league||{}),name:target||filter||m.league?.name}}});
+      games=matches.map(m=>{
+        const target=ALLOWED.find(n=>String(leagueMap[n]?.id)===String(m?.league?.id));
+        // The league-specific endpoint is authoritative for the selected tab.
+        // Some PitchAPI fixtures carry a missing or inconsistent embedded league
+        // object; don't let that metadata hide a fixture we just fetched for this tab.
+        const resolvedName=filter!=='ALL' ? filter : (target||m?.league?.name||'');
+        return {...m,league:{...(m.league||{}),name:resolvedName}};
+      });
     }
 
     if(myLoad!==loadGeneration || $('#date').value!==requestDate || filter!==requestFilter)return;
