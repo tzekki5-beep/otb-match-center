@@ -4155,7 +4155,36 @@ function skaterTable(a){return `<div class="otb-table-wrap"><table class="otb-st
 function goalieTable(a){return `<div class="otb-table-wrap"><table class="otb-stat-table"><thead><tr><th class="name">Maalivahti</th><th>Ottelut</th><th>Aloitukset</th><th>Voitot</th><th>Tappiot</th><th>Jatkoaikatappiot</th><th>Laukauksia vastaan</th><th>Torjunnat</th><th>Päästetyt</th><th>Torjunta%</th><th>GAA</th><th>Nollapelit</th><th>Maalit</th><th>Syötöt</th><th>Jääaika</th></tr></thead><tbody>${a.map(rowGoalie).join('')}</tbody></table></div>`}
 function mount(){const live=document.querySelector('#nhlLivePanel');const host=live?.parentElement||document.querySelector('.seh-nhl-inner');if(!host||document.getElementById('otbTeamsV71'))return;const el=document.createElement('section');el.id='otbTeamsV71';el.innerHTML=`<div class="otb-teams-head"><div><div class="otb-teams-title">Joukkueet</div><div class="otb-teams-sub">Kauden 2026–27 pelaajatilastot · päivittyvät NHL-datan mukana otteluiden jälkeen</div></div><button class="otb-teams-refresh" type="button" id="otbTeamsRefresh">↻ Päivitä</button></div><div class="otb-team-grid" id="otbTeamGrid">${TEAM_LIST.map(([ab,nm])=>`<button class="otb-team-btn" type="button" data-team="${ab}"><img src="${logo(ab)}" alt=""><span><b>${nm}</b><small>${ab}</small></span></button>`).join('')}</div><div id="otbTeamDetail" class="otb-team-detail"><div class="otb-team-loading">Valitse joukkue.</div></div>`;if(live&&live.parentElement===host) live.insertAdjacentElement('afterend',el); else host.appendChild(el);el.addEventListener('click',e=>{const b=e.target.closest('[data-team]');if(b)select(b.dataset.team)});el.querySelector('#otbTeamsRefresh').addEventListener('click',()=>state.team&&select(state.team,true))}
 const state={team:null,cache:new Map(),token:0};
-async function fetchTeamRoster(ab){let last=null;const codes=[...new Set([String(ab||'').toUpperCase(),String(ab||'').toLowerCase()])];for(const code of codes){try{const data=await api('/roster/'+code+'/current');if(data&&(Array.isArray(data.forwards)||Array.isArray(data.defensemen)||Array.isArray(data.goalies)))return data;last=Error('Roster-vastauksessa ei ollut pelaajalistoja: '+code)}catch(e){last=e}}throw last||Error('Roster puuttuu '+ab)}
+async function fetchTeamRoster(ab){
+  const code=String(ab||'').trim().toUpperCase();
+  let last=null;
+  // The Cloudflare worker currently returns an HTML fallback for /roster/* (HTTP 200),
+  // so try the official NHL web API directly first. Keep the existing worker as fallback.
+  const urls=[
+    'https://api-web.nhle.com/v1/roster/'+encodeURIComponent(code)+'/current',
+    API+'/roster/'+encodeURIComponent(code)+'/current'
+  ];
+  for(const url of urls){
+    try{
+      const r=await fetch(url,{cache:'no-store',headers:{'Accept':'application/json'}});
+      const txt=await r.text();
+      let data;
+      try{data=JSON.parse(txt)}catch(_){throw Error('Vastaus ei ollut JSON: '+url.replace(/^https?:\/\/[^/]+/,''))}
+      if(!r.ok)throw Error('HTTP '+r.status);
+      data=data?.data??data;
+      const roster=findRoster(data)||data?.roster||data;
+      if(roster&&(Array.isArray(roster.forwards)||Array.isArray(roster.defensemen)||Array.isArray(roster.goalies)||Array.isArray(roster.goaltenders))){
+        return {
+          forwards:Array.isArray(roster.forwards)?roster.forwards:[],
+          defensemen:Array.isArray(roster.defensemen)?roster.defensemen:(Array.isArray(roster.defense)?roster.defense:[]),
+          goalies:Array.isArray(roster.goalies)?roster.goalies:(Array.isArray(roster.goaltenders)?roster.goaltenders:[])
+        };
+      }
+      throw Error('Roster-vastauksessa ei ollut pelaajalistoja');
+    }catch(e){last=e}
+  }
+  throw last||Error('Roster puuttuu '+code);
+}
 async function select(ab,force=false){
   mount();
   state.team=ab;
